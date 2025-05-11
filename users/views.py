@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.conf import settings
 import uuid
 import json
+from django.contrib.auth import logout
 
 from .forms import UserRegisterForm, UserLoginForm, UserProfileForm
 from .models import User
@@ -121,3 +122,9 @@ def send_verification_code(request):
             messages.error(request, 'Please provide a valid phone number.')
     
     return redirect('users:verify_phone')
+
+def logout_view(request):
+    """Handle user logout"""
+    logout(request)
+    messages.success(request, 'You have been successfully logged out.')
+    return redirect('listings:listing_list')

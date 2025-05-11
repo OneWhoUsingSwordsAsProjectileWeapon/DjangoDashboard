@@ -522,12 +522,12 @@ def calculate_booking_price(request, pk):
         listing = Listing.objects.get(pk=pk)
         
         # Get dates from request
-        start_date = request.GET.get('start_date')
-        end_date = request.GET.get('end_date')
+        start_date = request.GET.get('start_date') or request.GET.get('check_in')
+        end_date = request.GET.get('end_date') or request.GET.get('check_out')
         
         if not start_date or not end_date:
             return JsonResponse({
-                'error': 'Please provide start_date and end_date'
+                'error': 'Пожалуйста, укажите даты заезда и выезда'
             }, status=400)
         
         # Calculate price
@@ -547,7 +547,7 @@ def calculate_booking_price(request, pk):
             })
         except (ValueError, TypeError):
             return JsonResponse({
-                'error': 'Invalid date format. Use YYYY-MM-DD.'
+                'error': 'Неверный формат даты. Используйте ГГГГ-ММ-ДД.'
             }, status=400)
             
     except Listing.DoesNotExist:
