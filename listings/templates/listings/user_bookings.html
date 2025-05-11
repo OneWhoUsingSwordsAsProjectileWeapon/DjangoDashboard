@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Trips - Rental Aggregator{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">My Trips</h2>
+            
+            <ul class="nav nav-tabs mb-4">
+                <li class="nav-item">
+                    <a class="nav-link {% if not current_status %}active{% endif %}" href="{% url 'listings:user_bookings' %}">
+                        All Trips
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if current_status == 'upcoming' %}active{% endif %}" href="{% url 'listings:user_bookings' %}?status=upcoming">
+                        Upcoming
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if current_status == 'completed' %}active{% endif %}" href="{% url 'listings:user_bookings' %}?status=completed">
+                        Past Trips
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if current_status == 'canceled' %}active{% endif %}" href="{% url 'listings:user_bookings' %}?status=canceled">
+                        Canceled
+                    </a>
+                </li>
+            </ul>
+            
+            {% if bookings %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    {% for booking in bookings %}
+                    <div class="col">
+                        <div class="card h-100 shadow-sm">
+                            <img src="{{ booking.listing.main_image_url }}" class="card-img-top" alt="{{ booking.listing.title }}">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ booking.listing.title }}</h5>
+                                <p class="card-text text-muted mb-2">
+                                    <i class="fas fa-map-marker-alt"></i> {{ booking.listing.city }}, {{ booking.listing.state }}
+                                </p>
+                                
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>
+                                        <i class="fas fa-calendar"></i> {{ booking.start_date|date:"M d" }} - {{ booking.end_date|date:"M d, Y" }}
+                                    </span>
+                                    <span class="badge {% if booking.status == 'confirmed' %}bg-success{% elif booking.status == 'pending' %}bg-warning text-dark{% elif booking.status == 'canceled' %}bg-danger{% elif booking.status == 'completed' %}bg-secondary{% endif %}">
+                                        {{ booking.get_status_display }}
+                                    </span>
+                                </div>
+                                
+                                <p class="card-text mb-2">
+                                    <i class="fas fa-user"></i> {{ booking.guests }} guests
+                                </p>
+                                <p class="card-text">
+                                    <strong>Total:</strong> ${{ booking.total_price }}
+                                </p>
+                            </div>
+                            <div class="card-footer bg-white">
+                                <div class="d-grid">
+                                    <a href="{% url 'listings:booking_detail' reference=booking.booking_reference %}" class="btn btn-outline-primary">
+                                        View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-suitcase fa-3x text-muted"></i>
+                    </div>
+                    <h4>No trips found</h4>
+                    <p class="text-muted">You don't have any {{ current_status|default:"" }} bookings.</p>
+                    <a href="{% url 'listings:listing_list' %}" class="btn btn-primary mt-2">
+                        Find a Place to Stay
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

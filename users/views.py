@@ -26,7 +26,7 @@ def register_view(request):
                 reverse('users:verify_email', kwargs={'token': token})
             )
             # In a real app, store token with user, here simplified
-            send_email_notification.delay(
+            send_email_notification(
                 user.email,
                 'Verify your email address',
                 f'Please click the link to verify your email: {verification_url}'

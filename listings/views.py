@@ -296,14 +296,14 @@ def create_booking(request, pk):
                           f"Guest: {request.user.get_full_name() or request.user.username}, " \
                           f"Check-in: {start_date}, Check-out: {end_date}."
             
-            # Send email notifications asynchronously
-            send_email_notification.delay(
+            # Send email notifications
+            send_email_notification(
                 request.user.email,
                 "Booking Confirmation",
                 guest_message
             )
             
-            send_email_notification.delay(
+            send_email_notification(
                 listing.host.email,
                 "New Booking Request",
                 host_message
