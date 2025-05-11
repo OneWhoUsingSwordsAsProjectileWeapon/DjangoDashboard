@@ -107,16 +107,16 @@
                     <div class="mt-3">
                         <h6>Связь</h6>
                         {% if conversation %}
-                            <a href="{% url 'chat:conversation_detail' pk=conversation.id %}" class="btn btn-outline-primary">
+                            <a href="{% url 'chat:start_conversation_about_booking' booking_id=booking.booking_reference %}" class="btn btn-outline-primary">
                                 <i class="fas fa-comments me-1"></i> Открыть чат
                             </a>
                         {% else %}
                             {% if booking.listing.host == request.user %}
-                                <a href="{% url 'chat:start_conversation' booking_id=booking.id %}" class="btn btn-outline-primary">
+                                <a href="{% url 'chat:start_conversation_about_booking' booking_id=booking.booking_reference %}" class="btn btn-outline-primary">
                                     <i class="fas fa-comments me-1"></i> Начать чат с гостем
                                 </a>
                             {% else %}
-                                <a href="{% url 'chat:start_conversation' booking_id=booking.id %}" class="btn btn-outline-primary">
+                                <a href="{% url 'chat:start_conversation_about_booking' booking_id=booking.booking_reference %}" class="btn btn-outline-primary">
                                     <i class="fas fa-comments me-1"></i> Начать чат с хозяином
                                 </a>
                             {% endif %}
@@ -126,9 +126,9 @@
                 
                 <div class="card-footer bg-white">
                     <div class="d-flex justify-content-between">
-                        <a href="{% url 'listings:my_bookings' %}" class="btn btn-outline-secondary">
-                            <i class="fas fa-arrow-left me-1"></i> Назад к бронированиям
-                        </a>
+                        <a href="{% url 'listings:user_bookings' %}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-1"></i> Назад к бронированиям
+</a>
                         <a href="{% url 'listings:listing_detail' pk=booking.listing.id %}" class="btn btn-outline-primary">
                             Посмотреть объявление <i class="fas fa-arrow-right ms-1"></i>
                         </a>
