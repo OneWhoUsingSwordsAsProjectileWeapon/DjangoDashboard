@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Панель модерации - Rental Aggregator{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">Панель модерации</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Всего жалоб</h5>
+                    <p class="display-4">{{ total_reports }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm h-100 bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Ожидают рассмотрения</h5>
+                    <p class="display-4">{{ pending_reports }}</p>
+                    {% if pending_reports > 0 %}
+                    <a href="{% url 'moderation:report_list' %}?status=pending" class="btn btn-sm btn-light">Просмотреть</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm h-100 bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">В процессе</h5>
+                    <p class="display-4">{{ in_progress_reports }}</p>
+                    {% if in_progress_reports > 0 %}
+                    <a href="{% url 'moderation:report_list' %}?status=in_progress" class="btn btn-sm btn-light">Просмотреть</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm h-100 bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Разрешено</h5>
+                    <p class="display-4">{{ resolved_reports }}</p>
+                    {% if resolved_reports > 0 %}
+                    <a href="{% url 'moderation:report_list' %}?status=resolved" class="btn btn-sm btn-light">Просмотреть</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Последние жалобы</h5>
+                    <a href="{% url 'moderation:report_list' %}" class="btn btn-sm btn-outline-primary">Все жалобы</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_reports %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Тип</th>
+                                    <th>Статус</th>
+                                    <th>Дата</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for report in recent_reports %}
+                                <tr>
+                                    <td>{{ report.id }}</td>
+                                    <td>
+                                        {% if report.content_type == 'listing' %}
+                                        <span class="badge bg-primary">Объявление</span>
+                                        {% elif report.content_type == 'review' %}
+                                        <span class="badge bg-info">Отзыв</span>
+                                        {% elif report.content_type == 'user' %}
+                                        <span class="badge bg-warning">Пользователь</span>
+                                        {% elif report.content_type == 'message' %}
+                                        <span class="badge bg-secondary">Сообщение</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if report.status == 'pending' %}
+                                        <span class="badge bg-warning">Ожидает</span>
+                                        {% elif report.status == 'in_progress' %}
+                                        <span class="badge bg-info">В процессе</span>
+                                        {% elif report.status == 'resolved' %}
+                                        <span class="badge bg-success">Разрешено</span>
+                                        {% elif report.status == 'rejected' %}
+                                        <span class="badge bg-danger">Отклонено</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ report.created_at|date:"d.m.Y H:i" }}</td>
+                                    <td>
+                                        <a href="{% url 'moderation:report_detail' pk=report.id %}" class="btn btn-sm btn-outline-primary">Просмотр</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Нет жалоб для отображения.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Аккаунты с ограничениями</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-center mb-3">
+                        <div class="text-center">
+                            <h2 class="display-4">{{ active_bans }}</h2>
+                            <p class="text-muted">Активных ограничений</p>
+                        </div>
+                    </div>
+                    
+                    {% if recent_bans %}
+                    <h6>Последние ограничения:</h6>
+                    <ul class="list-group">
+                        {% for ban in recent_bans %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ ban.user.username }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    {% if ban.is_permanent %}
+                                    Постоянное ограничение
+                                    {% else %}
+                                    До {{ ban.banned_until|date:"d.m.Y" }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <span class="badge bg-danger rounded-pill">
+                                {% if ban.is_active %}Активно{% else %}Завершено{% endif %}
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">Нет пользователей с ограничениями.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Модерация контента</h5>
+                </div>
+                <div class="card-body">
+                    <p>Активных запрещенных слов: <strong>{{ keywords_count }}</strong></p>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'admin:moderation_forbiddenkeyword_changelist' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-cog me-1"></i> Управление фильтрами
+                        </a>
+                        <a href="{% url 'admin:moderation_reportcategory_changelist' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-list me-1"></i> Категории жалоб
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

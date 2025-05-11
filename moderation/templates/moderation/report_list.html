@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Список жалоб - Модерация - Rental Aggregator{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Список жалоб</h1>
+        <a href="{% url 'moderation:dashboard' %}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-1"></i> К панели модерации
+        </a>
+    </div>
+    
+    <!-- Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Фильтры</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-5">
+                    <label for="status" class="form-label">Статус</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">Все статусы</option>
+                        {% for status_code, status_name in status_choices %}
+                        <option value="{{ status_code }}" {% if current_status == status_code %}selected{% endif %}>
+                            {{ status_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label for="content_type" class="form-label">Тип контента</label>
+                    <select name="content_type" id="content_type" class="form-select">
+                        <option value="">Все типы</option>
+                        {% for type_code, type_name in content_type_choices %}
+                        <option value="{{ type_code }}" {% if current_content_type == type_code %}selected{% endif %}>
+                            {{ type_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Применить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Reports list -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Результаты</h5>
+        </div>
+        <div class="card-body">
+            {% if reports %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Тип контента</th>
+                            <th>Заявитель</th>
+                            <th>Статус</th>
+                            <th>Категория</th>
+                            <th>Дата</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in reports %}
+                        <tr>
+                            <td>{{ report.id }}</td>
+                            <td>
+                                {% if report.content_type == 'listing' %}
+                                <span class="badge bg-primary">Объявление</span>
+                                {% elif report.content_type == 'review' %}
+                                <span class="badge bg-info">Отзыв</span>
+                                {% elif report.content_type == 'user' %}
+                                <span class="badge bg-warning">Пользователь</span>
+                                {% elif report.content_type == 'message' %}
+                                <span class="badge bg-secondary">Сообщение</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ report.reporter.username }}</td>
+                            <td>
+                                {% if report.status == 'pending' %}
+                                <span class="badge bg-warning">Ожидает</span>
+                                {% elif report.status == 'in_progress' %}
+                                <span class="badge bg-info">В процессе</span>
+                                {% elif report.status == 'resolved' %}
+                                <span class="badge bg-success">Разрешено</span>
+                                {% elif report.status == 'rejected' %}
+                                <span class="badge bg-danger">Отклонено</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ report.category.name|default:"—" }}</td>
+                            <td>{{ report.created_at|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'moderation:report_detail' pk=report.id %}" class="btn btn-sm btn-outline-primary">
+                                    Детали
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <p class="text-muted">Нет жалоб, соответствующих заданным критериям.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
