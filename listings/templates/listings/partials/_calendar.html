@@ -1,0 +1,299 @@
+{% load listing_extras %}
+
+<div x-data="calendar()" class="listing-calendar">
+    <div class="d-flex justify-content-between mb-3">
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-secondary" x-on:click="previousMonth()">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" x-on:click="nextMonth()">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+        <h5 class="mb-0" x-text="currentMonthName + ' ' + currentYear"></h5>
+    </div>
+    
+    <div class="calendar-container">
+        <table class="calendar-table">
+            <thead>
+                <tr>
+                    <th>Su</th>
+                    <th>Mo</th>
+                    <th>Tu</th>
+                    <th>We</th>
+                    <th>Th</th>
+                    <th>Fr</th>
+                    <th>Sa</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="week in calendarDays">
+                    <tr>
+                        <template x-for="day in week">
+                            <td :class="{
+                                    'calendar-day': day.date,
+                                    'empty': !day.date,
+                                    'unavailable': day.unavailable,
+                                    'today': day.isToday,
+                                    'selected': isSelected(day.date),
+                                    'in-range': isInRange(day.date),
+                                    'start-date': isStartDate(day.date),
+                                    'end-date': isEndDate(day.date)
+                                }"
+                                x-on:click="selectDate(day)"
+                                :title="day.unavailable ? 'Unavailable' : 'Available'">
+                                <template x-if="day.date">
+                                    <div class="day-content">
+                                        <span x-text="day.dayNumber"></span>
+                                    </div>
+                                </template>
+                            </td>
+                        </template>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="d-flex justify-content-center mt-3">
+        <div class="legend-item me-3">
+            <span class="legend-box bg-success"></span>
+            <span class="legend-text">Available</span>
+        </div>
+        <div class="legend-item me-3">
+            <span class="legend-box bg-danger"></span>
+            <span class="legend-text">Unavailable</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-box bg-primary"></span>
+            <span class="legend-text">Selected</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    function calendar() {
+        return {
+            currentYear: new Date().getFullYear(),
+            currentMonth: new Date().getMonth(),
+            calendarDays: [],
+            startDate: null,
+            endDate: null,
+            selectionMode: 'start', // 'start' or 'end'
+            unavailableDates: {{ unavailable_dates_json|safe }},
+            
+            init() {
+                this.generateCalendar();
+                
+                // Get query params
+                const urlParams = new URLSearchParams(window.location.search);
+                const checkIn = urlParams.get('check_in');
+                const checkOut = urlParams.get('check_out');
+                
+                // Set dates from URL if available
+                if (checkIn) {
+                    this.startDate = checkIn;
+                    this.selectionMode = 'end';
+                }
+                if (checkOut) {
+                    this.endDate = checkOut;
+                    this.selectionMode = 'start';
+                }
+                
+                // Listen for date selection from inputs
+                const checkInInput = document.getElementById('check_in');
+                const checkOutInput = document.getElementById('check_out');
+                
+                if (checkInInput) {
+                    checkInInput.addEventListener('change', (event) => {
+                        this.startDate = event.target.value;
+                        this.selectionMode = 'end';
+                        this.generateCalendar();
+                    });
+                }
+                
+                if (checkOutInput) {
+                    checkOutInput.addEventListener('change', (event) => {
+                        this.endDate = event.target.value;
+                        this.selectionMode = 'start';
+                        this.generateCalendar();
+                    });
+                }
+            },
+            
+            get currentMonthName() {
+                return new Date(this.currentYear, this.currentMonth).toLocaleString('default', { month: 'long' });
+            },
+            
+            generateCalendar() {
+                const firstDay = new Date(this.currentYear, this.currentMonth, 1).getDay();
+                const daysInMonth = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
+                
+                const calendar = [];
+                let date = 1;
+                
+                // Create weeks
+                for (let i = 0; i < 6; i++) {
+                    const week = [];
+                    
+                    // Create days in week
+                    for (let j = 0; j < 7; j++) {
+                        if (i === 0 && j < firstDay) {
+                            // Empty cells before first day
+                            week.push({ date: null });
+                        } else if (date > daysInMonth) {
+                            // Empty cells after last day
+                            week.push({ date: null });
+                        } else {
+                            // Valid days
+                            const currentDate = new Date(this.currentYear, this.currentMonth, date);
+                            const dateStr = this.formatDate(currentDate);
+                            const isToday = this.isToday(dateStr);
+                            const unavailable = this.isUnavailable(dateStr);
+                            
+                            week.push({
+                                date: dateStr,
+                                dayNumber: date,
+                                isToday: isToday,
+                                unavailable: unavailable
+                            });
+                            
+                            date++;
+                        }
+                    }
+                    
+                    calendar.push(week);
+                    
+                    // Stop if we've reached the end of the month
+                    if (date > daysInMonth) {
+                        break;
+                    }
+                }
+                
+                this.calendarDays = calendar;
+            },
+            
+            previousMonth() {
+                if (this.currentMonth === 0) {
+                    this.currentYear--;
+                    this.currentMonth = 11;
+                } else {
+                    this.currentMonth--;
+                }
+                this.generateCalendar();
+            },
+            
+            nextMonth() {
+                if (this.currentMonth === 11) {
+                    this.currentYear++;
+                    this.currentMonth = 0;
+                } else {
+                    this.currentMonth++;
+                }
+                this.generateCalendar();
+            },
+            
+            selectDate(day) {
+                if (!day.date || day.unavailable) return;
+                
+                if (this.selectionMode === 'start') {
+                    this.startDate = day.date;
+                    this.endDate = null;
+                    this.selectionMode = 'end';
+                    
+                    // Update check-in input if it exists
+                    const checkInInput = document.getElementById('check_in');
+                    if (checkInInput) {
+                        checkInInput.value = day.date;
+                        checkInInput.dispatchEvent(new Event('change'));
+                    }
+                } else {
+                    // Ensure end date is after start date
+                    if (day.date <= this.startDate) {
+                        this.startDate = day.date;
+                        
+                        // Update check-in input if it exists
+                        const checkInInput = document.getElementById('check_in');
+                        if (checkInInput) {
+                            checkInInput.value = day.date;
+                            checkInInput.dispatchEvent(new Event('change'));
+                        }
+                        return;
+                    }
+                    
+                    // Check if any unavailable dates are in range
+                    if (this.hasUnavailableDateInRange(this.startDate, day.date)) {
+                        alert('Your selected date range includes unavailable dates. Please choose another range.');
+                        return;
+                    }
+                    
+                    this.endDate = day.date;
+                    this.selectionMode = 'start';
+                    
+                    // Update check-out input if it exists
+                    const checkOutInput = document.getElementById('check_out');
+                    if (checkOutInput) {
+                        checkOutInput.value = day.date;
+                        checkOutInput.dispatchEvent(new Event('change'));
+                    }
+                }
+                
+                this.generateCalendar();
+            },
+            
+            formatDate(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            },
+            
+            isToday(dateStr) {
+                const today = this.formatDate(new Date());
+                return dateStr === today;
+            },
+            
+            isUnavailable(dateStr) {
+                // Check if date is in the past
+                const today = this.formatDate(new Date());
+                if (dateStr < today) return true;
+                
+                // Check if date is in unavailable dates
+                return this.unavailableDates.includes(dateStr);
+            },
+            
+            hasUnavailableDateInRange(start, end) {
+                // Convert to Date objects
+                const startDate = new Date(start);
+                const endDate = new Date(end);
+                
+                // Check each date in range
+                for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                    const dateStr = this.formatDate(d);
+                    if (this.unavailableDates.includes(dateStr)) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            },
+            
+            isSelected(dateStr) {
+                return dateStr === this.startDate || dateStr === this.endDate;
+            },
+            
+            isStartDate(dateStr) {
+                return dateStr === this.startDate;
+            },
+            
+            isEndDate(dateStr) {
+                return dateStr === this.endDate;
+            },
+            
+            isInRange(dateStr) {
+                if (!this.startDate || !this.endDate) return false;
+                return dateStr > this.startDate && dateStr < this.endDate;
+            }
+        };
+    }
+</script>

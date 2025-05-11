@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block title %}Verify Your Phone Number - Rental Aggregator{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body p-4">
+                    <h2 class="card-title text-center mb-4">Phone Verification</h2>
+                    
+                    <p class="text-center mb-4">
+                        Verifying your phone number adds an extra layer of security to your account and helps us confirm your identity.
+                    </p>
+                    
+                    {% if user.is_phone_verified %}
+                        <div class="alert alert-success mb-4">
+                            <i class="fas fa-check-circle me-2"></i> Your phone number ({{ user.phone_number }}) has been verified!
+                        </div>
+                        
+                        <div class="text-center">
+                            <a href="{% url 'users:profile' %}" class="btn btn-primary">Return to Profile</a>
+                        </div>
+                    {% else %}
+                        <div class="verification-steps">
+                            <!-- Step 1: Enter Phone Number -->
+                            <div id="step1" x-data="{ phone: '{{ user.phone_number|default:"" }}' }">
+                                <h5 class="mb-3">Step 1: Enter Your Phone Number</h5>
+                                
+                                <form method="post" action="{% url 'users:send_verification_code' %}" id="phoneForm">
+                                    {% csrf_token %}
+                                    
+                                    <div class="mb-3">
+                                        <label for="phone_number" class="form-label">Phone Number</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">+</span>
+                                            <input type="tel" class="form-control" id="phone_number" name="phone_number" 
+                                                x-model="phone" placeholder="1 (555) 123-4567" required>
+                                        </div>
+                                        <div class="form-text">
+                                            Enter your phone number with country code (e.g., +1 for US/Canada)
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary" 
+                                                x-bind:disabled="!phone.trim()" 
+                                                id="sendCodeBtn">
+                                            <i class="fas fa-paper-plane me-2"></i> Send Verification Code
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- Step 2: Enter Verification Code -->
+                            <div id="step2" style="display: none;" x-data="{ code: '' }">
+                                <h5 class="mb-3">Step 2: Enter the Verification Code</h5>
+                                
+                                <div class="alert alert-info mb-4">
+                                    <i class="fas fa-info-circle me-2"></i> We've sent a verification code to your phone. 
+                                    Enter the code below to complete verification.
+                                </div>
+                                
+                                <form method="post" action="{% url 'users:verify_phone' %}" id="codeForm">
+                                    {% csrf_token %}
+                                    <input type="hidden" id="verified_phone" name="verified_phone">
+                                    
+                                    <div class="mb-3">
+                                        <label for="verification_code" class="form-label">Verification Code</label>
+                                        <input type="text" class="form-control form-control-lg text-center" 
+                                               id="verification_code" name="verification_code" placeholder="123456"
+                                               x-model="code" maxlength="6" required>
+                                    </div>
+                                    
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-success" x-bind:disabled="code.length < 6">
+                                            <i class="fas fa-check-circle me-2"></i> Verify
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" id="backToStep1Btn">
+                                            <i class="fas fa-arrow-left me-2"></i> Back
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="text-center mt-3">
+                                        <p class="mb-0">Didn't receive a code? <a href="#" id="resendCodeBtn">Resend code</a></p>
+                                        <p class="text-muted small mt-1">You can resend after 60 seconds</p>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mt-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Why verify your phone?</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="fas fa-shield-alt text-success me-2"></i> Enhances account security</li>
+                        <li class="mb-2"><i class="fas fa-user-check text-success me-2"></i> Verifies your identity</li>
+                        <li class="mb-2"><i class="fas fa-bell text-success me-2"></i> Enables important SMS notifications</li>
+                        <li><i class="fas fa-unlock text-success me-2"></i> Unlocks additional platform features</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const phoneForm = document.getElementById('phoneForm');
+        const codeForm = document.getElementById('codeForm');
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const backToStep1Btn = document.getElementById('backToStep1Btn');
+        const resendCodeBtn = document.getElementById('resendCodeBtn');
+        const verifiedPhoneInput = document.getElementById('verified_phone');
+        
+        // For demo purposes, we're simulating the verification process
+        // In a real app, this would validate with a backend service
+        
+        // Handle submit phone form
+        if (phoneForm) {
+            phoneForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const phoneNumber = document.getElementById('phone_number').value.trim();
+                if (!phoneNumber) return;
+                
+                // Store the phone number for the verification step
+                if (verifiedPhoneInput) {
+                    verifiedPhoneInput.value = phoneNumber;
+                }
+                
+                // Show loading state
+                const sendCodeBtn = document.getElementById('sendCodeBtn');
+                sendCodeBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...';
+                sendCodeBtn.disabled = true;
+                
+                // Simulate API call delay
+                setTimeout(function() {
+                    // Show the verification code step
+                    step1.style.display = 'none';
+                    step2.style.display = 'block';
+                    
+                    // Reset button state
+                    sendCodeBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Send Verification Code';
+                    sendCodeBtn.disabled = false;
+                    
+                    // Start countdown for resend button
+                    startResendCountdown();
+                }, 1500);
+            });
+        }
+        
+        // Handle back button
+        if (backToStep1Btn) {
+            backToStep1Btn.addEventListener('click', function() {
+                step1.style.display = 'block';
+                step2.style.display = 'none';
+            });
+        }
+        
+        // Resend code functionality
+        let countdownTimer;
+        function startResendCountdown() {
+            if (!resendCodeBtn) return;
+            
+            let secondsLeft = 60;
+            resendCodeBtn.textContent = `Resend code (${secondsLeft}s)`;
+            resendCodeBtn.style.pointerEvents = 'none';
+            resendCodeBtn.style.color = '#6c757d';
+            
+            countdownTimer = setInterval(function() {
+                secondsLeft--;
+                resendCodeBtn.textContent = `Resend code (${secondsLeft}s)`;
+                
+                if (secondsLeft <= 0) {
+                    clearInterval(countdownTimer);
+                    resendCodeBtn.textContent = 'Resend code';
+                    resendCodeBtn.style.pointerEvents = 'auto';
+                    resendCodeBtn.style.color = '';
+                }
+            }, 1000);
+        }
+        
+        // Handle resend code
+        if (resendCodeBtn) {
+            resendCodeBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Only proceed if not in countdown
+                if (resendCodeBtn.style.pointerEvents !== 'none') {
+                    // Show sending status
+                    resendCodeBtn.textContent = 'Sending...';
+                    
+                    // Simulate API call delay
+                    setTimeout(function() {
+                        // Start countdown again
+                        startResendCountdown();
+                        
+                        // Show confirmation
+                        alert('A new verification code has been sent to your phone.');
+                    }, 1000);
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

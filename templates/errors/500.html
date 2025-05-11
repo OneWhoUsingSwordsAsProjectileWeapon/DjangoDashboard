@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Server Error - Rental Aggregator{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="error-page">
+                <h1 class="display-1 text-muted">500</h1>
+                <h2 class="mb-4">Server Error</h2>
+                <p class="lead mb-5">
+                    Oops! Something went wrong on our end. We're working to fix this issue.
+                </p>
+                
+                <div class="row mb-5">
+                    <div class="col-md-8 offset-md-2">
+                        <div class="card shadow-sm">
+                            <div class="card-body p-4">
+                                <h5 class="mb-3">What you can do:</h5>
+                                <ul class="list-unstyled text-start">
+                                    <li class="mb-2"><i class="fas fa-redo me-2 text-primary"></i> Refresh the page and try again</li>
+                                    <li class="mb-2"><i class="fas fa-clock me-2 text-primary"></i> Wait a few minutes and try again</li>
+                                    <li class="mb-2"><i class="fas fa-sign-out-alt me-2 text-primary"></i> Sign out and sign back in</li>
+                                    <li class="mb-2"><i class="fas fa-trash me-2 text-primary"></i> Clear your browser cache</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{% url 'home' %}" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i> Go to Homepage
+                    </a>
+                    <button class="btn btn-outline-primary" onclick="window.location.reload()">
+                        <i class="fas fa-redo me-2"></i> Refresh Page
+                    </button>
+                </div>
+                
+                <div class="mt-5">
+                    <p class="text-muted">
+                        If the problem persists, please <a href="#">contact our support team</a>.
+                    </p>
+                    <p class="text-muted small">
+                        Error Reference: {{ request.sentry.id|default:"N/A" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

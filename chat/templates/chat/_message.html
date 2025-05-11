@@ -1,0 +1,56 @@
+{% load static %}
+
+<div class="chat-message mb-3">
+    {% if message.sender == request.user %}
+        <div class="chat-bubble sent">
+            <p class="mb-0">{{ message.content }}</p>
+            
+            <!-- Message options for sender (own messages) -->
+            <div class="message-options position-absolute top-0 end-0 d-none">
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-link text-white p-0" type="button" id="messageOptions{{ message.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="messageOptions{{ message.id }}">
+                        <li><a class="dropdown-item" href="#" onclick="editMessage({{ message.id }})"><i class="fas fa-edit me-2"></i> Edit</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="deleteMessage({{ message.id }})"><i class="fas fa-trash me-2"></i> Delete</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="chat-timestamp text-end">
+            <span class="small text-muted">{{ message.created_at|time:"g:i A" }}</span>
+        </div>
+    {% else %}
+        <div class="d-flex">
+            {% if message.sender.profile_picture %}
+                <img src="{{ message.sender.profile_picture }}" class="rounded-circle me-2 align-self-start" width="30" height="30" alt="{{ message.sender.username }}">
+            {% else %}
+                <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center me-2 align-self-start text-white" style="width: 30px; height: 30px; font-size: 0.8rem;">
+                    {{ message.sender.username|first|upper }}
+                </div>
+            {% endif %}
+            
+            <div>
+                <div class="chat-bubble received">
+                    <p class="mb-0">{{ message.content }}</p>
+                    
+                    <!-- Message options for receiver (others' messages) -->
+                    <div class="message-options position-absolute top-0 end-0 d-none">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-link text-dark p-0" type="button" id="messageOptions{{ message.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="messageOptions{{ message.id }}">
+                                <li><a class="dropdown-item" href="#" onclick="reportMessage({{ message.id }})"><i class="fas fa-flag me-2"></i> Report</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-timestamp">
+                    <span class="small text-muted">{{ message.created_at|time:"g:i A" }}</span>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>

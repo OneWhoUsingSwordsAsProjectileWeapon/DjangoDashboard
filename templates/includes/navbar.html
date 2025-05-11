@@ -1,0 +1,180 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'home' %}">
+            <i class="fas fa-home"></i> Rental Aggregator
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" 
+                aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <!-- Search form -->
+            <form class="d-flex mx-auto my-2 my-lg-0" action="{% url 'listings:listing_list' %}" method="get">
+                <div class="input-group">
+                    <input class="form-control" type="search" name="location" placeholder="Where are you going?" 
+                           aria-label="Search" value="{{ request.GET.location|default:'' }}">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </form>
+            
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'listing_list' %}active{% endif %}" 
+                       href="{% url 'listings:listing_list' %}">
+                        <i class="fas fa-list"></i> Listings
+                    </a>
+                </li>
+                
+                {% if user.is_authenticated %}
+                    {% if user.is_host %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="hostDropdown" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-home"></i> Host
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="hostDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'listings:host_listings' %}">
+                                    <i class="fas fa-list"></i> My Listings
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'listings:listing_create' %}">
+                                    <i class="fas fa-plus"></i> Create Listing
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'listings:host_bookings' %}">
+                                    <i class="fas fa-calendar-check"></i> Booking Requests
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'listings:listing_create' %}">
+                            <i class="fas fa-plus"></i> Become a Host
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Bookings -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'user_bookings' %}active{% endif %}" 
+                           href="{% url 'listings:user_bookings' %}">
+                            <i class="fas fa-suitcase"></i> Trips
+                        </a>
+                    </li>
+                    
+                    <!-- Messages -->
+                    <li class="nav-item">
+                        <a class="nav-link position-relative {% if 'chat' in request.path %}active{% endif %}" 
+                           href="{% url 'chat:conversation_list' %}">
+                            <i class="fas fa-envelope"></i> Messages
+                            <span id="message-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                <!-- HTMX will load count here -->
+                            </span>
+                        </a>
+                    </li>
+                    
+                    <!-- Notifications -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle position-relative" href="#" id="notificationsDropdown" 
+                           role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-bell"></i> 
+                            <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                <!-- HTMX will load count here -->
+                            </span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationsDropdown" style="width: 300px;">
+                            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                                <h6 class="m-0">Notifications</h6>
+                                <a href="{% url 'notifications:mark_all_read' %}" class="text-decoration-none small">
+                                    Mark all as read
+                                </a>
+                            </div>
+                            <div class="notifications-scrollable" style="max-height: 350px; overflow-y: auto;">
+                                {% load notify_tags %}
+                                {% recent_notifications as notifications %}
+                                
+                                {% if notifications %}
+                                    {% for notification in notifications %}
+                                    <a href="{% notification_target_url notification %}" class="dropdown-item d-flex {% if not notification.is_read %}bg-light{% endif %}">
+                                        <div class="me-2">
+                                            {% notification_icon notification.notification_type %}
+                                        </div>
+                                        <div>
+                                            <div class="small fw-bold">{{ notification.title }}</div>
+                                            <div class="small text-muted">{{ notification.message|truncatechars:70 }}</div>
+                                            <div class="small text-muted">{{ notification.created_at|timesince }} ago</div>
+                                        </div>
+                                    </a>
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="dropdown-item text-muted small">No notifications</p>
+                                {% endif %}
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item text-center small" href="{% url 'notifications:notification_list' %}">
+                                View all notifications
+                            </a>
+                        </div>
+                    </li>
+                    
+                    <!-- User dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            {% if user.profile_picture %}
+                                <img src="{{ user.profile_picture }}" alt="{{ user.username }}" class="user-avatar sm me-1">
+                            {% else %}
+                                <i class="fas fa-user-circle"></i>
+                            {% endif %}
+                            {{ user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'users:profile' %}">
+                                    <i class="fas fa-user"></i> Profile
+                                </a>
+                            </li>
+                            {% if user.is_staff %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'admin:index' %}">
+                                    <i class="fas fa-cog"></i> Admin
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'moderation:dashboard' %}">
+                                    <i class="fas fa-shield-alt"></i> Moderation
+                                </a>
+                            </li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'users:logout' %}">
+                                    <i class="fas fa-sign-out-alt"></i> Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}" 
+                           href="{% url 'users:login' %}">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-primary text-white px-3 {% if request.resolver_match.url_name == 'register' %}active{% endif %}" 
+                           href="{% url 'users:register' %}">
+                            <i class="fas fa-user-plus"></i> Sign Up
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>

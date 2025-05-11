@@ -1,0 +1,67 @@
+{% load listing_extras %}
+
+<div class="pricing-breakdown">
+    {% if check_in and check_out %}
+        <!-- Pricing Calculation -->
+        <div class="pricing-row">
+            <div>
+                {{ nights }} night{{ nights|pluralize }} at {{ base_price_per_night|currency }}
+            </div>
+            <div>{{ base_price|currency }}</div>
+        </div>
+        
+        <div class="pricing-row">
+            <div>Cleaning fee</div>
+            <div>{{ cleaning_fee|currency }}</div>
+        </div>
+        
+        <div class="pricing-row">
+            <div>Service fee</div>
+            <div>{{ service_fee|currency }}</div>
+        </div>
+        
+        <div class="pricing-row pricing-total">
+            <div>Total</div>
+            <div>{{ total_price|currency }}</div>
+        </div>
+        
+        {% if is_available %}
+            <!-- Show availability message if dates are available -->
+            <div class="alert alert-success mt-3 mb-0 py-2 small">
+                <i class="fas fa-check-circle me-1"></i> These dates are available!
+            </div>
+        {% else %}
+            <!-- Show unavailability message if dates are not available -->
+            <div class="alert alert-danger mt-3 mb-0 py-2 small">
+                <i class="fas fa-exclamation-circle me-1"></i> Some or all of these dates are unavailable.
+            </div>
+        {% endif %}
+    {% else %}
+        <!-- Default Pricing Information -->
+        <div class="pricing-row">
+            <div>
+                {{ listing.price_per_night|currency }} × 0 nights
+            </div>
+            <div>$0.00</div>
+        </div>
+        
+        <div class="pricing-row">
+            <div>Cleaning fee</div>
+            <div>{{ listing.cleaning_fee|currency }}</div>
+        </div>
+        
+        <div class="pricing-row">
+            <div>Service fee</div>
+            <div>{{ listing.service_fee|currency }}</div>
+        </div>
+        
+        <div class="pricing-row pricing-total">
+            <div>Total</div>
+            <div>{{ listing.cleaning_fee|add:listing.service_fee|currency }}</div>
+        </div>
+        
+        <div class="alert alert-info mt-3 mb-0 py-2 small">
+            <i class="fas fa-info-circle me-1"></i> Select dates to see the total price.
+        </div>
+    {% endif %}
+</div>

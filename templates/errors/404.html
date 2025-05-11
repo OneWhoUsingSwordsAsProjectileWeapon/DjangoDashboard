@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Page Not Found - Rental Aggregator{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="error-page">
+                <h1 class="display-1 text-muted">404</h1>
+                <h2 class="mb-4">Page Not Found</h2>
+                <p class="lead mb-5">
+                    We couldn't find the page you're looking for. It might have been moved, deleted, or never existed.
+                </p>
+                
+                <div class="row mb-5">
+                    <div class="col-md-8 offset-md-2">
+                        <div class="card shadow-sm">
+                            <div class="card-body p-4">
+                                <h5 class="mb-3">What might have happened?</h5>
+                                <ul class="list-unstyled text-start">
+                                    <li class="mb-2"><i class="fas fa-link-slash me-2 text-danger"></i> The link you clicked may be broken</li>
+                                    <li class="mb-2"><i class="fas fa-keyboard me-2 text-danger"></i> You might have typed the address incorrectly</li>
+                                    <li class="mb-2"><i class="fas fa-trash-alt me-2 text-danger"></i> The page may have been removed</li>
+                                    <li class="mb-2"><i class="fas fa-map-signs me-2 text-danger"></i> You might have taken a wrong turn</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{% url 'home' %}" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i> Go to Homepage
+                    </a>
+                    <a href="{% url 'listings:listing_list' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-search me-2"></i> Browse Listings
+                    </a>
+                </div>
+                
+                <div class="mt-5">
+                    <p class="text-muted">
+                        If you believe this is an error, please <a href="#">contact our support team</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

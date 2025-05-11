@@ -1,0 +1,90 @@
+<footer class="footer mt-auto py-5 bg-dark">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 mb-4 mb-md-0">
+                <h5 class="text-white">Rental Aggregator</h5>
+                <p class="text-muted">
+                    Find your perfect vacation rental, cabin, apartment, or house with our comprehensive 
+                    rental aggregator platform. Book with confidence and enjoy your stay.
+                </p>
+                <div class="social-icons mt-3">
+                    <a href="#" class="me-3"><i class="fab fa-facebook-f fa-lg"></i></a>
+                    <a href="#" class="me-3"><i class="fab fa-twitter fa-lg"></i></a>
+                    <a href="#" class="me-3"><i class="fab fa-instagram fa-lg"></i></a>
+                    <a href="#" class="me-3"><i class="fab fa-linkedin-in fa-lg"></i></a>
+                </div>
+            </div>
+            
+            <div class="col-md-2 mb-4 mb-md-0">
+                <h6 class="text-white">Navigation</h6>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <a href="{% url 'listings:listing_list' %}" class="text-muted">Listings</a>
+                    </li>
+                    {% if user.is_authenticated %}
+                    <li class="mb-2">
+                        <a href="{% url 'listings:user_bookings' %}" class="text-muted">My Trips</a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="{% url 'chat:conversation_list' %}" class="text-muted">Messages</a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="{% url 'users:profile' %}" class="text-muted">Profile</a>
+                    </li>
+                    {% if user.is_host %}
+                    <li class="mb-2">
+                        <a href="{% url 'listings:host_listings' %}" class="text-muted">My Listings</a>
+                    </li>
+                    {% endif %}
+                    {% else %}
+                    <li class="mb-2">
+                        <a href="{% url 'users:login' %}" class="text-muted">Login</a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="{% url 'users:register' %}" class="text-muted">Sign Up</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+            
+            <div class="col-md-2 mb-4 mb-md-0">
+                <h6 class="text-white">Support</h6>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><a href="#" class="text-muted">Help Center</a></li>
+                    <li class="mb-2"><a href="#" class="text-muted">Safety Information</a></li>
+                    <li class="mb-2"><a href="#" class="text-muted">Cancellation Options</a></li>
+                    <li class="mb-2"><a href="#" class="text-muted">COVID-19 Guidelines</a></li>
+                    <li class="mb-2"><a href="#" class="text-muted">Report an Issue</a></li>
+                </ul>
+            </div>
+            
+            <div class="col-md-4">
+                <h6 class="text-white">Newsletter</h6>
+                <p class="text-muted">Subscribe to receive updates about new listings and special offers</p>
+                <form>
+                    <div class="input-group mb-3">
+                        <input type="email" class="form-control" placeholder="Your email address" aria-label="Email" aria-describedby="button-addon2">
+                        <button class="btn btn-primary" type="button" id="button-addon2">Subscribe</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <hr class="my-4 bg-secondary">
+        
+        <div class="row">
+            <div class="col-md-6 text-center text-md-start">
+                <p class="text-muted mb-0">
+                    &copy; {% now 'Y' %} Rental Aggregator. All rights reserved.
+                </p>
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+                <ul class="list-inline mb-0">
+                    <li class="list-inline-item"><a href="#" class="text-muted">Privacy Policy</a></li>
+                    <li class="list-inline-item"><a href="#" class="text-muted">Terms of Use</a></li>
+                    <li class="list-inline-item"><a href="#" class="text-muted">Cookie Policy</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</footer>

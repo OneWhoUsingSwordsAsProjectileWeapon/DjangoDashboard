@@ -1,0 +1,88 @@
+{% load notify_tags %}
+
+<div id="notification-data" 
+     hx-get="{% url 'notifications:get_unread_count' %}" 
+     hx-trigger="load delay:2s" 
+     hx-swap="none">
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <!-- Toast notifications will be inserted here dynamically -->
+</div>
+
+<template id="notification-toast-template">
+    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="5000">
+        <div class="toast-header">
+            <span class="notification-icon me-2"></span>
+            <strong class="me-auto notification-title"></strong>
+            <small class="notification-time"></small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body notification-message">
+        </div>
+        <div class="toast-footer p-2 border-top d-flex justify-content-end">
+            <a href="#" class="notification-link small text-decoration-none">View Details</a>
+        </div>
+    </div>
+</template>
+
+<script>
+    document.addEventListener('htmx:afterSwap', function(event) {
+        // Check if this is a notification update
+        if (event.detail.target && event.detail.target.id === 'notification-badge') {
+            const count = parseInt(event.detail.target.innerText);
+            if (count > 0) {
+                const existingCount = parseInt(localStorage.getItem('notificationCount') || '0');
+                if (count > existingCount) {
+                    // There are new notifications, fetch the latest one
+                    fetchLatestNotification();
+                }
+                localStorage.setItem('notificationCount', count.toString());
+            }
+        }
+    });
+    
+    function fetchLatestNotification() {
+        // This would be replaced with a real endpoint in a production app
+        // Simulated notification data for demo purposes
+        const notificationTypes = [
+            {type: 'booking_request', icon: '<i class="fas fa-calendar-plus text-primary"></i>'},
+            {type: 'booking_confirmed', icon: '<i class="fas fa-calendar-check text-success"></i>'},
+            {type: 'message_received', icon: '<i class="fas fa-envelope text-info"></i>'},
+            {type: 'review_received', icon: '<i class="fas fa-star text-warning"></i>'}
+        ];
+        
+        const randomType = notificationTypes[Math.floor(Math.random() * notificationTypes.length)];
+        const notificationData = {
+            title: 'New Notification',
+            message: 'You have a new notification. Click to view details.',
+            time: 'Just now',
+            icon: randomType.icon,
+            link: '{% url "notifications:notification_list" %}'
+        };
+        
+        showNotificationToast(notificationData);
+    }
+    
+    function showNotificationToast(data) {
+        // Clone the toast template
+        const template = document.getElementById('notification-toast-template');
+        const toast = template.content.cloneNode(true);
+        
+        // Fill in the data
+        toast.querySelector('.notification-icon').innerHTML = data.icon;
+        toast.querySelector('.notification-title').textContent = data.title;
+        toast.querySelector('.notification-time').textContent = data.time;
+        toast.querySelector('.notification-message').textContent = data.message;
+        toast.querySelector('.notification-link').href = data.link;
+        
+        // Add to the container
+        const container = document.querySelector('.toast-container');
+        container.appendChild(toast);
+        
+        // Initialize and show the toast
+        const toastElement = container.lastElementChild;
+        const bsToast = new bootstrap.Toast(toastElement);
+        bsToast.show();
+    }
+</script>
