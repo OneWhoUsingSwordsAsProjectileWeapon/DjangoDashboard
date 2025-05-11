@@ -19,7 +19,23 @@ def register_view(request):
     if request.method == 'POST':
         form = UserRegisterForm(request.POST)
         if form.is_valid():
-            user = form.save()
+            user = form.save(commit=False)
+            
+            # Set user role based on selection
+            role = form.cleaned_data.get('role')
+            if role == 'host':
+                user.is_host = True
+                user.is_guest = False
+            elif role == 'both':
+                user.is_host = True
+                user.is_guest = True
+            else:  # default to guest
+                user.is_host = False
+                user.is_guest = True
+            
+            # Save the user with role settings
+            user.save()
+            
             # Send verification email
             token = uuid.uuid4().hex
             verification_url = request.build_absolute_uri(

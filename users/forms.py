@@ -12,15 +12,31 @@ class UserRegisterForm(UserCreationForm):
         widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email'})
     )
     
+    # Role selection field
+    USER_ROLES = [
+        ('guest', _('I want to rent properties (guest)')),
+        ('host', _('I want to list my properties (host)')),
+        ('both', _('Both host and guest')),
+    ]
+    
+    role = forms.ChoiceField(
+        choices=USER_ROLES,
+        required=True,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='guest',
+        label=_('Register as')
+    )
+    
     class Meta:
         model = User
-        fields = ['username', 'email', 'first_name', 'last_name', 'password1', 'password2']
+        fields = ['username', 'email', 'first_name', 'last_name', 'role', 'password1', 'password2']
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Add custom styling
         for field_name in self.fields:
-            self.fields[field_name].widget.attrs.update({'class': 'form-control'})
+            if field_name != 'role':  # Skip radio buttons
+                self.fields[field_name].widget.attrs.update({'class': 'form-control'})
             
     def clean_email(self):
         email = self.cleaned_data.get('email')
