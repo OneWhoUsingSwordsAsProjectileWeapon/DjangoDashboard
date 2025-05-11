@@ -33,11 +33,10 @@ if MODELS_AVAILABLE:
                 if user != instance.sender:
                     Notification.objects.create(
                         user=user,
-                        content_type='message',
-                        content_id=instance.id,
-                        notification_type='new_message',
-                        text=f"New message from {instance.sender.username}",
-                        related_link=f"/chat/{instance.conversation.id}/",
+                        notification_type='message_received',
+                        title=f"New message",
+                        message=f"New message from {instance.sender.username}",
+                        conversation=instance.conversation,
                     )
     
     @receiver(post_save, sender=Booking)
@@ -49,23 +48,26 @@ if MODELS_AVAILABLE:
             # Notify host of new booking
             Notification.objects.create(
                 user=instance.listing.host,
-                content_type='booking',
-                content_id=instance.id,
-                notification_type='new_booking',
-                text=f"New booking request for {instance.listing.title}",
-                related_link=f"/listings/booking/{instance.booking_reference}/",
+                notification_type='booking_request',
+                title="New Booking Request",
+                message=f"New booking request for {instance.listing.title}",
+                booking=instance,
+                listing=instance.listing,
             )
         else:
             # Check if status changed
             if instance.tracker.has_changed('status'):
                 # Notify guest of booking status change
+                # Determine notification type based on status
+                notification_type = 'booking_confirmed' if instance.status == 'confirmed' else 'booking_canceled'
+                
                 Notification.objects.create(
                     user=instance.guest,
-                    content_type='booking',
-                    content_id=instance.id,
-                    notification_type='booking_update',
-                    text=f"Your booking for {instance.listing.title} is now {instance.status}",
-                    related_link=f"/listings/booking/{instance.booking_reference}/",
+                    notification_type=notification_type,
+                    title=f"Booking {instance.status.capitalize()}",
+                    message=f"Your booking for {instance.listing.title} is now {instance.status}",
+                    booking=instance,
+                    listing=instance.listing,
                 )
     
     @receiver(post_save, sender=Review)
@@ -77,9 +79,9 @@ if MODELS_AVAILABLE:
             # Notify listing host
             Notification.objects.create(
                 user=instance.listing.host,
-                content_type='review',
-                content_id=instance.id,
-                notification_type='new_review',
-                text=f"New review for {instance.listing.title}",
-                related_link=f"/listings/{instance.listing.id}/#reviews",
+                notification_type='review_received',
+                title="New Review",
+                message=f"New review for {instance.listing.title}",
+                listing=instance.listing,
+                review=instance,
             )

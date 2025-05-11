@@ -442,7 +442,7 @@ def update_booking_status(request, reference, status):
                 message = f"Your booking for {booking.listing.title} has been canceled by the host. " \
                          f"Check-in: {booking.start_date}, Check-out: {booking.end_date}."
                 
-                send_email_notification.delay(
+                send_email_notification(
                     booking.guest.email,
                     "Booking Canceled",
                     message
@@ -454,7 +454,7 @@ def update_booking_status(request, reference, status):
                          f"Guest: {booking.guest.get_full_name() or booking.guest.username}, " \
                          f"Check-in: {booking.start_date}, Check-out: {booking.end_date}."
                 
-                send_email_notification.delay(
+                send_email_notification(
                     booking.listing.host.email,
                     "Booking Canceled",
                     message
