@@ -19,6 +19,15 @@ class User(AbstractUser):
     is_host = models.BooleanField(_("Is host"), default=False)
     is_guest = models.BooleanField(_("Is guest"), default=True)
     
+    # User role
+    ROLE_CHOICES = [
+        ('user', _('Regular User')),
+        ('host', _('Host')),
+        ('moderator', _('Moderator')),
+        ('admin', _('Administrator')),
+    ]
+    role = models.CharField(_("Role"), max_length=20, choices=ROLE_CHOICES, default='user')
+    
     # Notification preferences
     email_notifications = models.BooleanField(_("Email notifications"), default=True)
     sms_notifications = models.BooleanField(_("SMS notifications"), default=False)
