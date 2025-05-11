@@ -428,7 +428,7 @@ def update_booking_status(request, reference, status):
             message = f"Your booking for {booking.listing.title} has been confirmed by the host. " \
                      f"Check-in: {booking.start_date}, Check-out: {booking.end_date}."
             
-            send_email_notification.delay(
+            send_email_notification(
                 booking.guest.email,
                 "Booking Confirmed",
                 message

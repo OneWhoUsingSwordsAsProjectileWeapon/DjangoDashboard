@@ -161,8 +161,9 @@ def get_unread_count(request):
     """API to get unread message count for current user"""
     count = Message.objects.filter(
         conversation__participants=request.user,
-        sender__id__ne=request.user.id,
         is_read=False
+    ).exclude(
+        sender=request.user
     ).count()
     
     return JsonResponse({'unread_count': count})

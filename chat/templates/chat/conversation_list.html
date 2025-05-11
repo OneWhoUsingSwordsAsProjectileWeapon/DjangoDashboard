@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Messages - Rental Aggregator{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Conversation list - left panel -->
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Recent Conversations</h5>
+                </div>
+                <div class="list-group list-group-flush conversation-list">
+                    {% if conversations %}
+                        {% for conversation in conversations %}
+                        <a href="{% url 'chat:conversation_detail' pk=conversation.id %}" 
+                           class="list-group-item list-group-item-action {% if conversation.id == active_conversation.id %}active{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-1">
+                                    {% if conversation.listing %}
+                                        {{ conversation.listing.title|truncatechars:30 }}
+                                    {% else %}
+                                        {% for participant in conversation.participants.all %}
+                                            {% if participant != request.user %}
+                                                {{ participant.get_full_name|default:participant.username }}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                </h6>
+                                <small class="text-muted">{{ conversation.updated_at|timesince }}</small>
+                            </div>
+                            <p class="mb-1 text-muted small">
+                                {% if conversation.last_message %}
+                                    {% if conversation.last_message.sender == request.user %}
+                                        <span class="text-muted">You: </span>
+                                    {% else %}
+                                        <span class="text-muted">{{ conversation.last_message.sender.first_name }}: </span>
+                                    {% endif %}
+                                    {{ conversation.last_message.content|truncatechars:50 }}
+                                {% else %}
+                                    No messages yet
+                                {% endif %}
+                            </p>
+                            {% if conversation.unread_count > 0 and conversation.id != active_conversation.id %}
+                                <span class="badge bg-primary rounded-pill">{{ conversation.unread_count }}</span>
+                            {% endif %}
+                        </a>
+                        {% endfor %}
+                    {% else %}
+                        <div class="list-group-item text-center py-4">
+                            <i class="fas fa-comment-slash fa-2x text-muted mb-3"></i>
+                            <p>No conversations yet</p>
+                            <a href="{% url 'listings:listing_list' %}" class="btn btn-sm btn-primary">Browse Listings</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Conversation content - right panel -->
+        <div class="col-md-8">
+            {% if active_conversation %}
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">
+                                {% if active_conversation.listing %}
+                                    <a href="{% url 'listings:listing_detail' pk=active_conversation.listing.id %}" class="text-decoration-none">
+                                        {{ active_conversation.listing.title }}
+                                    </a>
+                                {% else %}
+                                    {% for participant in active_conversation.participants.all %}
+                                        {% if participant != request.user %}
+                                            {{ participant.get_full_name|default:participant.username }}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            </h5>
+                            {% if active_conversation.booking %}
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar"></i> Booking: {{ active_conversation.booking.start_date|date:"M d" }} - {{ active_conversation.booking.end_date|date:"M d, Y" }}
+                                </small>
+                            {% endif %}
+                        </div>
+                        {% if active_conversation.listing %}
+                            <img src="{{ active_conversation.listing.main_image_url }}" class="rounded" alt="{{ active_conversation.listing.title }}" style="width: 50px; height: 50px; object-fit: cover;">
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-body p-0">
+                        <!-- Message display area -->
+                        <div class="chat-messages p-3" id="messageContainer" style="height: 400px; overflow-y: auto;">
+                            {% if messages %}
+                                {% for message in messages %}
+                                    <div class="message mb-3 {% if message.sender == request.user %}message-outgoing{% else %}message-incoming{% endif %}">
+                                        <div class="d-flex {% if message.sender == request.user %}justify-content-end{% endif %}">
+                                            <div class="message-content {% if message.sender == request.user %}bg-primary text-white{% else %}bg-light{% endif %}" style="max-width: 80%; border-radius: 1rem; padding: 0.75rem;">
+                                                {{ message.content|linebreaksbr }}
+                                            </div>
+                                        </div>
+                                        <div class="message-meta small text-muted {% if message.sender == request.user %}text-end{% endif %}">
+                                            {{ message.sender.first_name|default:message.sender.username }} • {{ message.created_at|date:"M d, g:i a" }}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center my-5 py-5">
+                                    <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">No messages yet. Start the conversation!</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Message input form -->
+                        <div class="chat-input border-top p-3">
+                            <form id="messageForm" method="post" class="d-flex">
+                                {% csrf_token %}
+                                <textarea class="form-control me-2" rows="2" name="content" id="messageInput" placeholder="Type your message..." required></textarea>
+                                <button type="submit" class="btn btn-primary align-self-end">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-comments fa-4x text-muted mb-3"></i>
+                        <h4>Select a conversation</h4>
+                        <p class="text-muted">Choose a conversation from the list to view messages</p>
+                        {% if not conversations %}
+                            <a href="{% url 'listings:listing_list' %}" class="btn btn-primary mt-3">
+                                Browse Listings
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if active_conversation %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Scroll to bottom of message container
+        const messageContainer = document.getElementById('messageContainer');
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+        
+        // Set up WebSocket
+        const conversationId = "{{ active_conversation.id }}";
+        const chatSocket = new WebSocket(
+            'ws://' + window.location.host + '/ws/chat/' + conversationId + '/'
+        );
+        
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            
+            // Create message element
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message mb-3';
+            
+            // Check if message is from current user
+            const isOutgoing = data.sender_id === "{{ request.user.id }}";
+            if (isOutgoing) {
+                messageDiv.classList.add('message-outgoing');
+            } else {
+                messageDiv.classList.add('message-incoming');
+            }
+            
+            // Create message content wrapper
+            const contentWrapper = document.createElement('div');
+            contentWrapper.className = 'd-flex';
+            if (isOutgoing) {
+                contentWrapper.classList.add('justify-content-end');
+            }
+            
+            // Create message content
+            const content = document.createElement('div');
+            content.className = isOutgoing ? 'message-content bg-primary text-white' : 'message-content bg-light';
+            content.style.maxWidth = '80%';
+            content.style.borderRadius = '1rem';
+            content.style.padding = '0.75rem';
+            content.innerHTML = data.message.replace(/\n/g, '<br>');
+            
+            // Create message metadata
+            const meta = document.createElement('div');
+            meta.className = 'message-meta small text-muted';
+            if (isOutgoing) {
+                meta.classList.add('text-end');
+            }
+            
+            const now = new Date();
+            const timeStr = now.toLocaleString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
+            
+            meta.textContent = data.sender_name + ' • ' + timeStr;
+            
+            // Assemble the message
+            contentWrapper.appendChild(content);
+            messageDiv.appendChild(contentWrapper);
+            messageDiv.appendChild(meta);
+            
+            // Add the message to the container
+            messageContainer.appendChild(messageDiv);
+            
+            // Scroll to the bottom
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        };
+        
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+        
+        // Setup message form
+        const messageForm = document.getElementById('messageForm');
+        const messageInput = document.getElementById('messageInput');
+        
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const message = messageInput.value.trim();
+            if (message) {
+                chatSocket.send(JSON.stringify({
+                    'message': message
+                }));
+                messageInput.value = '';
+            }
+        });
+        
+        // Allow sending messages with Enter key (but Shift+Enter for newline)
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const submitButton = messageForm.querySelector('button[type="submit"]');
+                submitButton.click();
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}
