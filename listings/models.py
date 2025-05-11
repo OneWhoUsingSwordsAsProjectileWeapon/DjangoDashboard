@@ -31,7 +31,7 @@ class Listing(models.Model):
     property_type = models.CharField(_("Property type"), max_length=50)
     
     # Images
-    image_urls = models.JSONField(_("Image URLs"), default=list)
+    image_urls = models.JSONField(_("Image URLs"), default=list, null=True, blank=True)
     
     # Features/amenities
     amenities = models.JSONField(_("Amenities"), default=list)
