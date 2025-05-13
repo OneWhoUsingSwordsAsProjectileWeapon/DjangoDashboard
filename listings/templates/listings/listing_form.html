@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-{% if form.instance.id %}Edit Listing: {{ form.instance.title }}{% else %}Create New Listing{% endif %} - Rental Aggregator
+{% if form.instance.id %}Edit Listing: {{ form.instance.title }}{% else %}Создать новое объявление{% endif %} - Rental Aggregator
 {% endblock %}
 
 {% block extra_css %}
@@ -30,7 +30,7 @@
         <div class="col-lg-8 mx-auto">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h3 class="mb-0">{% if form.instance.id %}Edit Listing{% else %}Create New Listing{% endif %}</h3>
+                    <h3 class="mb-0">{% if form.instance.id %}Edit Listing{% else %}Создать новое объявление{% endif %}</h3>
                 </div>
                 <div class="card-body">
                     <form method="post" enctype="multipart/form-data" id="listingForm">
@@ -45,7 +45,7 @@
                         {% endif %}
                         
                         <!-- Basic Information -->
-                        <h5 class="mt-3 mb-3">Basic Information</h5>
+                        <h5 class="mt-3 mb-3">Основная информация</h5>
                         <div class="row">
                             <div class="col-md-12 mb-3">
                                 <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
@@ -53,7 +53,7 @@
                                 {% if form.title.errors %}
                                     <div class="text-danger">{{ form.title.errors }}</div>
                                 {% endif %}
-                                <div class="form-text">Create a catchy title that highlights your property's best features.</div>
+                                <div class="form-text">Придумайте запоминающийся заголовок, подчеркивающий лучшие черты вашей недвижимости.</div>
                             </div>
                         </div>
                         
@@ -64,12 +64,12 @@
                                 {% if form.description.errors %}
                                     <div class="text-danger">{{ form.description.errors }}</div>
                                 {% endif %}
-                                <div class="form-text">Describe your property in detail. Include unique features and attractions nearby.</div>
+                                <div class="form-text">Подробно опишите свою собственность. Включите уникальные особенности и достопримечательности поблизости.</div>
                             </div>
                         </div>
                         
                         <!-- Location -->
-                        <h5 class="mt-4 mb-3">Location</h5>
+                        <h5 class="mt-4 mb-3">Расположение</h5>
                         <div class="row">
                             <div class="col-md-12 mb-3">
                                 <label for="{{ form.address.id_for_label }}" class="form-label">{{ form.address.label }}</label>
@@ -115,7 +115,7 @@
                         </div>
                         
                         <!-- Property Details -->
-                        <h5 class="mt-4 mb-3">Property Details</h5>
+                        <h5 class="mt-4 mb-3">Подробнее о недвижимости</h5>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="{{ form.property_type.id_for_label }}" class="form-label">{{ form.property_type.label }}</label>
@@ -130,7 +130,7 @@
                                 {% if form.accommodates.errors %}
                                     <div class="text-danger">{{ form.accommodates.errors }}</div>
                                 {% endif %}
-                                <div class="form-text">Maximum number of guests allowed.</div>
+                                <div class="form-text">Максимальное количество разрешенных гостей.</div>
                             </div>
                         </div>
                         
@@ -152,7 +152,7 @@
                         </div>
                         
                         <!-- Amenities -->
-                        <h5 class="mt-4 mb-3">Amenities</h5>
+                        <h5 class="mt-4 mb-3">Удобства</h5>
                         <div class="mb-4">
                             {{ form.amenities }}
                             <div id="amenities-container" class="mt-2">
@@ -164,12 +164,12 @@
                         </div>
                         
                         <!-- Pricing -->
-                        <h5 class="mt-4 mb-3">Pricing</h5>
+                        <h5 class="mt-4 mb-3">Цена</h5>
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label for="{{ form.price_per_night.id_for_label }}" class="form-label">{{ form.price_per_night.label }}</label>
                                 <div class="input-group">
-                                    <span class="input-group-text">$</span>
+                                    <span class="input-group-text">Руб</span>
                                     {{ form.price_per_night }}
                                 </div>
                                 {% if form.price_per_night.errors %}
@@ -179,7 +179,7 @@
                             <div class="col-md-4 mb-3">
                                 <label for="{{ form.cleaning_fee.id_for_label }}" class="form-label">{{ form.cleaning_fee.label }}</label>
                                 <div class="input-group">
-                                    <span class="input-group-text">$</span>
+                                    <span class="input-group-text">Руб</span>
                                     {{ form.cleaning_fee }}
                                 </div>
                                 {% if form.cleaning_fee.errors %}
@@ -189,7 +189,7 @@
                             <div class="col-md-4 mb-3">
                                 <label for="{{ form.service_fee.id_for_label }}" class="form-label">{{ form.service_fee.label }}</label>
                                 <div class="input-group">
-                                    <span class="input-group-text">$</span>
+                                    <span class="input-group-text">Руб</span>
                                     {{ form.service_fee }}
                                 </div>
                                 {% if form.service_fee.errors %}
@@ -199,7 +199,7 @@
                         </div>
                         
                         <!-- Rules and Availability -->
-                        <h5 class="mt-4 mb-3">Rules and Availability</h5>
+                        <h5 class="mt-4 mb-3">Правила</h5>
                         <div class="row">
                             <div class="col-md-12 mb-3">
                                 <label for="{{ form.house_rules.id_for_label }}" class="form-label">{{ form.house_rules.label }}</label>
@@ -245,8 +245,8 @@
                         </div>
                         
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                            <a href="{% if form.instance.id %}{% url 'listings:listing_detail' pk=form.instance.id %}{% else %}{% url 'listings:host_listings' %}{% endif %}" class="btn btn-outline-secondary me-md-2">Cancel</a>
-                            <button type="submit" class="btn btn-primary">Save Listing</button>
+                            <a href="{% if form.instance.id %}{% url 'listings:listing_detail' pk=form.instance.id %}{% else %}{% url 'listings:host_listings' %}{% endif %}" class="btn btn-outline-secondary me-md-2">Отмена</a>
+                            <button type="submit" class="btn btn-primary">Сохранить</button>
                         </div>
                     </form>
                 </div>
@@ -270,7 +270,7 @@
                             {% endfor %}
                         </div>
                     {% else %}
-                        <p class="text-muted">No images have been added yet. Click 'Edit Images' to add some.</p>
+                        <p class="text-muted">Изображения еще не добавлены. Нажмите «Редактировать изображения», чтобы добавить несколько.</p>
                     {% endif %}
                 </div>
             </div>
@@ -289,12 +289,33 @@
         
         // Common amenities
         const commonAmenities = [
-            'Wifi', 'Kitchen', 'Free parking', 'Air conditioning', 'Heating', 'TV',
-            'Washer', 'Dryer', 'Iron', 'Hair dryer', 'Pool', 'Hot tub', 'Gym',
-            'Elevator', 'Wheelchair accessible', 'BBQ grill', 'Balcony', 'Garden view',
-            'Sea view', 'Mountain view', 'Smoke alarm', 'Carbon monoxide alarm',
-            'Essentials', 'Cable TV', 'Breakfast', 'Pets allowed'
-        ];
+         'Wi-Fi', 
+         'Кухня', 
+         'Бесплатная парковка', 
+         'Кондиционер', 
+         'Отопление', 
+         'Телевизор',
+         'Стиральная машина', 
+         'Сушильная машина', 
+         'Утюг', 
+         'Фен', 
+         'Бассейн', 
+         'Гидромассажная ванна', 
+         'Спортзал',
+         'Лифт', 
+         'Доступно для инвалидных колясок', 
+         'Мангал', 
+         'Балкон', 
+         'Вид на сад',
+         'Вид на море', 
+         'Вид на горы', 
+         'Датчик дыма', 
+         'Датчик угарного газа',
+         'Основные предметы первой необходимости', 
+        'Кабельное телевидение', 
+        'Завтрак', 
+        'Разрешено проживание с домашними животными'
+    ];
         
         // Get existing amenities, if any
         let selectedAmenities = [];

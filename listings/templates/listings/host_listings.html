@@ -1,16 +1,16 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}My Listings - Rental Aggregator{% endblock %}
+{% block title %}Мои объявления{% endblock %}
 
 {% block content %}
 <div class="container py-4">
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>My Listings</h2>
+                <h2>Мои объявления</h2>
                 <a href="{% url 'listings:listing_create' %}" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Create New Listing
+                    <i class="fas fa-plus"></i> Создать новое объявление
                 </a>
             </div>
             
@@ -24,12 +24,12 @@
                                 <div class="position-absolute top-0 end-0 m-2">
                                     {% if listing.is_approved %}
                                         {% if listing.is_active %}
-                                        <span class="badge bg-success">Active</span>
+                                        <span class="badge bg-success">Активно</span>
                                         {% else %}
-                                        <span class="badge bg-warning text-dark">Inactive</span>
+                                        <span class="badge bg-warning text-dark">Неактивно</span>
                                         {% endif %}
                                     {% else %}
-                                    <span class="badge bg-secondary">Pending Approval</span>
+                                    <span class="badge bg-secondary">Ожидает одобрения</span>
                                     {% endif %}
                                 </div>
                             </div>
@@ -53,13 +53,13 @@
                             </div>
                             <div class="card-footer bg-white d-flex justify-content-between">
                                 <a href="{% url 'listings:listing_detail' pk=listing.id %}" class="btn btn-sm btn-outline-secondary">
-                                    <i class="fas fa-eye"></i> View
+                                    <i class="fas fa-eye"></i> Смотреть
                                 </a>
                                 <a href="{% url 'listings:listing_update' pk=listing.id %}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-edit"></i> Edit
+                                    <i class="fas fa-edit"></i> Редактировать
                                 </a>
                                 <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ listing.id }}">
-                                    <i class="fas fa-trash"></i> Delete
+                                    <i class="fas fa-trash"></i> Удалить
                                 </button>
                             </div>
                         </div>
@@ -69,16 +69,16 @@
                             <div class="modal-dialog">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h5 class="modal-title" id="deleteModalLabel{{ listing.id }}">Confirm Deletion</h5>
+                                        <h5 class="modal-title" id="deleteModalLabel{{ listing.id }}">Подтвердить</h5>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
-                                        Are you sure you want to delete this listing: <strong>{{ listing.title }}</strong>?
-                                        <p class="text-danger mt-2">This action cannot be undone.</p>
+                                        Вы уверены что хотите удалить объявление?: <strong>{{ listing.title }}</strong>?
+                                        <p class="text-danger mt-2">Это действие будет необратимо.</p>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                        <a href="{% url 'listings:listing_delete' pk=listing.id %}" class="btn btn-danger">Delete</a>
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                        <a href="{% url 'listings:listing_delete' pk=listing.id %}" class="btn btn-danger">Удалить</a>
                                     </div>
                                 </div>
                             </div>
@@ -91,10 +91,10 @@
                     <div class="mb-4">
                         <i class="fas fa-home fa-3x text-muted"></i>
                     </div>
-                    <h4>You don't have any listings yet</h4>
-                    <p class="text-muted">Create your first property listing to start hosting.</p>
+                    <h4>У вас пока нет объявлений</h4>
+                    <p class="text-muted">Создайте свое первое объявление о недвижимости.</p>
                     <a href="{% url 'listings:listing_create' %}" class="btn btn-primary mt-2">
-                        <i class="fas fa-plus"></i> Create New Listing
+                        <i class="fas fa-plus"></i> Создать объявление
                     </a>
                 </div>
             {% endif %}

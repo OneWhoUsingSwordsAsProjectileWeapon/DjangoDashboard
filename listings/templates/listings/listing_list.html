@@ -2,69 +2,69 @@
 {% load static %}
 {% load listing_extras %}
 
-{% block title %}Find Your Perfect Rental - Rental Aggregator{% endblock %}
+{% block title %}Найдите идеальную аренду - Агрегатор аренды{% endblock %}
 
 {% block content %}
 <div class="container">
-    <!-- Search Section -->
+    <!-- Секция поиска -->
     <section class="mt-3 mb-5">
         <div class="card shadow-sm">
             <div class="card-body p-4">
-                <h4 class="mb-3">Find Your Perfect Place</h4>
+                <h4 class="mb-3">Найдите идеальное жилье</h4>
                 <form method="get" action="{% url 'listings:listing_list' %}" class="row g-3">
                     <div class="col-md-4">
-                        <label for="location" class="form-label">Location</label>
+                        <label for="location" class="form-label">Местоположение</label>
                         <input type="text" class="form-control" id="location" name="location" 
-                               placeholder="City, state, or country" value="{{ form.location.value|default:'' }}">
+                               placeholder="Город, область или страна" value="{{ form.location.value|default:'' }}">
                     </div>
                     <div class="col-md-3">
-                        <label for="check_in" class="form-label">Check-in</label>
+                        <label for="check_in" class="form-label">Заезд</label>
                         <input type="date" class="form-control" id="check_in" name="check_in" 
                                value="{{ form.check_in.value|default:'' }}">
                     </div>
                     <div class="col-md-3">
-                        <label for="check_out" class="form-label">Check-out</label>
+                        <label for="check_out" class="form-label">Выезд</label>
                         <input type="date" class="form-control" id="check_out" name="check_out" 
                                value="{{ form.check_out.value|default:'' }}">
                     </div>
                     <div class="col-md-2">
-                        <label for="guests" class="form-label">Guests</label>
+                        <label for="guests" class="form-label">Гости</label>
                         <input type="number" class="form-control" id="guests" name="guests" min="1" 
                                value="{{ form.guests.value|default:'1' }}">
                     </div>
                     
-                    <!-- Advanced Filters (hidden by default) -->
+                    <!-- Расширенные фильтры (скрыты по умолчанию) -->
                     <div class="collapse" id="advancedFilters">
                         <div class="row g-3 mt-2">
                             <div class="col-md-3">
-                                <label for="min_price" class="form-label">Min Price</label>
+                                <label for="min_price" class="form-label">Мин. цена</label>
                                 <input type="number" class="form-control" id="min_price" name="min_price" 
-                                       placeholder="Min $" value="{{ form.min_price.value|default:'' }}">
+                                       placeholder="Мин. $" value="{{ form.min_price.value|default:'' }}">
                             </div>
                             <div class="col-md-3">
-                                <label for="max_price" class="form-label">Max Price</label>
+                                <label for="max_price" class="form-label">Макс. цена</label>
                                 <input type="number" class="form-control" id="max_price" name="max_price" 
-                                       placeholder="Max $" value="{{ form.max_price.value|default:'' }}">
+                                       placeholder="Макс. $" value="{{ form.max_price.value|default:'' }}">
                             </div>
                             <div class="col-md-2">
-                                <label for="bedrooms" class="form-label">Bedrooms</label>
+                                <label for="bedrooms" class="form-label">Спальни</label>
                                 <input type="number" class="form-control" id="bedrooms" name="bedrooms" min="0" 
                                        value="{{ form.bedrooms.value|default:'' }}">
                             </div>
                             <div class="col-md-2">
-                                <label for="bathrooms" class="form-label">Bathrooms</label>
+                                <label for="bathrooms" class="form-label">Ванные</label>
                                 <input type="number" class="form-control" id="bathrooms" name="bathrooms" min="0" step="0.5" 
                                        value="{{ form.bathrooms.value|default:'' }}">
                             </div>
                             <div class="col-md-2">
-                                <label for="property_type" class="form-label">Property Type</label>
+                                <label for="property_type" class="form-label">Тип жилья</label>
                                 <select class="form-select" id="property_type" name="property_type">
-                                    <option value="">Any</option>
-                                    <option value="apartment" {% if form.property_type.value == 'apartment' %}selected{% endif %}>Apartment</option>
-                                    <option value="house" {% if form.property_type.value == 'house' %}selected{% endif %}>House</option>
-                                    <option value="villa" {% if form.property_type.value == 'villa' %}selected{% endif %}>Villa</option>
-                                    <option value="cabin" {% if form.property_type.value == 'cabin' %}selected{% endif %}>Cabin</option>
-                                    <option value="condo" {% if form.property_type.value == 'condo' %}selected{% endif %}>Condominium</option>
+                                    <option value="">Любой</option>
+                                    <option value="apartment" {% if form.property_type.value == 'apartment' %}selected{% endif %}>Квартира</option>
+                                    <option value="house" {% if form.property_type.value == 'house' %}selected{% endif %}>Дом</option>
+                                    <option value="villa" {% if form.property_type.value == 'villa' %}selected{% endif %}>Вилла</option>
+                                    <option value="cabin" {% if form.property_type.value == 'cabin' %}selected{% endif %}>Домик</option>
+                                    <option value="condo" {% if form.property_type.value == 'condo' %}selected{% endif %}>Апартаменты</option>
                                 </select>
                             </div>
                         </div>
@@ -73,10 +73,10 @@
                     <div class="col-12 d-flex justify-content-between align-items-center">
                         <button class="btn btn-link ps-0" type="button" data-bs-toggle="collapse" 
                                 data-bs-target="#advancedFilters" aria-expanded="false" aria-controls="advancedFilters">
-                            <i class="fas fa-sliders-h me-1"></i> Advanced Filters
+                            <i class="fas fa-sliders-h me-1"></i> Расширенные фильтры
                         </button>
                         <button type="submit" class="btn btn-primary px-4">
-                            <i class="fas fa-search me-1"></i> Search
+                            <i class="fas fa-search me-1"></i> Поиск
                         </button>
                     </div>
                 </form>
@@ -84,28 +84,28 @@
         </div>
     </section>
     
-    <!-- Listings Section -->
+    <!-- Секция объявлений -->
     <section class="mb-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h3>
                 {% if request.GET.location %}
-                    Properties in {{ request.GET.location }}
+                    Объекты в {{ request.GET.location }}
                 {% elif request.GET.property_type %}
-                    {{ request.GET.property_type|title }} Rentals
+                    Аренда {{ request.GET.property_type|title }}
                 {% else %}
-                    Featured Properties
+                    Недвижимость
                 {% endif %}
             </h3>
             <div class="dropdown">
                 <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="sortDropdown" 
                         data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fas fa-sort me-1"></i> Sort By
+                    <i class="fas fa-sort me-1"></i> Сортировать
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="sortDropdown">
-                    <li><a class="dropdown-item" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}sort=price_asc">Price (Low to High)</a></li>
-                    <li><a class="dropdown-item" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}sort=price_desc">Price (High to Low)</a></li>
-                    <li><a class="dropdown-item" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}sort=rating">Rating</a></li>
-                    <li><a class="dropdown-item" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}sort=newest">Newest</a></li>
+                    <li><a class="dropdown-item" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}sort=price_asc">Цена (по возрастанию)</a></li>
+                    <li><a class="dropdown-item" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}sort=price_desc">Цена (по убыванию)</a></li>
+                    <li><a class="dropdown-item" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}sort=rating">Рейтинг</a></li>
+                    <li><a class="dropdown-item" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}sort=newest">Сначала новые</a></li>
                 </ul>
             </div>
         </div>
@@ -133,15 +133,15 @@
                             </div>
                             {% endif %}
                             <div class="mb-2 amenities">
-                                <span class="me-2"><i class="fas fa-bed"></i> {{ listing.bedrooms }} bd</span>
-                                <span class="me-2"><i class="fas fa-bath"></i> {{ listing.bathrooms }} ba</span>
-                                <span><i class="fas fa-user"></i> {{ listing.accommodates }} guests</span>
+                                <span class="me-2"><i class="fas fa-bed"></i> {{ listing.bedrooms }} сп.</span>
+                                <span class="me-2"><i class="fas fa-bath"></i> {{ listing.bathrooms }} ванн.</span>
+                                <span><i class="fas fa-user"></i> {{ listing.accommodates }} гост.</span>
                             </div>
-                            <p class="listing-price card-text">{{ listing.price_per_night|currency }} <span class="text-muted">/night</span></p>
+                            <p class="listing-price card-text">{{ listing.price_per_night|currency }} <span class="text-muted">/ночь</span></p>
                         </div>
                         <div class="card-footer bg-white border-top-0">
                             <a href="{% url 'listings:listing_detail' pk=listing.id %}" class="btn btn-sm btn-outline-primary w-100">
-                                View Details
+                                Подробнее
                             </a>
                         </div>
                     </div>
@@ -149,18 +149,18 @@
                 {% endfor %}
             </div>
             
-            <!-- Pagination -->
+            <!-- Пагинация -->
             {% if is_paginated %}
-            <nav aria-label="Page navigation" class="mt-5">
+            <nav aria-label="Навигация по страницам" class="mt-5">
                 <ul class="pagination justify-content-center">
                     {% if page_obj.has_previous %}
                     <li class="page-item">
-                        <a class="page-link" href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" aria-label="First">
+                        <a class="page-link" href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" aria-label="Первая">
                             <span aria-hidden="true">&laquo;&laquo;</span>
                         </a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" aria-label="Previous">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" aria-label="Предыдущая">
                             <span aria-hidden="true">&laquo;</span>
                         </a>
                     </li>
@@ -178,12 +178,12 @@
                     
                     {% if page_obj.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" aria-label="Next">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" aria-label="Следующая">
                             <span aria-hidden="true">&raquo;</span>
                         </a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" aria-label="Last">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" aria-label="Последняя">
                             <span aria-hidden="true">&raquo;&raquo;</span>
                         </a>
                     </li>
@@ -197,56 +197,56 @@
                 <div class="mb-4">
                     <i class="fas fa-search fa-3x text-muted"></i>
                 </div>
-                <h4>No listings found</h4>
-                <p class="text-muted">Try adjusting your search criteria or explore other areas.</p>
+                <h4>Объекты не найдены</h4>
+                <p class="text-muted">Попробуйте изменить критерии поиска или изучите другие области.</p>
                 <a href="{% url 'listings:listing_list' %}" class="btn btn-outline-primary mt-2">
-                    Clear Filters
+                    Сбросить фильтры
                 </a>
             </div>
         {% endif %}
     </section>
     
-    <!-- Featured Destinations -->
+    <!-- Популярные направления -->
     <section class="mb-5">
-        <h3 class="mb-4">Popular Destinations</h3>
+        <h3 class="mb-4">Популярные направления</h3>
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
             <div class="col">
                 <div class="card h-100 border-0 shadow-sm">
-                    <img src="https://pixabay.com/get/g08327e829279cb55449d87c539db14752a90e1c4ff4cab0dac015b99769d7b3189c5d60eda3c81b1b56b649d3b713ecd652a3e463555809693451ae39f13212a_1280.jpg" class="card-img-top" alt="New York">
+                    <img src="https://pixabay.com/get/g08327e829279cb55449d87c539db14752a90e1c4ff4cab0dac015b99769d7b3189c5d60eda3c81b1b56b649d3b713ecd652a3e463555809693451ae39f13212a_1280.jpg" class="card-img-top" alt="Чита">
                     <div class="card-body">
-                        <h5 class="card-title">New York</h5>
-                        <p class="card-text text-muted">Explore the city that never sleeps</p>
-                        <a href="?location=New+York" class="btn btn-sm btn-outline-primary">View Properties</a>
+                        <h5 class="card-title">Чита</h5>
+                        <p class="card-text text-muted">Исследуйте город</p>
+                        <a href="?location=Чита" class="btn btn-sm btn-outline-primary">Посмотреть недвижимость</a>
                     </div>
                 </div>
             </div>
             <div class="col">
                 <div class="card h-100 border-0 shadow-sm">
-                    <img src="https://pixabay.com/get/gf93fad46688e50ccf20da311aa8b1dcbd0ca9f02ffcfa33f9f5b393aab77f94514318bde7529f74b111e8189a7626d14e855869bbb2642726c3dacf93a881a7a_1280.jpg" class="card-img-top" alt="Miami">
+                    <img src="https://pixabay.com/get/gf93fad46688e50ccf20da311aa8b1dcbd0ca9f02ffcfa33f9f5b393aab77f94514318bde7529f74b111e8189a7626d14e855869bbb2642726c3dacf93a881a7a_1280.jpg" class="card-img-top" alt="Борзя">
                     <div class="card-body">
-                        <h5 class="card-title">Miami</h5>
-                        <p class="card-text text-muted">Sun, beach, and vibrant culture</p>
-                        <a href="?location=Miami" class="btn btn-sm btn-outline-primary">View Properties</a>
+                        <h5 class="card-title">Борзя</h5>
+                        <p class="card-text text-muted">Исследуйте город</p>
+                        <a href="?location=Борзя" class="btn btn-sm btn-outline-primary">Посмотреть недвижимость</a>
                     </div>
                 </div>
             </div>
             <div class="col">
                 <div class="card h-100 border-0 shadow-sm">
-                    <img src="https://pixabay.com/get/g12a7d5f59976e11036e1a173df936ff9801b7bfc9c5310a040b7689f93238547da33287a467f7cddcc2b94f77bc59af3aef6417fd862dda7b61e5b259a180d22_1280.jpg" class="card-img-top" alt="Mountain Retreat">
+                    <img src="https://pixabay.com/get/g12a7d5f59976e11036e1a173df936ff9801b7bfc9c5310a040b7689f93238547da33287a467f7cddcc2b94f77bc59af3aef6417fd862dda7b61e5b259a180d22_1280.jpg" class="card-img-top" alt="Агинское">
                     <div class="card-body">
-                        <h5 class="card-title">Mountain Retreats</h5>
-                        <p class="card-text text-muted">Peaceful getaways in nature</p>
-                        <a href="?property_type=cabin" class="btn btn-sm btn-outline-primary">View Cabins</a>
+                        <h5 class="card-title">Агинское</h5>
+                        <p class="card-text text-muted">Исследуйте город</p>
+                        <a href="?location=Агинское" class="btn btn-sm btn-outline-primary">Посмотреть недвижимость</a>
                     </div>
                 </div>
             </div>
             <div class="col">
                 <div class="card h-100 border-0 shadow-sm">
-                    <img src="https://pixabay.com/get/g9cfcd22a42ff968bc8482cc2b479879e04da514ac23ceff35362d183eadf78ee6e6f017c17d31536156d05ef499f1c493c47e8c47c449ba7e422ce7d599ceb32_1280.jpg" class="card-img-top" alt="Beachfront">
+                    <img src="https://pixabay.com/get/g9cfcd22a42ff968bc8482cc2b479879e04da514ac23ceff35362d183eadf78ee6e6f017c17d31536156d05ef499f1c493c47e8c47c449ba7e422ce7d599ceb32_1280.jpg" class="card-img-top" alt="Краснокаменск">
                     <div class="card-body">
-                        <h5 class="card-title">Beachfront Properties</h5>
-                        <p class="card-text text-muted">Wake up to ocean views</p>
-                        <a href="?property_type=villa" class="btn btn-sm btn-outline-primary">View Villas</a>
+                        <h5 class="card-title">Краснокаменск</h5>
+                        <p class="card-text text-muted">Исследуйте город</p>
+                        <a href="?location=Краснокаменск" class="btn btn-sm btn-outline-primary">Посмотреть недвижимость</a>
                     </div>
                 </div>
             </div>

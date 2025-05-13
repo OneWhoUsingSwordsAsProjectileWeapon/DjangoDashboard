@@ -77,8 +77,8 @@
                             </div>
                         {% endif %}
                         <div>
-                            <h5 class="mb-1">Hosted by {{ listing.host.first_name|default:listing.host.username }}</h5>
-                            <p class="mb-0 text-muted">Member since {{ listing.host.date_joined|date:"F Y" }}</p>
+                            <h5 class="mb-1">Размещает - {{ listing.host.first_name|default:listing.host.username }}</h5>
+                            <p class="mb-0 text-muted">Участник с {{ listing.host.date_joined|date:"F Y" }}</p>
                             {% if listing.host.verification_status != "Unverified" %}
                                 <span class="badge bg-success">{{ listing.host.verification_status }}</span>
                             {% endif %}

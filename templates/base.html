@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Rental Aggregator{% endblock %}</title>
+    <title>{% block title %}Агрегатор аренды жилья{% endblock %}</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏠</text></svg>">
     
@@ -31,71 +31,71 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Navbar -->
+    <!-- Навигационная панель -->
     {% include 'includes/navbar.html' %}
     
-    <!-- Messages/Alerts -->
+    <!-- Сообщения/Уведомления -->
     {% if messages %}
     <div class="container mt-3">
         {% for message in messages %}
         <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
             {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
         </div>
         {% endfor %}
     </div>
     {% endif %}
     
-    <!-- Main content -->
+    <!-- Основное содержимое -->
     <main class="py-4">
         {% block content %}{% endblock %}
     </main>
     
-    <!-- Footer -->
+    <!-- Подвал -->
     {% include 'includes/footer.html' %}
     
-    <!-- Notifications container (for HTMX updates) -->
+    <!-- Контейнер уведомлений (для HTMX обновлений) -->
     <div id="notifications-container">
         {% include 'includes/notifications.html' %}
     </div>
     
-    <!-- Bootstrap JS Bundle with Popper -->
+    <!-- Bootstrap JS Bundle с Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Global JS -->
+    <!-- Глобальный JS -->
     <script>
-        // Initialize tooltips
+        // Инициализация всплывающих подсказок
         document.addEventListener('DOMContentLoaded', function() {
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
             var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl)
             });
             
-            // Initialize popovers
+            // Инициализация всплывающих окон
             var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
             var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
                 return new bootstrap.Popover(popoverTriggerEl)
             });
         });
         
-        // Poll for unread notifications
+        // Проверка непрочитанных уведомлений
         function checkNotifications() {
             if (document.getElementById('notification-badge')) {
                 htmx.ajax('GET', '{% url "notifications:get_unread_count" %}', {target: '#notification-badge'});
             }
         }
         
-        // Poll for unread messages
+        // Проверка непрочитанных сообщений
         function checkMessages() {
             if (document.getElementById('message-badge')) {
                 htmx.ajax('GET', '{% url "chat:get_unread_count" %}', {target: '#message-badge'});
             }
         }
         
-        // Check periodically if user is logged in
+        // Периодическая проверка для авторизованных пользователей
         {% if user.is_authenticated %}
-        setInterval(checkNotifications, 30000); // Every 30 seconds
-        setInterval(checkMessages, 30000); // Every 30 seconds
+        setInterval(checkNotifications, 30000); // Каждые 30 секунд
+        setInterval(checkMessages, 30000); // Каждые 30 секунд
         {% endif %}
     </script>
     
