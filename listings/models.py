@@ -12,6 +12,7 @@ class Listing(models.Model):
     Property listing model
     """
     # Basic information
+    # Basic information
     title = models.CharField(_("Title"), max_length=100)
     description = models.TextField(_("Description"))
     address = models.CharField(_("Address"), max_length=255)
