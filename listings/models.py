@@ -4,7 +4,8 @@ from django.utils.translation import gettext_lazy as _
 from django.urls import reverse
 from django.core.validators import MinValueValidator, MaxValueValidator
 import uuid
-from datetime import date
+from datetime import datetime, timedelta, date
+import json
 
 class Listing(models.Model):
     """
@@ -108,18 +109,18 @@ class Listing(models.Model):
     
     from datetime import timedelta
 
-def get_unavailable_dates(self):
-    """Get a list of dates that are booked"""
-    unavailable_dates = []
-    confirmed_bookings = self.bookings.filter(status__in=['confirmed', 'pending'])
+    def get_unavailable_dates(self):
+        """Get a list of dates that are booked"""
+        unavailable_dates = []
+        confirmed_bookings = self.bookings.filter(status__in=['confirmed', 'pending'])
     
-    for booking in confirmed_bookings:
-        current_date = booking.start_date
-        while current_date <= booking.end_date:
-            unavailable_dates.append(current_date.isoformat())
-            current_date += timedelta(days=1)  # Используем timedelta для безопасного увеличения даты
+        for booking in confirmed_bookings:
+            current_date = booking.start_date
+            while current_date <= booking.end_date:
+                unavailable_dates.append(current_date.isoformat())
+                current_date += timedelta(days=1)  # Используем timedelta для безопасного увеличения даты
             
-    return unavailable_dates
+        return unavailable_dates
     
     def calculate_price(self, start_date, end_date):
         """Calculate the total price for a booking"""
