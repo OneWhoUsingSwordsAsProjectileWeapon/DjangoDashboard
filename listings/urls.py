@@ -10,6 +10,7 @@ urlpatterns = [
     path('create/', views.ListingCreateView.as_view(), name='listing_create'),
     path('<int:pk>/edit/', views.ListingUpdateView.as_view(), name='listing_update'),
     path('<int:pk>/delete/', views.ListingDeleteView.as_view(), name='listing_delete'),
+    path('host-dashboard/', views.HostDashboardView.as_view(), name='host_dashboard'),
     path('my-listings/', views.HostListingListView.as_view(), name='host_listings'),
     
     # Listing images
@@ -30,4 +31,5 @@ urlpatterns = [
     # API endpoints for HTMX
     path('api/<int:pk>/calendar-data/', views.get_listing_calendar_data, name='calendar_data'),
     path('api/<int:pk>/calculate-price/', views.calculate_booking_price, name='calculate_price'),
+    path('api/<int:pk>/toggle-status/', views.toggle_listing_status, name='toggle_listing_status'),
 ]

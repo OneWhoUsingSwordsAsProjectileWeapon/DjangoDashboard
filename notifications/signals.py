@@ -56,7 +56,7 @@ if MODELS_AVAILABLE:
             )
         else:
             # Check if status changed
-            if instance.tracker.has_changed('status'):
+            if hasattr(instance, 'tracker') and instance.tracker.has_changed('status'):
                 # Notify guest of booking status change
                 # Determine notification type based on status
                 notification_type = 'booking_confirmed' if instance.status == 'confirmed' else 'booking_canceled'

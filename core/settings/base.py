@@ -29,12 +29,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    
+
     # Third party apps
     'rest_framework',
     'django_filters',
     'channels',
-    
+
     # Local apps
     'users.apps.UsersConfig',
     'listings.apps.ListingsConfig',
@@ -72,7 +72,16 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
+
+# Channels
 ASGI_APPLICATION = 'core.asgi.application'
+
+# Channel Layers (for WebSocket support)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -82,13 +91,6 @@ DATABASES = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
-}
-
-# Channel layers
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    },
 }
 
 # Password validation

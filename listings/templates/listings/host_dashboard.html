@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Host Dashboard - Rental Aggregator{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Host Dashboard</h2>
+
+            <!-- Quick Stats -->
+            <div class="row mb-5">
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-primary text-white h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Total Listings</h6>
+                                    <h3 class="mb-0">{{ stats.total_listings }}</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-home fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-success text-white h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Active Bookings</h6>
+                                    <h3 class="mb-0">{{ stats.active_bookings }}</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-calendar-check fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-warning text-white h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Pending Requests</h6>
+                                    <h3 class="mb-0">{{ stats.pending_bookings }}</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-clock fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <div class="card bg-info text-white h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Total Revenue</h6>
+                                    <h3 class="mb-0">${{ stats.total_revenue|floatformat:0 }}</h3>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-dollar-sign fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row mb-5">
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white">
+                            <h5 class="card-title mb-0">Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3 mb-2">
+                                    <a href="{% url 'listings:listing_create' %}" class="btn btn-primary w-100">
+                                        <i class="fas fa-plus"></i> Create New Listing
+                                    </a>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <a href="{% url 'listings:host_listings' %}" class="btn btn-outline-primary w-100">
+                                        <i class="fas fa-list"></i> Manage Listings
+                                    </a>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <a href="{% url 'listings:host_bookings' %}" class="btn btn-outline-success w-100">
+                                        <i class="fas fa-calendar"></i> View Bookings
+                                    </a>
+                                </div>
+                                <div class="col-md-3 mb-2">
+                                    <a href="{% url 'listings:host_bookings' %}?status=pending" class="btn btn-outline-warning w-100">
+                                        <i class="fas fa-exclamation-circle"></i> Pending Requests
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="row">
+                <!-- Recent Bookings -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Recent Bookings</h5>
+                            <a href="{% url 'listings:host_bookings' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_bookings %}
+                                {% for booking in recent_bookings %}
+                                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                                    <div>
+                                        <h6 class="mb-1">{{ booking.listing.title }}</h6>
+                                        <small class="text-muted">
+                                            {{ booking.guest.get_full_name|default:booking.guest.username }}
+                                        </small>
+                                        <div class="small text-muted">
+                                            {{ booking.start_date }} - {{ booking.end_date }}
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% elif booking.status == 'completed' %}info{% else %}secondary{% endif %}">
+                                            {{ booking.get_status_display }}
+                                        </span>
+                                        <div class="small text-muted">${{ booking.total_price }}</div>
+                                        <a href="{% url 'chat:start_conversation_about_booking' booking_id=booking.id %}" class="btn btn-sm btn-outline-info" title="Start conversation with guest">
+                                            <i class="fas fa-comment"></i> Message
+                                        </a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted text-center py-3">No recent bookings</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Listing Performance -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Top Performing Listings</h5>
+                            <a href="{% url 'listings:host_listings' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                        </div>
+                        <div class="card-body">
+                            {% if top_listings %}
+                                {% for listing in top_listings %}
+                                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                                    <div>
+                                        <h6 class="mb-1">{{ listing.title|truncatechars:30 }}</h6>
+                                        <div class="small text-muted">
+                                            <i class="fas fa-star text-warning"></i> 
+                                            {% if listing.avg_rating %}
+                                                {{ listing.avg_rating|floatformat:1 }}
+                                            {% else %}
+                                                No reviews
+                                            {% endif %}
+                                            ({{ listing.review_count }} reviews)
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold">${{ listing.price_per_night }}/night</div>
+                                        <div class="small text-muted">{{ listing.bookings_count }} bookings</div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted text-center py-3">No listings available</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
