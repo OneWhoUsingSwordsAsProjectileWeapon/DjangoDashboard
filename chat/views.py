@@ -29,6 +29,18 @@ def conversation_detail(request, pk):
     if request.user not in conversation.participants.all():
         raise Http404("Conversation not found")
     
+    # Handle POST request (message sending)
+    if request.method == 'POST':
+        content = request.POST.get('content', '').strip()
+        if content:
+            Message.objects.create(
+                conversation=conversation,
+                sender=request.user,
+                content=content
+            )
+            messages.success(request, "Message sent successfully!")
+        return redirect('chat:conversation_detail', pk=pk)
+    
     # Get messages in conversation
     messages_list = conversation.messages.select_related('sender').order_by('created_at')
     
