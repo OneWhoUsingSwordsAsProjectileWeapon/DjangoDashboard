@@ -260,10 +260,16 @@ class Review(models.Model):
         verbose_name = _("Review")
         verbose_name_plural = _("Reviews")
         ordering = ['-created_at']
-        # Ensure one review per booking
+        # Ensure one review per booking (when booking is not null)
         constraints = [
             models.UniqueConstraint(
+                fields=['listing', 'reviewer'],
+                condition=models.Q(booking__isnull=True),
+                name='unique_listing_review_no_booking'
+            ),
+            models.UniqueConstraint(
                 fields=['listing', 'reviewer', 'booking'],
+                condition=models.Q(booking__isnull=False),
                 name='unique_booking_review'
             )
         ]
