@@ -25,6 +25,15 @@ task = "shell.exec"
 args = "pip install django djangorestframework django-filter channels channels-redis daphne django-extensions six && python manage.py migrate && python manage.py runserver 0.0.0.0:5000"
 waitForPort = 5000
 
+[[workflows.workflow]]
+name = "ASGI Server"
+author = 42621469
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install django djangorestframework django-filter channels channels-redis daphne django-extensions six && python manage.py migrate && daphne -b 0.0.0.0 -p 5000 core.asgi:application"
+
 [deployment]
 run = ["sh", "-c", "pip install django djangorestframework django-filter channels channels-redis daphne django-extensions six && python manage.py migrate && python manage.py runserver 0.0.0.0:5000"]
 

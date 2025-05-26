@@ -61,6 +61,7 @@ class Listing(models.Model):
     class Meta:
         verbose_name = _("Listing")
         verbose_name_plural = _("Listings")
+        ordering = ['-created_at', '-id']
         ordering = ['-created_at']
     
     def __str__(self):

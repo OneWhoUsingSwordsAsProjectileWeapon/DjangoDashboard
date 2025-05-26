@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.db.models import Q, Avg, Count, Sum
 from django.db import models
 from django.http import JsonResponse, Http404
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from datetime import datetime, timedelta
 import json
@@ -133,7 +133,7 @@ class ListingDetailView(DetailView):
 
         return context
 
-class HostDashboardView(LoginRequiredMixin, ListView):
+class HostDashboardView(LoginRequiredMixin, TemplateView):
     """Comprehensive host dashboard view"""
     template_name = 'listings/host_dashboard.html'
 
