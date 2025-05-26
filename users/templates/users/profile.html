@@ -244,7 +244,12 @@
                                     <span class="badge bg-warning text-dark">Not Verified</span>
                                     {% endif %}
                                 </a>
-                                {% if not user.is_host %}
+                                {% if user.is_host %}
+                                <a href="{% url 'listings:host_dashboard' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                    Host Dashboard
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                                {% else %}
                                 <a href="{% url 'listings:listing_create' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                                     Become a Host
                                     <i class="fas fa-chevron-right"></i>

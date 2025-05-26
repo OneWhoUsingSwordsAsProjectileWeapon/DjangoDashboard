@@ -10,6 +10,7 @@ urlpatterns = [
     path('create/', views.ListingCreateView.as_view(), name='listing_create'),
     path('<int:pk>/edit/', views.ListingUpdateView.as_view(), name='listing_update'),
     path('<int:pk>/delete/', views.ListingDeleteView.as_view(), name='listing_delete'),
+    path('host-dashboard/', views.HostDashboardView.as_view(), name='host_dashboard'),
     path('my-listings/', views.HostListingListView.as_view(), name='host_listings'),
     
     # Listing images

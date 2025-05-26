@@ -2,7 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q, Avg, Count
+from django.db.models import Q, Avg, Count, Sum
+from django.db import models
 from django.http import JsonResponse, Http404
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -129,6 +130,58 @@ class ListingDetailView(DetailView):
         
         # Unavailable dates for calendar
         context['unavailable_dates_json'] = json.dumps(listing.get_unavailable_dates())
+        
+        return context
+
+class HostDashboardView(LoginRequiredMixin, ListView):
+    """Comprehensive host dashboard view"""
+    template_name = 'listings/host_dashboard.html'
+    
+    def get(self, request, *args, **kwargs):
+        # Check if user is a host
+        if not request.user.is_host:
+            messages.error(request, "You are not registered as a host.")
+            return redirect('listings:listing_create')
+        
+        return super().get(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # Get host's listings
+        host_listings = Listing.objects.filter(host=user)
+        
+        # Get host's bookings
+        host_bookings = Booking.objects.filter(listing__host=user)
+        
+        # Calculate statistics
+        stats = {
+            'total_listings': host_listings.count(),
+            'active_bookings': host_bookings.filter(status__in=['confirmed', 'pending']).count(),
+            'pending_bookings': host_bookings.filter(status='pending').count(),
+            'total_revenue': host_bookings.filter(status='completed').aggregate(
+                total=Sum('total_price')
+            )['total'] or 0,
+        }
+        
+        # Get recent bookings (last 5)
+        recent_bookings = host_bookings.select_related(
+            'listing', 'guest'
+        ).order_by('-created_at')[:5]
+        
+        # Get top performing listings
+        top_listings = host_listings.annotate(
+            avg_rating=Avg('reviews__rating'),
+            review_count=Count('reviews'),
+            bookings_count=Count('bookings')
+        ).order_by('-avg_rating', '-review_count')[:5]
+        
+        context.update({
+            'stats': stats,
+            'recent_bookings': recent_bookings,
+            'top_listings': top_listings,
+        })
         
         return context
 

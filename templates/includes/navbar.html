@@ -18,7 +18,7 @@
                     </button>
                 </div>
             </form>
-            
+
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                 <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.url_name == 'listing_list' %}active{% endif %}" 
@@ -26,7 +26,7 @@
                         <i class="fas fa-list"></i> Listings
                     </a>
                 </li>
-                
+
                 {% if user.is_authenticated %}
                     {% if user.is_host %}
                     <li class="nav-item dropdown">
@@ -34,7 +34,12 @@
                            data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-home"></i> Host
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="hostDropdown">
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'listings:host_dashboard' %}">
+                                    <i class="fas fa-tachometer-alt"></i> Host Dashboard
+                                </a>
+                            </li>
                             <li>
                                 <a class="dropdown-item" href="{% url 'listings:host_listings' %}">
                                     <i class="fas fa-list"></i> My Listings
@@ -59,7 +64,7 @@
                         </a>
                     </li>
                     {% endif %}
-                    
+
                     <!-- Bookings -->
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'user_bookings' %}active{% endif %}" 
@@ -67,7 +72,7 @@
                             <i class="fas fa-suitcase"></i> Trips
                         </a>
                     </li>
-                    
+
                     <!-- Messages -->
                     <li class="nav-item">
                         <a class="nav-link position-relative {% if 'chat' in request.path %}active{% endif %}" 
@@ -78,7 +83,7 @@
                             </span>
                         </a>
                     </li>
-                    
+
                     <!-- Notifications -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle position-relative" href="#" id="notificationsDropdown" 
@@ -98,7 +103,7 @@
                             <div class="notifications-scrollable" style="max-height: 350px; overflow-y: auto;">
                                 {% load notify_tags %}
                                 {% recent_notifications as notifications %}
-                                
+
                                 {% if notifications %}
                                     {% for notification in notifications %}
                                     <a href="{{ notification|notification_target_url }}" class="dropdown-item d-flex {% if not notification.is_read %}bg-light{% endif %}">
@@ -122,7 +127,7 @@
                             </a>
                         </div>
                     </li>
-                    
+
                     <!-- User dropdown -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
