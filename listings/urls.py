@@ -31,4 +31,5 @@ urlpatterns = [
     # API endpoints for HTMX
     path('api/<int:pk>/calendar-data/', views.get_listing_calendar_data, name='calendar_data'),
     path('api/<int:pk>/calculate-price/', views.calculate_booking_price, name='calculate_price'),
+    path('api/<int:pk>/toggle-status/', views.toggle_listing_status, name='toggle_listing_status'),
 ]
