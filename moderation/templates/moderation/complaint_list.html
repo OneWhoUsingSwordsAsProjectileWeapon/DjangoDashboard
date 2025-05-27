@@ -1,0 +1,189 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Complaints{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-exclamation-triangle"></i> User Complaints</h2>
+        <a href="{% url 'moderation:dashboard' %}" class="btn btn-outline-primary">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </a>
+    </div>
+    
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-control">
+                        <option value="">All Statuses</option>
+                        {% for status_code, status_name in status_choices %}
+                            <option value="{{ status_code }}" {% if current_status == status_code %}selected{% endif %}>
+                                {{ status_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label class="form-label">Type</label>
+                    <select name="complaint_type" class="form-control">
+                        <option value="">All Types</option>
+                        {% for type_code, type_name in complaint_type_choices %}
+                            <option value="{{ type_code }}" {% if current_complaint_type == type_code %}selected{% endif %}>
+                                {{ type_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label class="form-label">Priority</label>
+                    <select name="priority" class="form-control">
+                        <option value="">All Priorities</option>
+                        {% for priority_code, priority_name in priority_choices %}
+                            <option value="{{ priority_code }}" {% if current_priority == priority_code %}selected{% endif %}>
+                                {{ priority_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label">Assigned Moderator</label>
+                    <select name="assigned_moderator" class="form-control">
+                        <option value="">All Moderators</option>
+                        {% for moderator in moderators %}
+                            <option value="{{ moderator.id }}" {% if current_assigned_moderator == moderator.id|stringformat:"s" %}selected{% endif %}>
+                                {{ moderator.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                    <a href="{% url 'moderation:complaint_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Complaints List -->
+    {% if complaints %}
+        <div class="card">
+            <div class="card-body">
+                {% for complaint in complaints %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="row">
+                            <div class="col-md-1">
+                                <span class="badge bg-secondary">#{{ complaint.id }}</span>
+                                {% if complaint.is_urgent %}
+                                    <br><span class="badge bg-danger mt-1">URGENT</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-5">
+                                <h6 class="mb-1">{{ complaint.subject }}</h6>
+                                <p class="text-muted small mb-2">{{ complaint.description|truncatewords:15 }}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> {{ complaint.complainant.username }}
+                                    <span class="ms-2">
+                                        <i class="fas fa-calendar"></i> {{ complaint.created_at|date:"M d, Y" }}
+                                    </span>
+                                    <span class="ms-2">
+                                        <i class="fas fa-clock"></i> {{ complaint.days_open }} days open
+                                    </span>
+                                </small>
+                            </div>
+                            
+                            <div class="col-md-2 text-center">
+                                <span class="badge bg-info">{{ complaint.get_complaint_type_display }}</span>
+                                <br>
+                                {% if complaint.priority == 'urgent' %}
+                                    <span class="badge bg-danger mt-1">{{ complaint.get_priority_display }}</span>
+                                {% elif complaint.priority == 'high' %}
+                                    <span class="badge bg-warning mt-1">{{ complaint.get_priority_display }}</span>
+                                {% elif complaint.priority == 'medium' %}
+                                    <span class="badge bg-info mt-1">{{ complaint.get_priority_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary mt-1">{{ complaint.get_priority_display }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-2 text-center">
+                                {% if complaint.status == 'pending' %}
+                                    <span class="badge bg-warning">{{ complaint.get_status_display }}</span>
+                                {% elif complaint.status == 'in_progress' %}
+                                    <span class="badge bg-info">{{ complaint.get_status_display }}</span>
+                                {% elif complaint.status == 'resolved' %}
+                                    <span class="badge bg-success">{{ complaint.get_status_display }}</span>
+                                {% elif complaint.status == 'rejected' %}
+                                    <span class="badge bg-danger">{{ complaint.get_status_display }}</span>
+                                {% elif complaint.status == 'escalated' %}
+                                    <span class="badge bg-dark">{{ complaint.get_status_display }}</span>
+                                {% endif %}
+                                
+                                {% if complaint.assigned_moderator %}
+                                    <br><small class="text-muted mt-1">{{ complaint.assigned_moderator.username }}</small>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-2 text-end">
+                                <a href="{% url 'moderation:complaint_detail' complaint.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> Handle
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Pagination -->
+        {% if complaints.has_other_pages %}
+            <nav aria-label="Complaints pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if complaints.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ complaints.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_complaint_type %}&complaint_type={{ current_complaint_type }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned_moderator %}&assigned_moderator={{ current_assigned_moderator }}{% endif %}">Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in complaints.paginator.page_range %}
+                        {% if complaints.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_complaint_type %}&complaint_type={{ current_complaint_type }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned_moderator %}&assigned_moderator={{ current_assigned_moderator }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if complaints.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ complaints.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_complaint_type %}&complaint_type={{ current_complaint_type }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned_moderator %}&assigned_moderator={{ current_assigned_moderator }}{% endif %}">Next</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">No complaints found</h4>
+            <p class="text-muted">No complaints match your current filters.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

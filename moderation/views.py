@@ -3,9 +3,11 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse
 from django.contrib import messages
 from django.utils import timezone
+from django.core.paginator import Paginator
 import re
 
-from .models import Report, ReportCategory, BannedUser, ForbiddenKeyword
+from .models import Report, ReportCategory, BannedUser, ForbiddenKeyword, UserComplaint
+from .forms import UserComplaintForm, ComplaintResponseForm
 from listings.models import Listing, Review
 from chat.models import Message
 from users.models import User
@@ -472,3 +474,146 @@ def filter_content(request):
         })
     
     return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@login_required
+def file_complaint(request):
+    """View for users to file a complaint"""
+    if request.method == 'POST':
+        form = UserComplaintForm(request.POST)
+        if form.is_valid():
+            # Create the complaint
+            complaint = UserComplaint.objects.create(
+                complainant=request.user,
+                complaint_type=form.cleaned_data['complaint_type'],
+                subject=form.cleaned_data['subject'],
+                description=form.cleaned_data['description'],
+                priority=form.cleaned_data['priority'],
+                contact_email=form.cleaned_data['contact_email']
+            )
+            
+            messages.success(request, f"Your complaint #{complaint.id} has been submitted successfully. We will review it shortly.")
+            return redirect('moderation:my_complaints')
+    else:
+        # Pre-fill contact email with user's email
+        initial_data = {'contact_email': request.user.email}
+        form = UserComplaintForm(initial=initial_data)
+    
+    return render(request, 'moderation/file_complaint.html', {
+        'form': form
+    })
+
+@login_required
+def my_complaints(request):
+    """View for users to see their own complaints"""
+    complaints = UserComplaint.objects.filter(complainant=request.user).order_by('-created_at')
+    
+    # Pagination
+    paginator = Paginator(complaints, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'moderation/my_complaints.html', {
+        'complaints': page_obj
+    })
+
+@login_required
+@user_passes_test(is_moderator)
+def complaint_list(request):
+    """View for moderators to see all complaints"""
+    # Get filter parameters
+    status = request.GET.get('status')
+    complaint_type = request.GET.get('complaint_type')
+    priority = request.GET.get('priority')
+    assigned_moderator = request.GET.get('assigned_moderator')
+    
+    # Start with all complaints
+    complaints = UserComplaint.objects.select_related('complainant', 'assigned_moderator').all()
+    
+    # Apply filters
+    if status and status in [choice[0] for choice in UserComplaint.STATUS_CHOICES]:
+        complaints = complaints.filter(status=status)
+    
+    if complaint_type and complaint_type in [choice[0] for choice in UserComplaint.COMPLAINT_TYPES]:
+        complaints = complaints.filter(complaint_type=complaint_type)
+    
+    if priority and priority in [choice[0] for choice in UserComplaint.PRIORITY_CHOICES]:
+        complaints = complaints.filter(priority=priority)
+    
+    if assigned_moderator:
+        try:
+            complaints = complaints.filter(assigned_moderator_id=int(assigned_moderator))
+        except ValueError:
+            pass
+    
+    # Order by priority and creation date
+    priority_order = {'urgent': 1, 'high': 2, 'medium': 3, 'low': 4}
+    complaints = sorted(complaints, key=lambda x: (priority_order.get(x.priority, 5), -x.created_at.timestamp()))
+    
+    # Pagination
+    paginator = Paginator(complaints, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get moderators for filter dropdown
+    moderators = User.objects.filter(is_staff=True)
+    
+    return render(request, 'moderation/complaint_list.html', {
+        'complaints': page_obj,
+        'status_choices': UserComplaint.STATUS_CHOICES,
+        'complaint_type_choices': UserComplaint.COMPLAINT_TYPES,
+        'priority_choices': UserComplaint.PRIORITY_CHOICES,
+        'moderators': moderators,
+        'current_status': status,
+        'current_complaint_type': complaint_type,
+        'current_priority': priority,
+        'current_assigned_moderator': assigned_moderator
+    })
+
+@login_required
+@user_passes_test(is_moderator)
+def complaint_detail(request, pk):
+    """View for moderators to handle a specific complaint"""
+    complaint = get_object_or_404(UserComplaint, pk=pk)
+    
+    if request.method == 'POST':
+        form = ComplaintResponseForm(request.POST)
+        if form.is_valid():
+            # Update complaint
+            complaint.status = form.cleaned_data['status']
+            complaint.moderator_response = form.cleaned_data['response']
+            complaint.internal_notes = form.cleaned_data['internal_notes']
+            complaint.assigned_moderator = request.user
+            
+            # Set resolved timestamp if resolved
+            if complaint.status in ['resolved', 'rejected']:
+                complaint.resolved_at = timezone.now()
+            else:
+                complaint.resolved_at = None
+            
+            complaint.save()
+            
+            # Create a moderation log entry
+            from .models import ModerationLog
+            ModerationLog.objects.create(
+                moderator=request.user,
+                action_type='complaint_handled',
+                target_user=complaint.complainant,
+                description=f"Handled complaint #{complaint.id}: {complaint.subject}",
+                notes=f"Status: {complaint.get_status_display()}, Response: {complaint.moderator_response[:100]}..."
+            )
+            
+            messages.success(request, f"Complaint #{complaint.id} has been updated.")
+            return redirect('moderation:complaint_list')
+    else:
+        # Pre-fill form with current values
+        initial_data = {
+            'status': complaint.status,
+            'response': complaint.moderator_response,
+            'internal_notes': complaint.internal_notes
+        }
+        form = ComplaintResponseForm(initial=initial_data)
+    
+    return render(request, 'moderation/complaint_detail.html', {
+        'complaint': complaint,
+        'form': form
+    })

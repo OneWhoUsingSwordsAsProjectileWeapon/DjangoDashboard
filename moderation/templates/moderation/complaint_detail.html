@@ -1,0 +1,183 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Complaint #{{ complaint.id }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Complaint Details -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-exclamation-triangle"></i> Complaint #{{ complaint.id }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Subject:</strong><br>
+                            <span class="text-muted">{{ complaint.subject }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Type:</strong><br>
+                            <span class="badge bg-info">{{ complaint.get_complaint_type_display }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Priority:</strong><br>
+                            {% if complaint.priority == 'urgent' %}
+                                <span class="badge bg-danger">{{ complaint.get_priority_display }}</span>
+                            {% elif complaint.priority == 'high' %}
+                                <span class="badge bg-warning">{{ complaint.get_priority_display }}</span>
+                            {% elif complaint.priority == 'medium' %}
+                                <span class="badge bg-info">{{ complaint.get_priority_display }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ complaint.get_priority_display }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Status:</strong><br>
+                            {% if complaint.status == 'pending' %}
+                                <span class="badge bg-warning">{{ complaint.get_status_display }}</span>
+                            {% elif complaint.status == 'in_progress' %}
+                                <span class="badge bg-info">{{ complaint.get_status_display }}</span>
+                            {% elif complaint.status == 'resolved' %}
+                                <span class="badge bg-success">{{ complaint.get_status_display }}</span>
+                            {% elif complaint.status == 'rejected' %}
+                                <span class="badge bg-danger">{{ complaint.get_status_display }}</span>
+                            {% elif complaint.status == 'escalated' %}
+                                <span class="badge bg-dark">{{ complaint.get_status_display }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Description:</strong><br>
+                        <div class="bg-light p-3 rounded mt-2">
+                            {{ complaint.description|linebreaks }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Complainant:</strong><br>
+                            <span class="text-muted">{{ complaint.complainant.username }}</span>
+                            {% if complaint.contact_email %}
+                                <br><small class="text-muted">{{ complaint.contact_email }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Filed:</strong><br>
+                            <span class="text-muted">{{ complaint.created_at|date:"M d, Y g:i A" }}</span>
+                            <br><small class="text-muted">{{ complaint.days_open }} days ago</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Current Response -->
+            {% if complaint.moderator_response %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6><i class="fas fa-reply"></i> Current Response</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="bg-light p-3 rounded">
+                            {{ complaint.moderator_response|linebreaks }}
+                        </div>
+                        {% if complaint.resolved_at %}
+                            <small class="text-muted">
+                                Resolved on {{ complaint.resolved_at|date:"M d, Y g:i A" }} by {{ complaint.assigned_moderator.username }}
+                            </small>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Response Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-edit"></i> Handle Complaint</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">
+                                {{ form.status.label }}
+                            </label>
+                            {{ form.status }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.response.id_for_label }}" class="form-label">
+                                {{ form.response.label }}
+                            </label>
+                            {{ form.response }}
+                            <small class="form-text text-muted">This will be visible to the user</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.internal_notes.id_for_label }}" class="form-label">
+                                {{ form.internal_notes.label }}
+                            </label>
+                            {{ form.internal_notes }}
+                            <small class="form-text text-muted">Internal notes (not visible to user)</small>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Complaint
+                            </button>
+                            <a href="{% url 'moderation:complaint_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to List
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Complaint Info -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-info-circle"></i> Complaint Info</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>Days Open:</strong> {{ complaint.days_open }}
+                    </div>
+                    
+                    {% if complaint.assigned_moderator %}
+                        <div class="mb-2">
+                            <strong>Assigned to:</strong><br>
+                            {{ complaint.assigned_moderator.username }}
+                        </div>
+                    {% endif %}
+                    
+                    {% if complaint.related_listing %}
+                        <div class="mb-2">
+                            <strong>Related Listing:</strong><br>
+                            <a href="{% url 'listings:listing_detail' complaint.related_listing.id %}">
+                                {{ complaint.related_listing.title }}
+                            </a>
+                        </div>
+                    {% endif %}
+                    
+                    {% if complaint.internal_notes %}
+                        <div class="mb-2">
+                            <strong>Internal Notes:</strong><br>
+                            <small class="text-muted">{{ complaint.internal_notes|linebreaks }}</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -12,4 +12,10 @@ urlpatterns = [
     path('approvals/<int:pk>/', views.listing_approval_detail, name='listing_approval_detail'),
     path('logs/', views.moderation_logs, name='logs'),
     path('api/filter-content/', views.filter_content, name='filter_content'),
+    
+    # User complaints
+    path('complaints/file/', views.file_complaint, name='file_complaint'),
+    path('complaints/my/', views.my_complaints, name='my_complaints'),
+    path('complaints/', views.complaint_list, name='complaint_list'),
+    path('complaints/<int:pk>/', views.complaint_detail, name='complaint_detail'),
 ]

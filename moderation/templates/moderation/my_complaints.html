@@ -1,0 +1,125 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Complaints{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-list"></i> My Complaints</h2>
+        <a href="{% url 'moderation:file_complaint' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> File New Complaint
+        </a>
+    </div>
+    
+    {% if complaints %}
+        <div class="card">
+            <div class="card-body">
+                {% for complaint in complaints %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5 class="mb-1">
+                                    <span class="badge bg-secondary me-2">#{{ complaint.id }}</span>
+                                    {{ complaint.subject }}
+                                </h5>
+                                <p class="text-muted mb-2">{{ complaint.description|truncatewords:20 }}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar"></i> {{ complaint.created_at|date:"M d, Y g:i A" }}
+                                    <span class="ms-3">
+                                        <i class="fas fa-tag"></i> {{ complaint.get_complaint_type_display }}
+                                    </span>
+                                </small>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="mb-2">
+                                    {% if complaint.status == 'pending' %}
+                                        <span class="badge bg-warning">{{ complaint.get_status_display }}</span>
+                                    {% elif complaint.status == 'in_progress' %}
+                                        <span class="badge bg-info">{{ complaint.get_status_display }}</span>
+                                    {% elif complaint.status == 'resolved' %}
+                                        <span class="badge bg-success">{{ complaint.get_status_display }}</span>
+                                    {% elif complaint.status == 'rejected' %}
+                                        <span class="badge bg-danger">{{ complaint.get_status_display }}</span>
+                                    {% elif complaint.status == 'escalated' %}
+                                        <span class="badge bg-dark">{{ complaint.get_status_display }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="mb-2">
+                                    {% if complaint.priority == 'urgent' %}
+                                        <span class="badge bg-danger">{{ complaint.get_priority_display }}</span>
+                                    {% elif complaint.priority == 'high' %}
+                                        <span class="badge bg-warning">{{ complaint.get_priority_display }}</span>
+                                    {% elif complaint.priority == 'medium' %}
+                                        <span class="badge bg-info">{{ complaint.get_priority_display }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ complaint.get_priority_display }}</span>
+                                    {% endif %}
+                                </div>
+                                {% if complaint.moderator_response %}
+                                    <div class="text-muted small">
+                                        <i class="fas fa-reply"></i> Response Available
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        {% if complaint.moderator_response %}
+                            <div class="mt-3 p-3 bg-light rounded">
+                                <h6><i class="fas fa-user-shield"></i> Moderator Response:</h6>
+                                <p class="mb-0">{{ complaint.moderator_response }}</p>
+                                {% if complaint.resolved_at %}
+                                    <small class="text-muted">
+                                        Resolved on {{ complaint.resolved_at|date:"M d, Y g:i A" }}
+                                    </small>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Pagination -->
+        {% if complaints.has_other_pages %}
+            <nav aria-label="Complaints pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if complaints.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ complaints.previous_page_number }}">Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in complaints.paginator.page_range %}
+                        {% if complaints.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if complaints.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ complaints.next_page_number }}">Next</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">No complaints filed yet</h4>
+            <p class="text-muted">When you file a complaint, it will appear here.</p>
+            <a href="{% url 'moderation:file_complaint' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> File Your First Complaint
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

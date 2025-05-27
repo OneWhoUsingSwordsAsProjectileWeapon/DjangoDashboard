@@ -287,6 +287,102 @@ class ModerationLog(models.Model):
     def __str__(self):
         return f"{self.get_action_type_display()} by {self.moderator.username} at {self.created_at}"
 
+class UserComplaint(models.Model):
+    """
+    Model for user complaints about various issues
+    """
+    COMPLAINT_TYPES = [
+        ('billing', _('Billing Issue')),
+        ('booking', _('Booking Problem')),
+        ('host_behavior', _('Host Behavior')),
+        ('guest_behavior', _('Guest Behavior')),
+        ('property_issue', _('Property Issue')),
+        ('platform_bug', _('Platform Bug')),
+        ('safety_concern', _('Safety Concern')),
+        ('other', _('Other')),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', _('Pending')),
+        ('in_progress', _('In Progress')),
+        ('resolved', _('Resolved')),
+        ('rejected', _('Rejected')),
+        ('escalated', _('Escalated')),
+    ]
+    
+    PRIORITY_CHOICES = [
+        ('low', _('Low')),
+        ('medium', _('Medium')),
+        ('high', _('High')),
+        ('urgent', _('Urgent')),
+    ]
+    
+    # User information
+    complainant = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='complaints_filed',
+        verbose_name=_("Complainant")
+    )
+    
+    # Complaint details
+    complaint_type = models.CharField(_("Complaint Type"), max_length=20, choices=COMPLAINT_TYPES)
+    subject = models.CharField(_("Subject"), max_length=200)
+    description = models.TextField(_("Description"))
+    priority = models.CharField(_("Priority"), max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    status = models.CharField(_("Status"), max_length=15, choices=STATUS_CHOICES, default='pending')
+    
+    # Optional contact information
+    contact_email = models.EmailField(_("Contact Email"), blank=True)
+    
+    # Related objects (optional)
+    related_listing = models.ForeignKey(
+        'listings.Listing',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='complaints',
+        verbose_name=_("Related Listing")
+    )
+    
+    # Moderator response
+    assigned_moderator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_complaints',
+        verbose_name=_("Assigned Moderator")
+    )
+    moderator_response = models.TextField(_("Moderator Response"), blank=True)
+    internal_notes = models.TextField(_("Internal Notes"), blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
+    resolved_at = models.DateTimeField(_("Resolved At"), null=True, blank=True)
+    
+    class Meta:
+        verbose_name = _("User Complaint")
+        verbose_name_plural = _("User Complaints")
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Complaint #{self.id}: {self.subject} - {self.get_status_display()}"
+    
+    @property
+    def is_urgent(self):
+        """Check if complaint is marked as urgent"""
+        return self.priority == 'urgent'
+    
+    @property
+    def days_open(self):
+        """Calculate how many days the complaint has been open"""
+        from django.utils import timezone
+        if self.resolved_at:
+            return (self.resolved_at - self.created_at).days
+        return (timezone.now() - self.created_at).days
+
 class ForbiddenKeyword(models.Model):
     """
     Model for storing forbidden keywords to be filtered in content
