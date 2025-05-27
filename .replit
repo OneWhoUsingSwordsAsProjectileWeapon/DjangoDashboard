@@ -1,0 +1,17 @@
+modules = ["web", "python-3.11", "nodejs-20"]
+
+[nix]
+channel = "stable-24_05"
+packages = ["freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "tcl", "tk", "zlib"]
+
+[workflows]
+runButton = "Run Django Server"
+
+[[workflows.workflow]]
+name = "Run Django Server"
+author = 43165555
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python manage.py runserver 0.0.0.0:5000"
