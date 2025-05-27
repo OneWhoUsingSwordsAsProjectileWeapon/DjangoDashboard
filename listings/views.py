@@ -129,7 +129,9 @@ class ListingDetailView(DetailView):
                 context['booking_for_review'] = completed_bookings.first()
 
         # Unavailable dates for calendar
-        context['unavailable_dates_json'] = json.dumps(listing.get_unavailable_dates())
+        unavailable_dates = listing.get_unavailable_dates()
+        context['unavailable_dates_json'] = json.dumps(unavailable_dates)
+        context['unavailable_dates'] = unavailable_dates
 
         return context
 

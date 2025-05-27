@@ -33,7 +33,7 @@
                             <td :class="{
                                     'calendar-day': day.date,
                                     'empty': !day.date,
-                                    'unavailable': day.unavailable,
+                                    'unavailable': day.date && isUnavailable(day.date),
                                     'today': day.isToday,
                                     'selected': isSelected(day.date),
                                     'in-range': isInRange(day.date),
@@ -41,7 +41,7 @@
                                     'end-date': isEndDate(day.date)
                                 }"
                                 x-on:click="selectDate(day)"
-                                :title="day.unavailable ? 'Unavailable' : 'Available'">
+                                :title="day.date && isUnavailable(day.date) ? 'Unavailable' : 'Available'"></td>
                                 <template x-if="day.date">
                                     <div class="day-content">
                                         <span x-text="day.dayNumber"></span>
@@ -149,13 +149,11 @@
                             const currentDate = new Date(this.currentYear, this.currentMonth, date);
                             const dateStr = this.formatDate(currentDate);
                             const isToday = this.isToday(dateStr);
-                            const unavailable = this.isUnavailable(dateStr);
                             
                             week.push({
                                 date: dateStr,
                                 dayNumber: date,
-                                isToday: isToday,
-                                unavailable: unavailable
+                                isToday: isToday
                             });
                             
                             date++;
@@ -194,7 +192,7 @@
             },
             
             selectDate(day) {
-                if (!day.date || day.unavailable) return;
+                if (!day.date || this.isUnavailable(day.date)) return;
                 
                 if (this.selectionMode === 'start') {
                     this.startDate = day.date;

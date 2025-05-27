@@ -62,9 +62,18 @@
 }
 
 .calendar-day.unavailable .day-content {
-    background-color: #e74c3c;
+    background-color: #dc3545;
     color: white;
-    opacity: 0.8;
+    opacity: 0.9;
+    text-decoration: line-through;
+}
+
+.calendar-day.unavailable {
+    cursor: not-allowed !important;
+}
+
+.calendar-day.unavailable:hover .day-content {
+    background-color: #dc3545 !important;
 }
 
 .calendar-day.today .day-content {
