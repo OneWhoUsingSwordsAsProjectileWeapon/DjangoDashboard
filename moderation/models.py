@@ -166,6 +166,127 @@ class BannedUser(models.Model):
             return True
         return False
 
+class ListingApproval(models.Model):
+    """
+    Model for tracking listing approval process
+    """
+    STATUS_CHOICES = [
+        ('pending', _('Pending Review')),
+        ('approved', _('Approved')),
+        ('rejected', _('Rejected')),
+        ('requires_changes', _('Requires Changes')),
+    ]
+    
+    listing = models.OneToOneField(
+        'listings.Listing',
+        on_delete=models.CASCADE,
+        related_name='approval_record',
+        verbose_name=_("Listing")
+    )
+    status = models.CharField(_("Status"), max_length=20, choices=STATUS_CHOICES, default='pending')
+    moderator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='approved_listings',
+        verbose_name=_("Moderator")
+    )
+    moderator_notes = models.TextField(_("Moderator Notes"), blank=True)
+    rejection_reason = models.TextField(_("Rejection Reason"), blank=True)
+    required_changes = models.TextField(_("Required Changes"), blank=True)
+    
+    # Approval criteria checklist
+    has_valid_title = models.BooleanField(_("Has Valid Title"), default=False)
+    has_valid_description = models.BooleanField(_("Has Valid Description"), default=False)
+    has_valid_images = models.BooleanField(_("Has Valid Images"), default=False)
+    has_valid_address = models.BooleanField(_("Has Valid Address"), default=False)
+    has_appropriate_pricing = models.BooleanField(_("Has Appropriate Pricing"), default=False)
+    follows_content_policy = models.BooleanField(_("Follows Content Policy"), default=False)
+    
+    created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
+    reviewed_at = models.DateTimeField(_("Reviewed At"), null=True, blank=True)
+    
+    class Meta:
+        verbose_name = _("Listing Approval")
+        verbose_name_plural = _("Listing Approvals")
+        ordering = ['-created_at']
+        
+    def __str__(self):
+        return f"Approval for {self.listing.title} - {self.get_status_display()}"
+    
+    @property
+    def approval_score(self):
+        """Calculate approval score based on criteria"""
+        criteria = [
+            self.has_valid_title,
+            self.has_valid_description,
+            self.has_valid_images,
+            self.has_valid_address,
+            self.has_appropriate_pricing,
+            self.follows_content_policy
+        ]
+        return sum(criteria) / len(criteria) * 100
+
+class ModerationLog(models.Model):
+    """
+    Model for logging all moderation actions
+    """
+    ACTION_TYPES = [
+        ('report_resolved', _('Report Resolved')),
+        ('report_rejected', _('Report Rejected')),
+        ('user_banned', _('User Banned')),
+        ('user_unbanned', _('User Unbanned')),
+        ('listing_approved', _('Listing Approved')),
+        ('listing_rejected', _('Listing Rejected')),
+        ('content_removed', _('Content Removed')),
+        ('content_edited', _('Content Edited')),
+    ]
+    
+    moderator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='moderation_actions',
+        verbose_name=_("Moderator")
+    )
+    action_type = models.CharField(_("Action Type"), max_length=30, choices=ACTION_TYPES)
+    target_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='moderation_actions_received',
+        verbose_name=_("Target User")
+    )
+    target_listing = models.ForeignKey(
+        'listings.Listing',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='moderation_actions',
+        verbose_name=_("Target Listing")
+    )
+    report = models.ForeignKey(
+        Report,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='moderation_logs',
+        verbose_name=_("Related Report")
+    )
+    description = models.TextField(_("Description"))
+    notes = models.TextField(_("Notes"), blank=True)
+    created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
+    
+    class Meta:
+        verbose_name = _("Moderation Log")
+        verbose_name_plural = _("Moderation Logs")
+        ordering = ['-created_at']
+        
+    def __str__(self):
+        return f"{self.get_action_type_display()} by {self.moderator.username} at {self.created_at}"
+
 class ForbiddenKeyword(models.Model):
     """
     Model for storing forbidden keywords to be filtered in content

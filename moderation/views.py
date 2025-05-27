@@ -248,6 +248,8 @@ def report_detail(request, pk):
 @user_passes_test(is_moderator)
 def moderation_dashboard(request):
     """Dashboard for moderators with overview of reports and banned users"""
+    from .models import ListingApproval, ModerationLog
+    
     # Get report statistics
     total_reports = Report.objects.count()
     pending_reports = Report.objects.filter(status='pending').count()
@@ -257,6 +259,15 @@ def moderation_dashboard(request):
     
     # Recent reports
     recent_reports = Report.objects.all().order_by('-created_at')[:10]
+    
+    # Listing approval statistics
+    pending_listings = ListingApproval.objects.filter(status='pending').count()
+    approved_listings = ListingApproval.objects.filter(status='approved').count()
+    rejected_listings = ListingApproval.objects.filter(status='rejected').count()
+    changes_required_listings = ListingApproval.objects.filter(status='requires_changes').count()
+    
+    # Recent listing approvals
+    recent_approvals = ListingApproval.objects.all().order_by('-created_at')[:5]
     
     # Banned users
     active_bans = BannedUser.objects.filter(
@@ -271,6 +282,9 @@ def moderation_dashboard(request):
     # Forbidden keywords
     keywords_count = ForbiddenKeyword.objects.filter(is_active=True).count()
     
+    # Recent moderation logs
+    recent_logs = ModerationLog.objects.all().order_by('-created_at')[:10]
+    
     return render(request, 'moderation/dashboard.html', {
         'total_reports': total_reports,
         'pending_reports': pending_reports,
@@ -278,9 +292,150 @@ def moderation_dashboard(request):
         'resolved_reports': resolved_reports,
         'rejected_reports': rejected_reports,
         'recent_reports': recent_reports,
+        'pending_listings': pending_listings,
+        'approved_listings': approved_listings,
+        'rejected_listings': rejected_listings,
+        'changes_required_listings': changes_required_listings,
+        'recent_approvals': recent_approvals,
         'active_bans': active_bans,
         'recent_bans': recent_bans,
-        'keywords_count': keywords_count
+        'keywords_count': keywords_count,
+        'recent_logs': recent_logs
+    })
+
+@login_required
+@user_passes_test(is_moderator)
+def listing_approval_list(request):
+    """View for listing all pending listing approvals"""
+    from .models import ListingApproval
+    
+    # Get all listing approvals, filter by status if provided
+    status = request.GET.get('status')
+    approvals = ListingApproval.objects.select_related('listing', 'moderator').all()
+    
+    if status and status in [choice[0] for choice in ListingApproval.STATUS_CHOICES]:
+        approvals = approvals.filter(status=status)
+    
+    # Filter by moderator if provided
+    moderator_id = request.GET.get('moderator')
+    if moderator_id:
+        try:
+            approvals = approvals.filter(moderator_id=int(moderator_id))
+        except ValueError:
+            pass
+    
+    return render(request, 'moderation/listing_approval_list.html', {
+        'approvals': approvals,
+        'status_choices': ListingApproval.STATUS_CHOICES,
+        'current_status': status,
+        'current_moderator': moderator_id
+    })
+
+@login_required
+@user_passes_test(is_moderator)
+def listing_approval_detail(request, pk):
+    """View for reviewing a listing approval"""
+    from .models import ListingApproval, ModerationLog
+    
+    approval = get_object_or_404(ListingApproval, pk=pk)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        moderator_notes = request.POST.get('moderator_notes', '').strip()
+        
+        if action in ['approve', 'reject', 'require_changes']:
+            approval.moderator = request.user
+            approval.moderator_notes = moderator_notes
+            approval.reviewed_at = timezone.now()
+            
+            # Update checklist items
+            approval.has_valid_title = request.POST.get('has_valid_title') == 'on'
+            approval.has_valid_description = request.POST.get('has_valid_description') == 'on'
+            approval.has_valid_images = request.POST.get('has_valid_images') == 'on'
+            approval.has_valid_address = request.POST.get('has_valid_address') == 'on'
+            approval.has_appropriate_pricing = request.POST.get('has_appropriate_pricing') == 'on'
+            approval.follows_content_policy = request.POST.get('follows_content_policy') == 'on'
+            
+            if action == 'approve':
+                approval.status = 'approved'
+                approval.listing.is_approved = True
+                approval.listing.is_active = True
+                approval.listing.save(update_fields=['is_approved', 'is_active'])
+                
+                # Log the action
+                ModerationLog.objects.create(
+                    moderator=request.user,
+                    action_type='listing_approved',
+                    target_listing=approval.listing,
+                    target_user=approval.listing.host,
+                    description=f"Approved listing: {approval.listing.title}",
+                    notes=moderator_notes
+                )
+                
+                messages.success(request, f"Listing '{approval.listing.title}' has been approved.")
+                
+            elif action == 'reject':
+                approval.status = 'rejected'
+                approval.rejection_reason = request.POST.get('rejection_reason', '').strip()
+                approval.listing.is_approved = False
+                approval.listing.is_active = False
+                approval.listing.save(update_fields=['is_approved', 'is_active'])
+                
+                # Log the action
+                ModerationLog.objects.create(
+                    moderator=request.user,
+                    action_type='listing_rejected',
+                    target_listing=approval.listing,
+                    target_user=approval.listing.host,
+                    description=f"Rejected listing: {approval.listing.title}",
+                    notes=f"Reason: {approval.rejection_reason}"
+                )
+                
+                messages.success(request, f"Listing '{approval.listing.title}' has been rejected.")
+                
+            elif action == 'require_changes':
+                approval.status = 'requires_changes'
+                approval.required_changes = request.POST.get('required_changes', '').strip()
+                approval.listing.is_approved = False
+                approval.listing.save(update_fields=['is_approved'])
+                
+                messages.success(request, f"Changes required for listing '{approval.listing.title}'.")
+            
+            approval.save()
+            
+            return redirect('moderation:listing_approval_list')
+    
+    return render(request, 'moderation/listing_approval_detail.html', {
+        'approval': approval,
+        'listing': approval.listing
+    })
+
+@login_required
+@user_passes_test(is_moderator)
+def moderation_logs(request):
+    """View for displaying moderation activity logs"""
+    from .models import ModerationLog
+    
+    # Get all logs, filter by action type if provided
+    action_type = request.GET.get('action_type')
+    logs = ModerationLog.objects.select_related('moderator', 'target_user', 'target_listing').all()
+    
+    if action_type and action_type in [choice[0] for choice in ModerationLog.ACTION_TYPES]:
+        logs = logs.filter(action_type=action_type)
+    
+    # Filter by moderator if provided
+    moderator_id = request.GET.get('moderator')
+    if moderator_id:
+        try:
+            logs = logs.filter(moderator_id=int(moderator_id))
+        except ValueError:
+            pass
+    
+    return render(request, 'moderation/logs.html', {
+        'logs': logs,
+        'action_type_choices': ModerationLog.ACTION_TYPES,
+        'current_action_type': action_type,
+        'current_moderator': moderator_id
     })
 
 def filter_content(request):

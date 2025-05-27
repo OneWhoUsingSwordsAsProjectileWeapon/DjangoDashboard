@@ -51,6 +51,57 @@
         </div>
     </div>
     
+    <!-- Listing Approval Statistics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3>Модерация объявлений</h3>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm h-100 bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">На рассмотрении</h5>
+                    <p class="display-4">{{ pending_listings }}</p>
+                    {% if pending_listings > 0 %}
+                    <a href="{% url 'moderation:listing_approval_list' %}?status=pending" class="btn btn-sm btn-light">Просмотреть</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm h-100 bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Одобрено</h5>
+                    <p class="display-4">{{ approved_listings }}</p>
+                    {% if approved_listings > 0 %}
+                    <a href="{% url 'moderation:listing_approval_list' %}?status=approved" class="btn btn-sm btn-light">Просмотреть</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm h-100 bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Отклонено</h5>
+                    <p class="display-4">{{ rejected_listings }}</p>
+                    {% if rejected_listings > 0 %}
+                    <a href="{% url 'moderation:listing_approval_list' %}?status=rejected" class="btn btn-sm btn-light">Просмотреть</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm h-100 bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Требуют изменений</h5>
+                    <p class="display-4">{{ changes_required_listings }}</p>
+                    {% if changes_required_listings > 0 %}
+                    <a href="{% url 'moderation:listing_approval_list' %}?status=requires_changes" class="btn btn-sm btn-light">Просмотреть</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div class="row">
         <div class="col-md-8">
             <div class="card shadow-sm mb-4">
@@ -161,6 +212,12 @@
                 <div class="card-body">
                     <p>Активных запрещенных слов: <strong>{{ keywords_count }}</strong></p>
                     <div class="d-grid gap-2">
+                        <a href="{% url 'moderation:listing_approval_list' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-check me-1"></i> Модерация объявлений
+                        </a>
+                        <a href="{% url 'moderation:logs' %}" class="btn btn-outline-info">
+                            <i class="fas fa-history me-1"></i> Журнал действий
+                        </a>
                         <a href="{% url 'admin:moderation_forbiddenkeyword_changelist' %}" class="btn btn-outline-secondary">
                             <i class="fas fa-cog me-1"></i> Управление фильтрами
                         </a>

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils import timezone
-from .models import ReportCategory, Report, BannedUser, ForbiddenKeyword
+from .models import ReportCategory, Report, BannedUser, ForbiddenKeyword, ListingApproval, ModerationLog
 
 @admin.register(ReportCategory)
 class ReportCategoryAdmin(admin.ModelAdmin):
@@ -80,3 +80,39 @@ class ForbiddenKeywordAdmin(admin.ModelAdmin):
         queryset.update(is_active=False)
         self.message_user(request, f"{queryset.count()} keywords have been deactivated.")
     deactivate_keywords.short_description = "Deactivate selected keywords"
+
+@admin.register(ListingApproval)
+class ListingApprovalAdmin(admin.ModelAdmin):
+    list_display = ('listing', 'status', 'moderator', 'approval_score', 'created_at', 'reviewed_at')
+    list_filter = ('status', 'created_at', 'reviewed_at')
+    search_fields = ('listing__title', 'listing__host__username', 'moderator__username')
+    readonly_fields = ('created_at', 'updated_at', 'approval_score')
+    
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('listing', 'status', 'moderator')
+        }),
+        ('Критерии оценки', {
+            'fields': (
+                'has_valid_title', 'has_valid_description', 'has_valid_images',
+                'has_valid_address', 'has_appropriate_pricing', 'follows_content_policy'
+            )
+        }),
+        ('Заметки и причины', {
+            'fields': ('moderator_notes', 'rejection_reason', 'required_changes')
+        }),
+        ('Временные метки', {
+            'fields': ('created_at', 'updated_at', 'reviewed_at'),
+            'classes': ('collapse',)
+        })
+    )
+
+@admin.register(ModerationLog)
+class ModerationLogAdmin(admin.ModelAdmin):
+    list_display = ('created_at', 'moderator', 'action_type', 'target_user', 'target_listing')
+    list_filter = ('action_type', 'created_at')
+    search_fields = ('moderator__username', 'target_user__username', 'target_listing__title', 'description')
+    readonly_fields = ('created_at',)
+    
+    def has_add_permission(self, request):
+        return False  # Logs should only be created programmatically

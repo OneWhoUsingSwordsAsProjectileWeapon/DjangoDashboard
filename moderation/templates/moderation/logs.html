@@ -1,0 +1,105 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Журнал модерации - Rental Aggregator{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Журнал модерации</h1>
+        <a href="{% url 'moderation:dashboard' %}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-1"></i> К панели модерации
+        </a>
+    </div>
+    
+    <!-- Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Фильтры</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-6">
+                    <label for="action_type" class="form-label">Тип действия</label>
+                    <select name="action_type" id="action_type" class="form-select">
+                        <option value="">Все действия</option>
+                        {% for action_code, action_name in action_type_choices %}
+                        <option value="{{ action_code }}" {% if current_action_type == action_code %}selected{% endif %}>
+                            {{ action_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="moderator" class="form-label">Модератор</label>
+                    <input type="text" name="moderator" id="moderator" class="form-control" 
+                           value="{{ current_moderator }}" placeholder="ID модератора">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Применить фильтры</button>
+                    <a href="{% url 'moderation:logs' %}" class="btn btn-outline-secondary">Сбросить</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Logs -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Записи журнала</h5>
+        </div>
+        <div class="card-body">
+            {% if logs %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Модератор</th>
+                            <th>Действие</th>
+                            <th>Цель</th>
+                            <th>Описание</th>
+                            <th>Заметки</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ log.created_at|date:"d.m.Y H:i" }}</td>
+                            <td>{{ log.moderator.username }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if log.action_type == 'listing_approved' %}bg-success
+                                    {% elif log.action_type == 'listing_rejected' %}bg-danger
+                                    {% elif log.action_type == 'user_banned' %}bg-warning
+                                    {% elif log.action_type == 'report_resolved' %}bg-info
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ log.get_action_type_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if log.target_user %}
+                                <strong>Пользователь:</strong> {{ log.target_user.username }}
+                                {% endif %}
+                                {% if log.target_listing %}
+                                <strong>Объявление:</strong> {{ log.target_listing.title|truncatechars:30 }}
+                                {% endif %}
+                                {% if log.report %}
+                                <strong>Жалоба:</strong> #{{ log.report.id }}
+                                {% endif %}
+                            </td>
+                            <td>{{ log.description|truncatechars:50 }}</td>
+                            <td>{{ log.notes|truncatechars:30 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">Нет записей для отображения.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
