@@ -2,13 +2,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q, Avg, Count, Sum
+from django.db.models import Q, Avg, Count, Sum, F, Case, When, IntegerField, DecimalField
+from django.db.models.functions import TruncMonth, TruncWeek, TruncDay
 from django.db import models
 from django.http import JsonResponse, Http404
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+from django.utils import timezone
 import json
+import calendar
 
 from .models import Listing, Booking, Review
 from .forms import ListingForm, BookingForm, ReviewForm, ListingSearchForm, ListingImageForm
@@ -151,38 +154,196 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
+        # Get filter parameters
+        time_filter = self.request.GET.get('time_filter', '30')  # days
+        listing_filter = self.request.GET.get('listing_filter', 'all')
+        status_filter = self.request.GET.get('status_filter', 'all')
+
+        # Calculate date range
+        end_date = timezone.now().date()
+        if time_filter == '7':
+            start_date = end_date - timedelta(days=7)
+        elif time_filter == '30':
+            start_date = end_date - timedelta(days=30)
+        elif time_filter == '90':
+            start_date = end_date - timedelta(days=90)
+        elif time_filter == '365':
+            start_date = end_date - timedelta(days=365)
+        else:
+            start_date = end_date - timedelta(days=30)
+
         # Get host's listings
         host_listings = Listing.objects.filter(host=user)
+        
+        # Apply listing filter
+        if listing_filter != 'all' and listing_filter.isdigit():
+            filtered_listings = host_listings.filter(id=listing_filter)
+        else:
+            filtered_listings = host_listings
 
-        # Get host's bookings
-        host_bookings = Booking.objects.filter(listing__host=user)
+        # Get host's bookings with filters
+        host_bookings = Booking.objects.filter(
+            listing__host=user,
+            created_at__date__gte=start_date,
+            created_at__date__lte=end_date
+        )
 
-        # Calculate statistics
+        # Apply listing filter to bookings
+        if listing_filter != 'all' and listing_filter.isdigit():
+            host_bookings = host_bookings.filter(listing_id=listing_filter)
+
+        # Apply status filter
+        if status_filter != 'all':
+            host_bookings = host_bookings.filter(status=status_filter)
+
+        # Calculate comprehensive statistics
+        all_bookings = Booking.objects.filter(listing__host=user)
+        
         stats = {
             'total_listings': host_listings.count(),
-            'active_bookings': host_bookings.filter(status__in=['confirmed', 'pending']).count(),
-            'pending_bookings': host_bookings.filter(status='pending').count(),
-            'total_revenue': host_bookings.filter(status='completed').aggregate(
+            'active_listings': host_listings.filter(is_active=True).count(),
+            'pending_listings': host_listings.filter(is_approved=False).count(),
+            'total_bookings': all_bookings.count(),
+            'pending_bookings': all_bookings.filter(status='pending').count(),
+            'confirmed_bookings': all_bookings.filter(status='confirmed').count(),
+            'completed_bookings': all_bookings.filter(status='completed').count(),
+            'canceled_bookings': all_bookings.filter(status='canceled').count(),
+            'total_revenue': all_bookings.filter(status='completed').aggregate(
                 total=Sum('total_price')
+            )['total'] or 0,
+            'filtered_revenue': host_bookings.filter(status='completed').aggregate(
+                total=Sum('total_price')
+            )['total'] or 0,
+            'average_booking_value': all_bookings.filter(status='completed').aggregate(
+                avg=Avg('total_price')
+            )['avg'] or 0,
+            'total_guests': all_bookings.filter(status__in=['completed', 'confirmed']).aggregate(
+                total=Sum('guests')
             )['total'] or 0,
         }
 
-        # Get recent bookings (last 5)
-        recent_bookings = host_bookings.select_related(
-            'listing', 'guest'
-        ).order_by('-created_at')[:5]
+        # Calculate occupancy rate
+        total_possible_nights = 0
+        total_booked_nights = 0
+        for listing in host_listings:
+            days_available = (end_date - listing.created_at.date()).days
+            if days_available > 0:
+                total_possible_nights += days_available
+                booked_nights = listing.bookings.filter(
+                    status__in=['completed', 'confirmed'],
+                    start_date__lte=end_date,
+                    end_date__gte=listing.created_at.date()
+                ).aggregate(
+                    nights=Sum(F('end_date') - F('start_date'))
+                )['nights']
+                if booked_nights:
+                    total_booked_nights += booked_nights.days
 
-        # Get top performing listings
+        stats['occupancy_rate'] = (total_booked_nights / total_possible_nights * 100) if total_possible_nights > 0 else 0
+
+        # Revenue by month (last 12 months)
+        monthly_revenue = all_bookings.filter(
+            status='completed',
+            created_at__gte=timezone.now() - timedelta(days=365)
+        ).annotate(
+            month=TruncMonth('created_at')
+        ).values('month').annotate(
+            revenue=Sum('total_price'),
+            bookings=Count('id')
+        ).order_by('month')
+
+        # Bookings by status
+        status_stats = all_bookings.values('status').annotate(
+            count=Count('id'),
+            revenue=Sum(Case(
+                When(status='completed', then='total_price'),
+                default=0,
+                output_field=DecimalField()
+            ))
+        )
+
+        # Top performing listings
         top_listings = host_listings.annotate(
             avg_rating=Avg('reviews__rating'),
             review_count=Count('reviews'),
-            bookings_count=Count('bookings')
-        ).order_by('-avg_rating', '-review_count')[:5]
+            bookings_count=Count('bookings'),
+            total_revenue=Sum(
+                Case(
+                    When(bookings__status='completed', then='bookings__total_price'),
+                    default=0,
+                    output_field=DecimalField()
+                )
+            ),
+            occupancy_days=Sum(
+                Case(
+                    When(bookings__status__in=['completed', 'confirmed'], 
+                         then=F('bookings__end_date') - F('bookings__start_date')),
+                    default=0,
+                    output_field=IntegerField()
+                )
+            )
+        ).order_by('-total_revenue')
+
+        # Recent activity (last 10)
+        recent_bookings = all_bookings.select_related(
+            'listing', 'guest'
+        ).order_by('-created_at')[:10]
+
+        # Guest demographics
+        guest_stats = all_bookings.filter(
+            status__in=['completed', 'confirmed']
+        ).aggregate(
+            avg_guests_per_booking=Avg('guests'),
+            max_guests=models.Max('guests'),
+            min_guests=models.Min('guests')
+        )
+
+        # Booking trends (last 30 days)
+        daily_bookings = all_bookings.filter(
+            created_at__gte=timezone.now() - timedelta(days=30)
+        ).annotate(
+            day=TruncDay('created_at')
+        ).values('day').annotate(
+            count=Count('id')
+        ).order_by('day')
+
+        # Average response time to bookings
+        pending_time = all_bookings.filter(
+            status__in=['confirmed', 'canceled']
+        ).annotate(
+            response_time=F('updated_at') - F('created_at')
+        ).aggregate(
+            avg_response=Avg('response_time')
+        )
 
         context.update({
             'stats': stats,
-            'recent_bookings': recent_bookings,
+            'monthly_revenue': list(monthly_revenue),
+            'status_stats': list(status_stats),
             'top_listings': top_listings,
+            'recent_bookings': recent_bookings,
+            'guest_stats': guest_stats,
+            'daily_bookings': list(daily_bookings),
+            'pending_time': pending_time,
+            'host_listings_for_filter': host_listings,
+            'current_filters': {
+                'time_filter': time_filter,
+                'listing_filter': listing_filter,
+                'status_filter': status_filter,
+            },
+            'time_filter_options': [
+                ('7', 'Last 7 days'),
+                ('30', 'Last 30 days'),
+                ('90', 'Last 3 months'),
+                ('365', 'Last year'),
+            ],
+            'status_filter_options': [
+                ('all', 'All statuses'),
+                ('pending', 'Pending'),
+                ('confirmed', 'Confirmed'),
+                ('completed', 'Completed'),
+                ('canceled', 'Canceled'),
+            ]
         })
 
         return context

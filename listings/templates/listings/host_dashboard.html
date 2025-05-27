@@ -3,21 +3,87 @@
 
 {% block title %}Host Dashboard - Rental Aggregator{% endblock %}
 
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4">
     <div class="row">
         <div class="col-12">
-            <h2 class="mb-4">Host Dashboard</h2>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Host Dashboard</h2>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filtersModal">
+                        <i class="fas fa-filter"></i> Filters
+                    </button>
+                    <button class="btn btn-outline-info" onclick="exportData()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
 
-            <!-- Quick Stats -->
-            <div class="row mb-5">
-                <div class="col-md-3 mb-3">
+            <!-- Filters Modal -->
+            <div class="modal fade" id="filtersModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Dashboard Filters</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form method="get">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Time Period</label>
+                                    <select name="time_filter" class="form-select">
+                                        {% for value, label in time_filter_options %}
+                                        <option value="{{ value }}" {% if current_filters.time_filter == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Listing</label>
+                                    <select name="listing_filter" class="form-select">
+                                        <option value="all">All Listings</option>
+                                        {% for listing in host_listings_for_filter %}
+                                        <option value="{{ listing.id }}" {% if current_filters.listing_filter == listing.id|stringformat:"s" %}selected{% endif %}>
+                                            {{ listing.title }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Booking Status</label>
+                                    <select name="status_filter" class="form-select">
+                                        {% for value, label in status_filter_options %}
+                                        <option value="{{ value }}" {% if current_filters.status_filter == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Metrics -->
+            <div class="row mb-4">
+                <div class="col-lg-3 col-md-6 mb-3">
                     <div class="card bg-primary text-white h-100">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h6 class="card-title">Total Listings</h6>
                                     <h3 class="mb-0">{{ stats.total_listings }}</h3>
+                                    <small>{{ stats.active_listings }} active</small>
                                 </div>
                                 <div class="align-self-center">
                                     <i class="fas fa-home fa-2x"></i>
@@ -27,29 +93,48 @@
                     </div>
                 </div>
 
-                <div class="col-md-3 mb-3">
+                <div class="col-lg-3 col-md-6 mb-3">
                     <div class="card bg-success text-white h-100">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
-                                    <h6 class="card-title">Active Bookings</h6>
-                                    <h3 class="mb-0">{{ stats.active_bookings }}</h3>
+                                    <h6 class="card-title">Total Revenue</h6>
+                                    <h3 class="mb-0">${{ stats.total_revenue|floatformat:0 }}</h3>
+                                    <small>Avg: ${{ stats.average_booking_value|floatformat:0 }}</small>
                                 </div>
                                 <div class="align-self-center">
-                                    <i class="fas fa-calendar-check fa-2x"></i>
+                                    <i class="fas fa-dollar-sign fa-2x"></i>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-md-3 mb-3">
+                <div class="col-lg-3 col-md-6 mb-3">
                     <div class="card bg-warning text-white h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title">Occupancy Rate</h6>
+                                    <h3 class="mb-0">{{ stats.occupancy_rate|floatformat:1 }}%</h3>
+                                    <small>{{ stats.total_guests }} total guests</small>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-chart-line fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card bg-info text-white h-100">
                         <div class="card-body">
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h6 class="card-title">Pending Requests</h6>
                                     <h3 class="mb-0">{{ stats.pending_bookings }}</h3>
+                                    <small>{{ stats.total_bookings }} total bookings</small>
                                 </div>
                                 <div class="align-self-center">
                                     <i class="fas fa-clock fa-2x"></i>
@@ -58,19 +143,71 @@
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-md-3 mb-3">
-                    <div class="card bg-info text-white h-100">
+            <!-- Additional Stats Row -->
+            <div class="row mb-4">
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card border-left-success h-100">
                         <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <h6 class="card-title">Total Revenue</h6>
-                                    <h3 class="mb-0">${{ stats.total_revenue|floatformat:0 }}</h3>
-                                </div>
-                                <div class="align-self-center">
-                                    <i class="fas fa-dollar-sign fa-2x"></i>
-                                </div>
+                            <div class="text-success">
+                                <i class="fas fa-check-circle"></i> Confirmed
                             </div>
+                            <h4 class="mb-0">{{ stats.confirmed_bookings }}</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card border-left-info h-100">
+                        <div class="card-body">
+                            <div class="text-info">
+                                <i class="fas fa-flag-checkered"></i> Completed
+                            </div>
+                            <h4 class="mb-0">{{ stats.completed_bookings }}</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card border-left-danger h-100">
+                        <div class="card-body">
+                            <div class="text-danger">
+                                <i class="fas fa-times-circle"></i> Canceled
+                            </div>
+                            <h4 class="mb-0">{{ stats.canceled_bookings }}</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card border-left-warning h-100">
+                        <div class="card-body">
+                            <div class="text-warning">
+                                <i class="fas fa-users"></i> Avg Guests
+                            </div>
+                            <h4 class="mb-0">{{ guest_stats.avg_guests_per_booking|floatformat:1 }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="row mb-4">
+                <div class="col-lg-8 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Revenue Trend (Last 12 Months)</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="revenueChart" height="100"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Booking Status Distribution</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="statusChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -111,77 +248,158 @@
                 </div>
             </div>
 
+            <!-- Listings Performance Table -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Listings Performance</h5>
+                            <a href="{% url 'listings:host_listings' %}" class="btn btn-sm btn-outline-primary">Manage All</a>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Listing</th>
+                                            <th>Status</th>
+                                            <th>Rating</th>
+                                            <th>Bookings</th>
+                                            <th>Occupancy</th>
+                                            <th>Revenue</th>
+                                            <th>Price/Night</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for listing in top_listings %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <img src="{{ listing.main_image_url }}" alt="{{ listing.title }}" 
+                                                         class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                                    <div>
+                                                        <div class="fw-bold">{{ listing.title|truncatechars:25 }}</div>
+                                                        <small class="text-muted">{{ listing.city }}, {{ listing.state }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-{% if listing.is_active %}success{% else %}secondary{% endif %}">
+                                                    {% if listing.is_active %}Active{% else %}Inactive{% endif %}
+                                                </span>
+                                                {% if not listing.is_approved %}
+                                                <span class="badge bg-warning">Pending</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if listing.avg_rating %}
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fas fa-star text-warning me-1"></i>
+                                                        {{ listing.avg_rating|floatformat:1 }}
+                                                        <small class="text-muted ms-1">({{ listing.review_count }})</small>
+                                                    </div>
+                                                {% else %}
+                                                    <span class="text-muted">No reviews</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ listing.bookings_count }}</td>
+                                            <td>
+                                                {% if listing.occupancy_days %}
+                                                    {{ listing.occupancy_days }} days
+                                                {% else %}
+                                                    0 days
+                                                {% endif %}
+                                            </td>
+                                            <td class="fw-bold text-success">${{ listing.total_revenue|floatformat:0|default:"0" }}</td>
+                                            <td>${{ listing.price_per_night }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{% url 'listings:listing_detail' pk=listing.pk %}" 
+                                                       class="btn btn-sm btn-outline-primary" title="View">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="{% url 'listings:listing_update' pk=listing.pk %}" 
+                                                       class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="8" class="text-center text-muted py-4">No listings available</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Recent Activity -->
             <div class="row">
-                <!-- Recent Bookings -->
-                <div class="col-lg-6 mb-4">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="card-title mb-0">Recent Bookings</h5>
                             <a href="{% url 'listings:host_bookings' %}" class="btn btn-sm btn-outline-primary">View All</a>
                         </div>
                         <div class="card-body">
                             {% if recent_bookings %}
-                                {% for booking in recent_bookings %}
-                                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
-                                    <div>
-                                        <h6 class="mb-1">{{ booking.listing.title }}</h6>
-                                        <small class="text-muted">
-                                            {{ booking.guest.get_full_name|default:booking.guest.username }}
-                                        </small>
-                                        <div class="small text-muted">
-                                            {{ booking.start_date }} - {{ booking.end_date }}
-                                        </div>
-                                    </div>
-                                    <div class="text-end">
-                                        <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% elif booking.status == 'completed' %}info{% else %}secondary{% endif %}">
-                                            {{ booking.get_status_display }}
-                                        </span>
-                                        <div class="small text-muted">${{ booking.total_price }}</div>
-                                        <a href="{% url 'chat:start_conversation_about_booking' booking_id=booking.id %}" class="btn btn-sm btn-outline-info" title="Start conversation with guest">
-                                            <i class="fas fa-comment"></i> Message
-                                        </a>
-                                    </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Guest</th>
+                                                <th>Listing</th>
+                                                <th>Dates</th>
+                                                <th>Status</th>
+                                                <th>Amount</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for booking in recent_bookings %}
+                                            <tr>
+                                                <td>
+                                                    <div>
+                                                        <div class="fw-bold">{{ booking.guest.get_full_name|default:booking.guest.username }}</div>
+                                                        <small class="text-muted">{{ booking.guests }} guest{{ booking.guests|pluralize }}</small>
+                                                    </div>
+                                                </td>
+                                                <td>{{ booking.listing.title|truncatechars:25 }}</td>
+                                                <td>
+                                                    <div>{{ booking.start_date|date:"M d" }} - {{ booking.end_date|date:"M d" }}</div>
+                                                    <small class="text-muted">{{ booking.duration_nights }} night{{ booking.duration_nights|pluralize }}</small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% elif booking.status == 'completed' %}info{% else %}secondary{% endif %}">
+                                                        {{ booking.get_status_display }}
+                                                    </span>
+                                                </td>
+                                                <td class="fw-bold">${{ booking.total_price }}</td>
+                                                <td>
+                                                    <div class="btn-group" role="group">
+                                                        <a href="{% url 'listings:booking_detail' reference=booking.booking_reference %}" 
+                                                           class="btn btn-sm btn-outline-primary" title="View Details">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        <a href="{% url 'chat:start_conversation_about_booking' booking_id=booking.id %}" 
+                                                           class="btn btn-sm btn-outline-info" title="Message Guest">
+                                                            <i class="fas fa-comment"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
                                 </div>
-                                {% endfor %}
                             {% else %}
-                                <p class="text-muted text-center py-3">No recent bookings</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Listing Performance -->
-                <div class="col-lg-6 mb-4">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                            <h5 class="card-title mb-0">Top Performing Listings</h5>
-                            <a href="{% url 'listings:host_listings' %}" class="btn btn-sm btn-outline-primary">View All</a>
-                        </div>
-                        <div class="card-body">
-                            {% if top_listings %}
-                                {% for listing in top_listings %}
-                                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
-                                    <div>
-                                        <h6 class="mb-1">{{ listing.title|truncatechars:30 }}</h6>
-                                        <div class="small text-muted">
-                                            <i class="fas fa-star text-warning"></i> 
-                                            {% if listing.avg_rating %}
-                                                {{ listing.avg_rating|floatformat:1 }}
-                                            {% else %}
-                                                No reviews
-                                            {% endif %}
-                                            ({{ listing.review_count }} reviews)
-                                        </div>
-                                    </div>
-                                    <div class="text-end">
-                                        <div class="fw-bold">${{ listing.price_per_night }}/night</div>
-                                        <div class="small text-muted">{{ listing.bookings_count }} bookings</div>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            {% else %}
-                                <p class="text-muted text-center py-3">No listings available</p>
+                                <p class="text-muted text-center py-4">No recent bookings</p>
                             {% endif %}
                         </div>
                     </div>
@@ -190,4 +408,128 @@
         </div>
     </div>
 </div>
+
+<script>
+// Chart.js configurations
+document.addEventListener('DOMContentLoaded', function() {
+    // Revenue Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    const monthlyRevenue = {{ monthly_revenue|safe }};
+    
+    new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: monthlyRevenue.map(item => {
+                const date = new Date(item.month);
+                return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            }),
+            datasets: [{
+                label: 'Revenue',
+                data: monthlyRevenue.map(item => item.revenue),
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Revenue: $' + context.parsed.y.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Status Chart
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    const statusStats = {{ status_stats|safe }};
+    
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: statusStats.map(item => item.status.charAt(0).toUpperCase() + item.status.slice(1)),
+            datasets: [{
+                data: statusStats.map(item => item.count),
+                backgroundColor: [
+                    '#28a745', // confirmed - green
+                    '#ffc107', // pending - yellow
+                    '#17a2b8', // completed - blue
+                    '#dc3545'  // canceled - red
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+
+// Export functionality
+function exportData() {
+    // Create CSV data
+    const csvData = [
+        ['Metric', 'Value'],
+        ['Total Listings', '{{ stats.total_listings }}'],
+        ['Active Listings', '{{ stats.active_listings }}'],
+        ['Total Revenue', '{{ stats.total_revenue }}'],
+        ['Occupancy Rate', '{{ stats.occupancy_rate|floatformat:2 }}%'],
+        ['Total Bookings', '{{ stats.total_bookings }}'],
+        ['Confirmed Bookings', '{{ stats.confirmed_bookings }}'],
+        ['Pending Bookings', '{{ stats.pending_bookings }}'],
+        ['Completed Bookings', '{{ stats.completed_bookings }}'],
+        ['Canceled Bookings', '{{ stats.canceled_bookings }}']
+    ];
+
+    // Convert to CSV string
+    const csvContent = csvData.map(row => row.join(',')).join('\n');
+    
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', 'host-dashboard-stats.csv');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+</script>
+
+<style>
+.border-left-success {
+    border-left: 4px solid #28a745;
+}
+.border-left-info {
+    border-left: 4px solid #17a2b8;
+}
+.border-left-warning {
+    border-left: 4px solid #ffc107;
+}
+.border-left-danger {
+    border-left: 4px solid #dc3545;
+}
+</style>
 {% endblock %}
