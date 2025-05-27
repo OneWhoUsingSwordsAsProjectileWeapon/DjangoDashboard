@@ -31,22 +31,26 @@
                     <tr>
                         <template x-for="day in week">
                             <td :class="{
-                                    'calendar-day': day.date,
-                                    'empty': !day.date,
-                                    'unavailable': day.date && isUnavailable(day.date),
-                                    'today': day.isToday,
-                                    'selected': isSelected(day.date),
-                                    'in-range': isInRange(day.date),
-                                    'start-date': isStartDate(day.date),
-                                    'end-date': isEndDate(day.date)
-                                }"
-                                x-on:click="selectDate(day)"
-                                :title="day.date && isUnavailable(day.date) ? 'Unavailable' : 'Available'"></td>
-                                <template x-if="day.date">
-                                    <div class="day-content">
-                                        <span x-text="day.dayNumber"></span>
-                                    </div>
-                                </template>
+                                    'empty': !day.date
+                                }">
+                                <div :class="{
+                                        'calendar-day': true,
+                                        'unavailable': day.date && isUnavailable(day.date),
+                                        'today': day.isToday,
+                                        'selected': isSelected(day.date),
+                                        'in-range': isInRange(day.date),
+                                        'start-date': isStartDate(day.date),
+                                        'end-date': isEndDate(day.date),
+                                        'empty': !day.date
+                                    }"
+                                    x-on:click="selectDate(day)"
+                                    :title="day.date && isUnavailable(day.date) ? 'Unavailable' : (day.date ? 'Available' : '')">
+                                    <template x-if="day.date">
+                                        <div class="day-content">
+                                            <span x-text="day.dayNumber"></span>
+                                        </div>
+                                    </template>
+                                </div>
                             </td>
                         </template>
                     </tr>
