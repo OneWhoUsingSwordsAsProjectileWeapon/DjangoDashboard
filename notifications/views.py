@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse
 from django.contrib import messages
 
 from .models import Notification
@@ -44,22 +44,4 @@ def mark_all_read(request):
 def get_unread_count(request):
     """API to get unread notification count"""
     count = request.user.notifications.filter(is_read=False).count()
-    
-    # For HTMX requests, return the count directly as HTML
-    if request.headers.get('HX-Request'):
-        if count > 0:
-            return HttpResponse(str(count))
-        else:
-            return HttpResponse('')
-    
-    # For regular requests, return JSON
     return JsonResponse({'count': count})
-
-@login_required
-def recent_notifications(request):
-    """Get recent notifications for dropdown"""
-    notifications = request.user.notifications.all().order_by('-created_at')[:5]
-    
-    return render(request, 'notifications/partials/recent_notifications.html', {
-        'notifications': notifications
-    })
