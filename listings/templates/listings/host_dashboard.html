@@ -410,13 +410,11 @@
 </div>
 
 <script>
-// Chart.js configurations
-document.addEventListener('DOMContentLoaded', function() {
-    // Revenue Chart
-    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-    const monthlyRevenue = {{ monthly_revenue|safe }};
-    
-    new Chart(revenueCtx, {
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Revenue Chart
+            const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+            new Chart(revenueCtx, {
         type: 'line',
         data: {
             labels: monthlyRevenue.map(item => {
@@ -459,7 +457,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Status Chart
     const statusCtx = document.getElementById('statusChart').getContext('2d');
     const statusStats = {{ status_stats|safe }};
-    
+
     new Chart(statusCtx, {
         type: 'doughnut',
         data: {
@@ -484,7 +482,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-});
+
+        }); // End DOMContentLoaded
 
 // Export functionality
 function exportData() {
@@ -504,7 +503,7 @@ function exportData() {
 
     // Convert to CSV string
     const csvContent = csvData.map(row => row.join(',')).join('\n');
-    
+
     // Create download link
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);

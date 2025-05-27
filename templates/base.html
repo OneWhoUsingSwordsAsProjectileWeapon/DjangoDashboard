@@ -77,26 +77,6 @@
                 return new bootstrap.Popover(popoverTriggerEl)
             });
         });
-        
-        // Poll for unread notifications
-        function checkNotifications() {
-            if (document.getElementById('notification-badge')) {
-                htmx.ajax('GET', '{% url "notifications:get_unread_count" %}', {target: '#notification-badge'});
-            }
-        }
-        
-        // Poll for unread messages
-        function checkMessages() {
-            if (document.getElementById('message-badge')) {
-                htmx.ajax('GET', '{% url "chat:get_unread_count" %}', {target: '#message-badge'});
-            }
-        }
-        
-        // Check periodically if user is logged in
-        {% if user.is_authenticated %}
-        setInterval(checkNotifications, 30000); // Every 30 seconds
-        setInterval(checkMessages, 30000); // Every 30 seconds
-        {% endif %}
     </script>
     
     <!-- Page-specific JS -->

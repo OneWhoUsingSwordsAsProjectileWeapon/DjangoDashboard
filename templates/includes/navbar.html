@@ -78,8 +78,10 @@
                         <a class="nav-link position-relative {% if 'chat' in request.path %}active{% endif %}" 
                            href="{% url 'chat:conversation_list' %}">
                             <i class="fas fa-envelope"></i> Messages
-                            <span id="message-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                <!-- HTMX will load count here -->
+                            <span id="message-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
+                                  hx-get="{% url 'chat:get_unread_count' %}" 
+                                  hx-trigger="load, every 30s" 
+                                  hx-swap="innerHTML">
                             </span>
                         </a>
                     </li>
@@ -89,8 +91,10 @@
                         <a class="nav-link dropdown-toggle position-relative" href="#" id="notificationsDropdown" 
                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-bell"></i> 
-                            <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                <!-- HTMX will load count here -->
+                            <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                  hx-get="{% url 'notifications:get_unread_count' %}"
+                                  hx-trigger="load, every 30s"
+                                  hx-swap="innerHTML">
                             </span>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationsDropdown" style="width: 300px;">
@@ -100,26 +104,14 @@
                                     Mark all as read
                                 </a>
                             </div>
-                            <div class="notifications-scrollable" style="max-height: 350px; overflow-y: auto;">
-                                {% load notify_tags %}
-                                {% recent_notifications as notifications %}
-
-                                {% if notifications %}
-                                    {% for notification in notifications %}
-                                    <a href="{{ notification|notification_target_url }}" class="dropdown-item d-flex {% if not notification.is_read %}bg-light{% endif %}">
-                                        <div class="me-2">
-                                            {{ notification.notification_type|notification_icon }}
-                                        </div>
-                                        <div>
-                                            <div class="small fw-bold">{{ notification.title }}</div>
-                                            <div class="small text-muted">{{ notification.message|truncatechars:70 }}</div>
-                                            <div class="small text-muted">{{ notification.created_at|timesince }} ago</div>
-                                        </div>
-                                    </a>
-                                    {% endfor %}
-                                {% else %}
-                                    <p class="dropdown-item text-muted small">No notifications</p>
-                                {% endif %}
+                            <div class="notifications-scrollable" style="max-height: 350px; overflow-y: auto;"
+                                 hx-get="{% url 'notifications:recent_notifications' %}"
+                                 hx-trigger="load">
+                                <div class="text-center p-3">
+                                    <div class="spinner-border spinner-border-sm" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
                             </div>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item text-center small" href="{% url 'notifications:notification_list' %}">
