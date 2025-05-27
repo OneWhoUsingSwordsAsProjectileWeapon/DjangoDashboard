@@ -513,7 +513,33 @@ def update_booking_status(request, reference, status):
                     message
                 )
 
+        # Send automatic message to chat if conversation exists
+        from chat.models import Conversation, Message
+        try:
+            conversation = Conversation.objects.get(booking=booking)
+            if status == 'confirmed':
+                auto_message = f"✅ Booking has been approved! Your stay from {booking.start_date} to {booking.end_date} is confirmed."
+            elif status == 'canceled':
+                auto_message = f"❌ Booking request has been declined."
+            else:
+                auto_message = f"ℹ️ Booking status updated to {booking.get_status_display()}."
+            
+            # Create system message
+            Message.objects.create(
+                conversation=conversation,
+                sender=request.user,
+                content=auto_message
+            )
+        except Conversation.DoesNotExist:
+            pass
+
         messages.success(request, f"Booking status updated to {status}.")
+        
+        # Check for redirect parameter
+        redirect_to = request.POST.get('redirect_to')
+        if redirect_to:
+            return redirect(redirect_to)
+        
         return redirect('listings:booking_detail', reference=reference)
 
     except Booking.DoesNotExist:

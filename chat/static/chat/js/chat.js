@@ -254,3 +254,10 @@ function escapeHtml(unsafe) {
 document.addEventListener('DOMContentLoaded', function() {
     initMessageHoverListeners();
 });
+
+// WebSocket connection with proper protocol detection
+const conversationId = JSON.parse(document.getElementById('conversation-id').textContent);
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const chatSocket = new WebSocket(
+    protocol + '//' + window.location.host + '/ws/chat/' + conversationId + '/'
+);
