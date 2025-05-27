@@ -43,7 +43,7 @@ def notification_icon(notification_type):
         'payment_received': 'fas fa-dollar-sign',
         'system': 'fas fa-bell',
     }
-    
+
     icon_class = icons.get(notification_type, 'fas fa-bell')
     return mark_safe(f'<i class="{icon_class}"></i>')
 

@@ -78,7 +78,10 @@
                         <a class="nav-link position-relative {% if 'chat' in request.path %}active{% endif %}" 
                            href="{% url 'chat:conversation_list' %}">
                             <i class="fas fa-envelope"></i> Messages
-                            <span id="message-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            <span id="message-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                  hx-get="{% url 'chat:get_unread_count' %}" 
+                                  hx-trigger="load, every 30s"
+                                  hx-swap="innerHTML">
                                 <!-- HTMX will load count here -->
                             </span>
                         </a>
@@ -89,7 +92,10 @@
                         <a class="nav-link dropdown-toggle position-relative" href="#" id="notificationsDropdown" 
                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-bell"></i> 
-                            <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                  hx-get="{% url 'notifications:get_unread_count' %}" 
+                                  hx-trigger="load, every 30s"
+                                  hx-swap="innerHTML">
                                 <!-- HTMX will load count here -->
                             </span>
                         </a>
@@ -100,7 +106,10 @@
                                     Mark all as read
                                 </a>
                             </div>
-                            <div class="notifications-scrollable" style="max-height: 350px; overflow-y: auto;">
+                            <div class="notifications-scrollable" style="max-height: 350px; overflow-y: auto;"
+                                 hx-get="{% url 'notifications:recent_notifications' %}" 
+                                 hx-trigger="load, every 60s"
+                                 hx-swap="innerHTML">
                                 {% load notify_tags %}
                                 {% recent_notifications as notifications %}
 

@@ -44,4 +44,18 @@ def mark_all_read(request):
 def get_unread_count(request):
     """API to get unread notification count"""
     count = request.user.notifications.filter(is_read=False).count()
+    if request.headers.get('HX-Request'):
+        # Return HTML for HTMX
+        if count > 0:
+            return render(request, 'notifications/partials/notification_badge.html', {'count': count})
+        else:
+            return render(request, 'notifications/partials/notification_badge.html', {'count': 0})
     return JsonResponse({'count': count})
+
+@login_required
+def recent_notifications(request):
+    """API to get recent notifications for dropdown"""
+    notifications = request.user.notifications.all().order_by('-created_at')[:5]
+    return render(request, 'notifications/partials/recent_notifications.html', {
+        'notifications': notifications
+    })

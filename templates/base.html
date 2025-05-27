@@ -78,25 +78,8 @@
             });
         });
         
-        // Poll for unread notifications
-        function checkNotifications() {
-            if (document.getElementById('notification-badge')) {
-                htmx.ajax('GET', '{% url "notifications:get_unread_count" %}', {target: '#notification-badge'});
-            }
-        }
-        
-        // Poll for unread messages
-        function checkMessages() {
-            if (document.getElementById('message-badge')) {
-                htmx.ajax('GET', '{% url "chat:get_unread_count" %}', {target: '#message-badge'});
-            }
-        }
-        
-        // Check periodically if user is logged in
-        {% if user.is_authenticated %}
-        setInterval(checkNotifications, 30000); // Every 30 seconds
-        setInterval(checkMessages, 30000); // Every 30 seconds
-        {% endif %}
+        // Notification system is now handled by HTMX polling
+        // The badges and dropdowns will automatically update
     </script>
     
     <!-- Page-specific JS -->
