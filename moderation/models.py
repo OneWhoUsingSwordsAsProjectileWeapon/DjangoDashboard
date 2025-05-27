@@ -10,11 +10,11 @@ class ReportCategory(models.Model):
     name = models.CharField(_("Category Name"), max_length=100)
     description = models.TextField(_("Description"), blank=True)
     is_active = models.BooleanField(_("Is Active"), default=True)
-    
+
     class Meta:
         verbose_name = _("Report Category")
         verbose_name_plural = _("Report Categories")
-        
+
     def __str__(self):
         return self.name
 
@@ -28,14 +28,14 @@ class Report(models.Model):
         ('resolved', _('Resolved')),
         ('rejected', _('Rejected')),
     ]
-    
+
     CONTENT_TYPES = [
         ('listing', _('Listing')),
         ('review', _('Review')),
         ('user', _('User')),
         ('message', _('Message')),
     ]
-    
+
     # Reporter information
     reporter = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -43,7 +43,7 @@ class Report(models.Model):
         related_name='reports_filed',
         verbose_name=_("Reporter")
     )
-    
+
     # Report details
     content_type = models.CharField(_("Content Type"), max_length=20, choices=CONTENT_TYPES)
     category = models.ForeignKey(
@@ -55,7 +55,7 @@ class Report(models.Model):
     )
     description = models.TextField(_("Description"))
     status = models.CharField(_("Status"), max_length=20, choices=STATUS_CHOICES, default='pending')
-    
+
     # Related objects (optional)
     listing = models.ForeignKey(
         'listings.Listing',
@@ -89,7 +89,7 @@ class Report(models.Model):
         related_name='reports',
         verbose_name=_("Reported Message")
     )
-    
+
     # Moderator notes and actions
     moderator_notes = models.TextField(_("Moderator Notes"), blank=True)
     moderator = models.ForeignKey(
@@ -101,17 +101,17 @@ class Report(models.Model):
         verbose_name=_("Moderator")
     )
     action_taken = models.CharField(_("Action Taken"), max_length=255, blank=True)
-    
+
     # Timestamps
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
     resolved_at = models.DateTimeField(_("Resolved At"), null=True, blank=True)
-    
+
     class Meta:
         verbose_name = _("Report")
         verbose_name_plural = _("Reports")
         ordering = ['-created_at']
-    
+
     def __str__(self):
         content_info = ""
         if self.content_type == 'listing' and self.listing:
@@ -122,7 +122,7 @@ class Report(models.Model):
             content_info = f"User: {self.reported_user.username}"
         elif self.content_type == 'message' and self.message:
             content_info = f"Message by {self.message.sender.username}"
-            
+
         return f"Report #{self.id}: {self.content_type} - {content_info}"
 
 class BannedUser(models.Model):
@@ -148,14 +148,14 @@ class BannedUser(models.Model):
     notes = models.TextField(_("Notes"), blank=True)
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
-    
+
     class Meta:
         verbose_name = _("Banned User")
         verbose_name_plural = _("Banned Users")
-        
+
     def __str__(self):
         return f"Ban: {self.user.username} - {'Permanent' if self.is_permanent else 'Until ' + str(self.banned_until)}"
-    
+
     @property
     def is_active(self):
         """Check if the ban is currently active"""
@@ -176,7 +176,7 @@ class ListingApproval(models.Model):
         ('rejected', _('Rejected')),
         ('requires_changes', _('Requires Changes')),
     ]
-    
+
     listing = models.OneToOneField(
         'listings.Listing',
         on_delete=models.CASCADE,
@@ -195,7 +195,7 @@ class ListingApproval(models.Model):
     moderator_notes = models.TextField(_("Moderator Notes"), blank=True)
     rejection_reason = models.TextField(_("Rejection Reason"), blank=True)
     required_changes = models.TextField(_("Required Changes"), blank=True)
-    
+
     # Approval criteria checklist
     has_valid_title = models.BooleanField(_("Has Valid Title"), default=False)
     has_valid_description = models.BooleanField(_("Has Valid Description"), default=False)
@@ -203,19 +203,19 @@ class ListingApproval(models.Model):
     has_valid_address = models.BooleanField(_("Has Valid Address"), default=False)
     has_appropriate_pricing = models.BooleanField(_("Has Appropriate Pricing"), default=False)
     follows_content_policy = models.BooleanField(_("Follows Content Policy"), default=False)
-    
+
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
     reviewed_at = models.DateTimeField(_("Reviewed At"), null=True, blank=True)
-    
+
     class Meta:
         verbose_name = _("Listing Approval")
         verbose_name_plural = _("Listing Approvals")
         ordering = ['-created_at']
-        
+
     def __str__(self):
         return f"Approval for {self.listing.title} - {self.get_status_display()}"
-    
+
     @property
     def approval_score(self):
         """Calculate approval score based on criteria"""
@@ -243,7 +243,7 @@ class ModerationLog(models.Model):
         ('content_removed', _('Content Removed')),
         ('content_edited', _('Content Edited')),
     ]
-    
+
     moderator = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -278,12 +278,12 @@ class ModerationLog(models.Model):
     description = models.TextField(_("Description"))
     notes = models.TextField(_("Notes"), blank=True)
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
-    
+
     class Meta:
         verbose_name = _("Moderation Log")
         verbose_name_plural = _("Moderation Logs")
         ordering = ['-created_at']
-        
+
     def __str__(self):
         return f"{self.get_action_type_display()} by {self.moderator.username} at {self.created_at}"
 
@@ -307,10 +307,79 @@ class ForbiddenKeyword(models.Model):
     notes = models.TextField(_("Notes"), blank=True)
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
-    
+
     class Meta:
         verbose_name = _("Forbidden Keyword")
         verbose_name_plural = _("Forbidden Keywords")
-        
+
     def __str__(self):
         return f"{self.keyword} ({self.get_severity_display()})"
+from django.db import models
+from django.conf import settings
+from django.utils.translation import gettext_lazy as _
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
+class UserComplaint(models.Model):
+    COMPLAINT_TYPES = [
+        ('inappropriate_content', 'Inappropriate Content'),
+        ('fraud', 'Fraud/Scam'),
+        ('harassment', 'Harassment'),
+        ('fake_listing', 'Fake Listing'),
+        ('discrimination', 'Discrimination'),
+        ('other', 'Other'),
+    ]
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('under_review', 'Under Review'),
+        ('resolved', 'Resolved'),
+        ('dismissed', 'Dismissed'),
+    ]
+
+    complainant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='filed_complaints', verbose_name=_("Complainant"))
+    complaint_type = models.CharField(_("Complaint Type"), max_length=30, choices=COMPLAINT_TYPES)
+    subject = models.CharField(_("Subject"), max_length=200)
+    description = models.TextField(_("Description"))
+
+    # What the complaint is about
+    target_user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='complaints_against', verbose_name=_("Target User"))
+    target_listing = models.ForeignKey('listings.Listing', on_delete=models.CASCADE, null=True, blank=True, verbose_name=_("Target Listing"))
+    # Assuming a Booking model exists in listings app
+    # target_booking = models.ForeignKey('listings.Booking', on_delete=models.CASCADE, null=True, blank=True)
+
+    status = models.CharField(_("Status"), max_length=20, choices=STATUS_CHOICES, default='pending')
+    priority = models.CharField(_("Priority"), max_length=10, choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High')], default='medium')
+
+    # Moderation
+    assigned_moderator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                         related_name='assigned_complaints', limit_choices_to={'is_staff': True}, verbose_name=_("Assigned Moderator"))
+    moderator_notes = models.TextField(_("Moderator Notes"), blank=True)
+    resolution_notes = models.TextField(_("Resolution Notes"), blank=True)
+
+    created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
+    resolved_at = models.DateTimeField(_("Resolved At"), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("User Complaint")
+        verbose_name_plural = _("User Complaints")
+        ordering = ['-created_at']
+
+    def __str__(self):
+        target = self.target_user or self.target_listing or "Unknown"
+        return f"Complaint #{self.id} by {self.complainant.username} - {self.get_complaint_type_display()}"
+
+    def get_target_object(self):
+        if self.target_user:
+            return self.target_user
+        elif self.target_listing:
+            return self.target_listing
+        return None
+
+    def get_target_type(self):
+        if self.target_user:
+            return 'user'
+        elif self.target_listing:
+            return 'listing'
+        return 'unknown'

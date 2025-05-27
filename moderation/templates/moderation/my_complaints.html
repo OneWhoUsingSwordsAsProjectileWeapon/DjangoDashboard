@@ -1,0 +1,102 @@
+
+{% extends 'base.html' %}
+
+{% block title %}My Complaints{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>My Complaints</h2>
+        <a href="{% url 'moderation:file_complaint' %}" class="btn btn-warning">
+            <i class="fas fa-plus"></i> File New Complaint
+        </a>
+    </div>
+    
+    {% if page_obj %}
+        <div class="row">
+            {% for complaint in page_obj %}
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between">
+                            <span class="fw-bold">{{ complaint.get_complaint_type_display }}</span>
+                            <span class="badge bg-{% if complaint.status == 'pending' %}warning{% elif complaint.status == 'under_review' %}info{% elif complaint.status == 'resolved' %}success{% else %}secondary{% endif %}">
+                                {{ complaint.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title">{{ complaint.subject }}</h6>
+                            <p class="card-text text-muted small">{{ complaint.description|truncatewords:20 }}</p>
+                            
+                            {% if complaint.get_target_object %}
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <strong>Target:</strong> 
+                                        {% if complaint.target_user %}
+                                            User: {{ complaint.target_user.username }}
+                                        {% elif complaint.target_listing %}
+                                            Listing: {{ complaint.target_listing.title }}
+                                        {% elif complaint.target_booking %}
+                                            Booking #{{ complaint.target_booking.id }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            {% endif %}
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Filed: {{ complaint.created_at|date:"M d, Y" }}</small>
+                                <span class="badge bg-{% if complaint.priority == 'high' %}danger{% elif complaint.priority == 'medium' %}warning{% else %}secondary{% endif %}">
+                                    {{ complaint.get_priority_display }} Priority
+                                </span>
+                            </div>
+                            
+                            {% if complaint.resolution_notes %}
+                                <div class="mt-2 p-2 bg-light rounded">
+                                    <small><strong>Resolution:</strong> {{ complaint.resolution_notes|truncatewords:15 }}</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="Complaints pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">No complaints filed yet</h4>
+            <p class="text-muted">When you file complaints, they will appear here.</p>
+            <a href="{% url 'moderation:file_complaint' %}" class="btn btn-warning">File Your First Complaint</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

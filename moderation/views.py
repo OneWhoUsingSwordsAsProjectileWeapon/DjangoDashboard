@@ -5,10 +5,13 @@ from django.contrib import messages
 from django.utils import timezone
 import re
 
-from .models import Report, ReportCategory, BannedUser, ForbiddenKeyword
+from .models import Report, ReportCategory, BannedUser, ForbiddenKeyword, UserComplaint
 from listings.models import Listing, Review
 from chat.models import Message
 from users.models import User
+from .forms import ComplaintForm, ComplaintResponseForm
+from django.core.paginator import Paginator
+
 
 def is_moderator(user):
     """Check if user is a moderator"""
@@ -20,7 +23,7 @@ def report_content(request, content_type, content_id):
     if content_type not in ['listing', 'review', 'user', 'message']:
         messages.error(request, "Invalid content type for reporting.")
         return redirect('listings:listing_list')
-    
+
     # Get the reported content
     content_object = None
     if content_type == 'listing':
@@ -31,14 +34,14 @@ def report_content(request, content_type, content_id):
         content_object = get_object_or_404(User, id=content_id)
     elif content_type == 'message':
         content_object = get_object_or_404(Message, id=content_id)
-    
+
     # Get report categories
     categories = ReportCategory.objects.filter(is_active=True)
-    
+
     if request.method == 'POST':
         description = request.POST.get('description', '').strip()
         category_id = request.POST.get('category')
-        
+
         if not description:
             messages.error(request, "Please provide a description of the issue.")
             return render(request, 'moderation/report_form.html', {
@@ -46,14 +49,14 @@ def report_content(request, content_type, content_id):
                 'content_object': content_object,
                 'categories': categories,
             })
-        
+
         # Create the report
         report = Report(
             reporter=request.user,
             content_type=content_type,
             description=description
         )
-        
+
         # Set the related object based on content type
         if content_type == 'listing':
             report.listing = content_object
@@ -63,18 +66,18 @@ def report_content(request, content_type, content_id):
             report.reported_user = content_object
         elif content_type == 'message':
             report.message = content_object
-        
+
         # Set category if provided
         if category_id:
             try:
                 report.category = ReportCategory.objects.get(id=int(category_id))
             except (ReportCategory.DoesNotExist, ValueError):
                 pass
-        
+
         report.save()
-        
+
         messages.success(request, "Thank you for your report. Our moderation team will review it shortly.")
-        
+
         # Redirect back to appropriate page
         if content_type == 'listing':
             return redirect('listings:listing_detail', pk=content_object.id)
@@ -84,7 +87,7 @@ def report_content(request, content_type, content_id):
             return redirect('listings:listing_list')
         elif content_type == 'message':
             return redirect('chat:conversation_detail', pk=content_object.conversation.id)
-    
+
     return render(request, 'moderation/report_form.html', {
         'content_type': content_type,
         'content_object': content_object,
@@ -98,15 +101,15 @@ def report_list(request):
     # Get all reports, filter by status if provided
     status = request.GET.get('status')
     reports = Report.objects.all()
-    
+
     if status and status in [choice[0] for choice in Report.STATUS_CHOICES]:
         reports = reports.filter(status=status)
-    
+
     # Filter by content type if provided
     content_type = request.GET.get('content_type')
     if content_type and content_type in [choice[0] for choice in Report.CONTENT_TYPES]:
         reports = reports.filter(content_type=content_type)
-    
+
     return render(request, 'moderation/report_list.html', {
         'reports': reports,
         'status_choices': Report.STATUS_CHOICES,
@@ -120,37 +123,37 @@ def report_list(request):
 def report_detail(request, pk):
     """View for viewing and processing a report (moderators only)"""
     report = get_object_or_404(Report, pk=pk)
-    
+
     if request.method == 'POST':
         status = request.POST.get('status')
         notes = request.POST.get('moderator_notes', '').strip()
         action = request.POST.get('action_taken', '').strip()
-        
+
         # Update report
         if status and status in [choice[0] for choice in Report.STATUS_CHOICES]:
             report.status = status
             report.moderator = request.user
             report.moderator_notes = notes
             report.action_taken = action
-            
+
             # Set resolved_at if status is resolved or rejected
             if status in ['resolved', 'rejected']:
                 report.resolved_at = timezone.now()
             else:
                 report.resolved_at = None
-                
+
             report.save()
-            
+
             messages.success(request, f"Report #{report.id} has been updated.")
-        
+
         # Handle any additional actions (ban user, remove content, etc.)
         action_type = request.POST.get('action_type')
-        
+
         if action_type == 'ban_user':
             ban_days = request.POST.get('ban_days')
             ban_reason = request.POST.get('ban_reason', '').strip()
             is_permanent = request.POST.get('is_permanent') == 'on'
-            
+
             # Determine which user to ban
             user_to_ban = None
             if report.content_type == 'user':
@@ -161,7 +164,7 @@ def report_detail(request, pk):
                 user_to_ban = report.listing.host
             elif report.content_type == 'message':
                 user_to_ban = report.message.sender
-            
+
             if user_to_ban:
                 # Calculate ban duration
                 banned_until = None
@@ -171,7 +174,7 @@ def report_detail(request, pk):
                         banned_until = timezone.now() + timezone.timedelta(days=days)
                     except ValueError:
                         pass
-                
+
                 # Create or update ban record
                 ban, created = BannedUser.objects.update_or_create(
                     user=user_to_ban,
@@ -183,16 +186,16 @@ def report_detail(request, pk):
                         'notes': f"Ban issued from report #{report.id}"
                     }
                 )
-                
+
                 # Log the action
                 if not report.action_taken:
                     report.action_taken = ""
                 report.action_taken += f"\nBanned user {user_to_ban.username} "
                 report.action_taken += "permanently" if is_permanent else f"for {ban_days} days"
                 report.save(update_fields=['action_taken'])
-                
+
                 messages.success(request, f"User {user_to_ban.username} has been banned.")
-        
+
         elif action_type == 'remove_content':
             # Remove the reported content
             if report.content_type == 'review' and report.review:
@@ -200,45 +203,45 @@ def report_detail(request, pk):
                 listing_id = review.listing.id
                 review.delete()
                 messages.success(request, "The review has been removed.")
-                
+
                 # Log the action
                 if not report.action_taken:
                     report.action_taken = ""
                 report.action_taken += "\nRemoved the reported review"
                 report.save(update_fields=['action_taken'])
-                
+
                 return redirect('listings:listing_detail', pk=listing_id)
-            
+
             elif report.content_type == 'message' and report.message:
                 message = report.message
                 conversation_id = message.conversation.id
                 message.content = "[This message has been removed by a moderator]"
                 message.save(update_fields=['content'])
-                
+
                 messages.success(request, "The message has been moderated.")
-                
+
                 # Log the action
                 if not report.action_taken:
                     report.action_taken = ""
                 report.action_taken += "\nModerated the reported message"
                 report.save(update_fields=['action_taken'])
-                
+
                 return redirect('chat:conversation_detail', pk=conversation_id)
-            
+
             elif report.content_type == 'listing' and report.listing:
                 listing = report.listing
                 listing.is_active = False
                 listing.is_approved = False
                 listing.save(update_fields=['is_active', 'is_approved'])
-                
+
                 messages.success(request, "The listing has been deactivated.")
-                
+
                 # Log the action
                 if not report.action_taken:
                     report.action_taken = ""
                 report.action_taken += "\nDeactivated the reported listing"
                 report.save(update_fields=['action_taken'])
-    
+
     return render(request, 'moderation/report_detail.html', {
         'report': report,
         'status_choices': Report.STATUS_CHOICES
@@ -249,26 +252,26 @@ def report_detail(request, pk):
 def moderation_dashboard(request):
     """Dashboard for moderators with overview of reports and banned users"""
     from .models import ListingApproval, ModerationLog
-    
+
     # Get report statistics
     total_reports = Report.objects.count()
     pending_reports = Report.objects.filter(status='pending').count()
     in_progress_reports = Report.objects.filter(status='in_progress').count()
     resolved_reports = Report.objects.filter(status='resolved').count()
     rejected_reports = Report.objects.filter(status='rejected').count()
-    
+
     # Recent reports
     recent_reports = Report.objects.all().order_by('-created_at')[:10]
-    
+
     # Listing approval statistics
     pending_listings = ListingApproval.objects.filter(status='pending').count()
     approved_listings = ListingApproval.objects.filter(status='approved').count()
     rejected_listings = ListingApproval.objects.filter(status='rejected').count()
     changes_required_listings = ListingApproval.objects.filter(status='requires_changes').count()
-    
+
     # Recent listing approvals
     recent_approvals = ListingApproval.objects.all().order_by('-created_at')[:5]
-    
+
     # Banned users
     active_bans = BannedUser.objects.filter(
         is_permanent=True
@@ -276,15 +279,20 @@ def moderation_dashboard(request):
         is_permanent=False,
         banned_until__gt=timezone.now()
     ).count()
-    
+
     recent_bans = BannedUser.objects.all().order_by('-created_at')[:5]
-    
+
     # Forbidden keywords
     keywords_count = ForbiddenKeyword.objects.filter(is_active=True).count()
-    
+
     # Recent moderation logs
     recent_logs = ModerationLog.objects.all().order_by('-created_at')[:10]
-    
+
+    #Complaint stats
+    pending_complaints = UserComplaint.objects.filter(status='pending').count()
+    high_priority_complaints = UserComplaint.objects.filter(priority='high', status__in=['pending', 'under_review']).count()
+    recent_complaints = UserComplaint.objects.select_related('complainant')[:5]
+
     return render(request, 'moderation/dashboard.html', {
         'total_reports': total_reports,
         'pending_reports': pending_reports,
@@ -300,7 +308,10 @@ def moderation_dashboard(request):
         'active_bans': active_bans,
         'recent_bans': recent_bans,
         'keywords_count': keywords_count,
-        'recent_logs': recent_logs
+        'recent_logs': recent_logs,
+        'pending_complaints': pending_complaints,
+        'high_priority_complaints': high_priority_complaints,
+        'recent_complaints': recent_complaints,
     })
 
 @login_required
@@ -308,14 +319,14 @@ def moderation_dashboard(request):
 def listing_approval_list(request):
     """View for listing all pending listing approvals"""
     from .models import ListingApproval
-    
+
     # Get all listing approvals, filter by status if provided
     status = request.GET.get('status')
     approvals = ListingApproval.objects.select_related('listing', 'moderator').all()
-    
+
     if status and status in [choice[0] for choice in ListingApproval.STATUS_CHOICES]:
         approvals = approvals.filter(status=status)
-    
+
     # Filter by moderator if provided
     moderator_id = request.GET.get('moderator')
     if moderator_id:
@@ -323,7 +334,7 @@ def listing_approval_list(request):
             approvals = approvals.filter(moderator_id=int(moderator_id))
         except ValueError:
             pass
-    
+
     return render(request, 'moderation/listing_approval_list.html', {
         'approvals': approvals,
         'status_choices': ListingApproval.STATUS_CHOICES,
@@ -336,18 +347,18 @@ def listing_approval_list(request):
 def listing_approval_detail(request, pk):
     """View for reviewing a listing approval"""
     from .models import ListingApproval, ModerationLog
-    
+
     approval = get_object_or_404(ListingApproval, pk=pk)
-    
+
     if request.method == 'POST':
         action = request.POST.get('action')
         moderator_notes = request.POST.get('moderator_notes', '').strip()
-        
+
         if action in ['approve', 'reject', 'require_changes']:
             approval.moderator = request.user
             approval.moderator_notes = moderator_notes
             approval.reviewed_at = timezone.now()
-            
+
             # Update checklist items
             approval.has_valid_title = request.POST.get('has_valid_title') == 'on'
             approval.has_valid_description = request.POST.get('has_valid_description') == 'on'
@@ -355,13 +366,13 @@ def listing_approval_detail(request, pk):
             approval.has_valid_address = request.POST.get('has_valid_address') == 'on'
             approval.has_appropriate_pricing = request.POST.get('has_appropriate_pricing') == 'on'
             approval.follows_content_policy = request.POST.get('follows_content_policy') == 'on'
-            
+
             if action == 'approve':
                 approval.status = 'approved'
                 approval.listing.is_approved = True
                 approval.listing.is_active = True
                 approval.listing.save(update_fields=['is_approved', 'is_active'])
-                
+
                 # Log the action
                 ModerationLog.objects.create(
                     moderator=request.user,
@@ -371,16 +382,16 @@ def listing_approval_detail(request, pk):
                     description=f"Approved listing: {approval.listing.title}",
                     notes=moderator_notes
                 )
-                
+
                 messages.success(request, f"Listing '{approval.listing.title}' has been approved.")
-                
+
             elif action == 'reject':
                 approval.status = 'rejected'
                 approval.rejection_reason = request.POST.get('rejection_reason', '').strip()
                 approval.listing.is_approved = False
                 approval.listing.is_active = False
                 approval.listing.save(update_fields=['is_approved', 'is_active'])
-                
+
                 # Log the action
                 ModerationLog.objects.create(
                     moderator=request.user,
@@ -390,21 +401,21 @@ def listing_approval_detail(request, pk):
                     description=f"Rejected listing: {approval.listing.title}",
                     notes=f"Reason: {approval.rejection_reason}"
                 )
-                
+
                 messages.success(request, f"Listing '{approval.listing.title}' has been rejected.")
-                
+
             elif action == 'require_changes':
                 approval.status = 'requires_changes'
                 approval.required_changes = request.POST.get('required_changes', '').strip()
                 approval.listing.is_approved = False
                 approval.listing.save(update_fields=['is_approved'])
-                
+
                 messages.success(request, f"Changes required for listing '{approval.listing.title}'.")
-            
+
             approval.save()
-            
+
             return redirect('moderation:listing_approval_list')
-    
+
     return render(request, 'moderation/listing_approval_detail.html', {
         'approval': approval,
         'listing': approval.listing
@@ -415,14 +426,14 @@ def listing_approval_detail(request, pk):
 def moderation_logs(request):
     """View for displaying moderation activity logs"""
     from .models import ModerationLog
-    
+
     # Get all logs, filter by action type if provided
     action_type = request.GET.get('action_type')
     logs = ModerationLog.objects.select_related('moderator', 'target_user', 'target_listing').all()
-    
+
     if action_type and action_type in [choice[0] for choice in ModerationLog.ACTION_TYPES]:
         logs = logs.filter(action_type=action_type)
-    
+
     # Filter by moderator if provided
     moderator_id = request.GET.get('moderator')
     if moderator_id:
@@ -430,7 +441,7 @@ def moderation_logs(request):
             logs = logs.filter(moderator_id=int(moderator_id))
         except ValueError:
             pass
-    
+
     return render(request, 'moderation/logs.html', {
         'logs': logs,
         'action_type_choices': ModerationLog.ACTION_TYPES,
@@ -442,10 +453,10 @@ def filter_content(request):
     """API endpoint to filter content for forbidden keywords"""
     if request.method == 'POST':
         content = request.POST.get('content', '')
-        
+
         # Get all active forbidden keywords
         keywords = ForbiddenKeyword.objects.filter(is_active=True)
-        
+
         # Apply filtering
         filtered_content = content
         for keyword in keywords:
@@ -465,10 +476,108 @@ def filter_content(request):
                     filtered_content, 
                     flags=re.IGNORECASE
                 )
-        
+
         return JsonResponse({
             'filtered_content': filtered_content,
             'is_modified': filtered_content != content
         })
-    
+
     return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@login_required
+def file_complaint(request):
+    if request.method == 'POST':
+        form = ComplaintForm(request.POST, user=request.user)
+        if form.is_valid():
+            complaint = form.save(commit=False)
+            complaint.complainant = request.user
+            complaint.save()
+            messages.success(request, 'Your complaint has been filed successfully. We will review it shortly.')
+            return redirect('moderation:my_complaints')
+    else:
+        form = ComplaintForm(user=request.user)
+
+    return render(request, 'moderation/file_complaint.html', {'form': form})
+
+
+@login_required
+def my_complaints(request):
+    complaints = UserComplaint.objects.filter(complainant=request.user).order_by('-created_at')
+
+    # Pagination
+    paginator = Paginator(complaints, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'moderation/my_complaints.html', {'page_obj': page_obj})
+
+
+@user_passes_test(is_moderator)
+def complaint_list(request):
+    complaints = UserComplaint.objects.select_related('complainant', 'target_user', 'assigned_moderator').all()
+
+    # Filtering
+    status_filter = request.GET.get('status')
+    priority_filter = request.GET.get('priority')
+    type_filter = request.GET.get('type')
+
+    if status_filter:
+        complaints = complaints.filter(status=status_filter)
+    if priority_filter:
+        complaints = complaints.filter(priority=priority_filter)
+    if type_filter:
+        complaints = complaints.filter(complaint_type=type_filter)
+
+    # Pagination
+    paginator = Paginator(complaints, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'status_choices': UserComplaint.STATUS_CHOICES,
+        'priority_choices': [('low', 'Low'), ('medium', 'Medium'), ('high', 'High')],
+        'type_choices': UserComplaint.COMPLAINT_TYPES,
+        'current_filters': {
+            'status': status_filter,
+            'priority': priority_filter,
+            'type': type_filter,
+        }
+    }
+
+    return render(request, 'moderation/complaint_list.html', context)
+
+
+@user_passes_test(is_moderator)
+def complaint_detail(request, complaint_id):
+    complaint = get_object_or_404(UserComplaint, id=complaint_id)
+
+    if request.method == 'POST':
+        form = ComplaintResponseForm(request.POST, instance=complaint)
+        if form.is_valid():
+            updated_complaint = form.save(commit=False)
+
+            # Set resolved timestamp if status changed to resolved
+            if updated_complaint.status == 'resolved' and complaint.status != 'resolved':
+                updated_complaint.resolved_at = timezone.now()
+
+            updated_complaint.save()
+
+            # Log the action
+            ModerationLog.objects.create(
+                moderator=request.user,
+                action_type='complaint_updated',
+                target_type='complaint',
+                target_id=complaint.id,
+                description=f"Updated complaint status to {updated_complaint.status}"
+            )
+
+            messages.success(request, 'Complaint updated successfully.')
+            return redirect('moderation:complaint_detail', complaint_id=complaint.id)
+    else:
+        form = ComplaintResponseForm(instance=complaint)
+
+    return render(request, 'moderation/complaint_detail.html', {
+        'complaint': complaint,
+        'form': form
+    })

@@ -1,0 +1,80 @@
+
+{% extends 'base.html' %}
+
+{% block title %}File a Complaint{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-exclamation-triangle text-warning"></i> File a Complaint</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.complaint_type.id_for_label }}" class="form-label">Complaint Type</label>
+                            {{ form.complaint_type }}
+                            {% if form.complaint_type.errors %}
+                                <div class="text-danger small">{{ form.complaint_type.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.subject.id_for_label }}" class="form-label">Subject</label>
+                            {{ form.subject }}
+                            {% if form.subject.errors %}
+                                <div class="text-danger small">{{ form.subject.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                            {{ form.description }}
+                            <div class="form-text">Please provide as much detail as possible about the issue.</div>
+                            {% if form.description.errors %}
+                                <div class="text-danger small">{{ form.description.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.target_user.id_for_label }}" class="form-label">Against User</label>
+                                    {{ form.target_user }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.target_listing.id_for_label }}" class="form-label">Against Listing</label>
+                                    {{ form.target_listing }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.target_booking.id_for_label }}" class="form-label">Against Booking</label>
+                                    {{ form.target_booking }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'moderation:my_complaints' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-warning">File Complaint</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
