@@ -1,0 +1,132 @@
+.listing-calendar {
+    background-color: #fff;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.calendar-container {
+    position: relative;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.calendar-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.calendar-table th {
+    text-align: center;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.calendar-table td {
+    text-align: center;
+    padding: 0;
+    width: calc(100% / 7);
+    position: relative;
+    height: 40px;
+}
+
+.calendar-day {
+    position: relative;
+    height: 100%;
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.calendar-day:hover:not(.unavailable) {
+    background-color: #e9ecef;
+}
+
+.calendar-day .day-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.calendar-day.unavailable {
+    cursor: not-allowed;
+}
+
+.calendar-day.unavailable .day-content {
+    background-color: #e74c3c;
+    color: white;
+    opacity: 0.8;
+}
+
+.calendar-day.today .day-content {
+    border: 2px solid #3498db;
+}
+
+.calendar-day.selected .day-content {
+    background-color: #3498db;
+    color: white;
+}
+
+.calendar-day.in-range .day-content {
+    background-color: rgba(52, 152, 219, 0.2);
+    border-radius: 0;
+    width: 100%;
+}
+
+.calendar-day.start-date .day-content {
+    background-color: #3498db;
+    color: white;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.calendar-day.end-date .day-content {
+    background-color: #3498db;
+    color: white;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.calendar-day.empty {
+    cursor: default;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+}
+
+.legend-box {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    margin-right: 4px;
+}
+
+.legend-text {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+/* Adjustments for smaller screens */
+@media (max-width: 576px) {
+    .calendar-table th {
+        font-size: 0.7rem;
+        padding: 0.3rem;
+    }
+    
+    .calendar-day .day-content {
+        width: 30px;
+        height: 30px;
+        font-size: 0.9rem;
+    }
+}
