@@ -1,9 +1,73 @@
 
 {% extends 'base.html' %}
+{% csrf_token %}
 
 {% block title %}Notifications - Rental Aggregator{% endblock %}
 
 {% block content %}
+<style>
+.notification-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.notification-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.notification-card.border-primary {
+    border-left-color: #007bff !important;
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.notification-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    background-color: rgba(0, 123, 255, 0.1);
+    border-radius: 50%;
+}
+
+.notification-card .card-title {
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.notification-card.border-primary .card-title {
+    color: #007bff;
+}
+
+.notification-card .card-text {
+    color: #666;
+    line-height: 1.4;
+}
+
+.notification-card .text-muted {
+    font-size: 0.875rem;
+}
+
+.btn-outline-primary:hover {
+    transform: none;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.empty-state i {
+    color: #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.empty-state h4 {
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+</style>
 <div class="container mt-4">
     <div class="row">
         <div class="col-md-8 mx-auto">
@@ -72,10 +136,10 @@
                 </div>
                 {% endfor %}
             {% else %}
-                <div class="text-center py-5">
-                    <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
-                    <h4 class="text-muted">No notifications yet</h4>
-                    <p class="text-muted">You'll see notifications about bookings, messages, and more here.</p>
+                <div class="empty-state">
+                    <i class="fas fa-bell-slash fa-3x"></i>
+                    <h4>No notifications yet</h4>
+                    <p>You'll see notifications about bookings, messages, and more here.</p>
                 </div>
             {% endif %}
         </div>
@@ -84,10 +148,14 @@
 
 <script>
     function markAllNotificationsRead() {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]') || 
+                         document.querySelector('meta[name="csrf-token"]') ||
+                         document.querySelector('input[name="csrfmiddlewaretoken"]');
+        
         fetch('{% url "notifications:mark_all_read" %}', {
             method: 'POST',
             headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-CSRFToken': csrfToken ? csrfToken.value || csrfToken.content : '{{ csrf_token }}',
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
@@ -107,10 +175,14 @@
         const notificationCard = e.target.closest('.notification-card');
         if (notificationCard && notificationCard.classList.contains('border-primary')) {
             const notificationId = notificationCard.dataset.notificationId;
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]') || 
+                             document.querySelector('meta[name="csrf-token"]') ||
+                             document.querySelector('input[name="csrfmiddlewaretoken"]');
+            
             fetch(`/notifications/${notificationId}/read/`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'X-CSRFToken': csrfToken ? csrfToken.value || csrfToken.content : '{{ csrf_token }}',
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
