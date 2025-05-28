@@ -190,23 +190,25 @@
             </div>
 
             <!-- Charts Row -->
-            <div class="row mb-4">
-                <div class="col-lg-8 mb-3">
-                    <div class="card h-100">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">Revenue Trend (Last 12 Months)</h5>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="revenueChart" height="100"></canvas>
+            <div class="col-lg-8 mb-3">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Revenue Trend (Last 12 Months)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="revenueChart"></canvas>
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-4 mb-3">
-                    <div class="card h-100">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">Booking Status Distribution</h5>
-                        </div>
-                        <div class="card-body">
+            </div>
+            <div class="col-lg-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Booking Status Distribution</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
                             <canvas id="statusChart"></canvas>
                         </div>
                     </div>
@@ -412,110 +414,112 @@
 <script>
 // Chart.js configurations
 document.addEventListener('DOMContentLoaded', function() {
-    // Revenue Chart
-    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-    const monthlyRevenue = {{ monthly_revenue|safe }};
-    
-    new Chart(revenueCtx, {
-        type: 'line',
-        data: {
-            labels: monthlyRevenue.map(item => {
-                const date = new Date(item.month);
-                return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-            }),
-            datasets: [{
-                label: 'Revenue',
-                data: monthlyRevenue.map(item => item.revenue),
-                borderColor: 'rgb(75, 192, 192)',
-                backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                tension: 0.1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return '$' + value.toLocaleString();
-                        }
-                    }
-                }
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return 'Revenue: $' + context.parsed.y.toLocaleString();
-                        }
-                    }
-                }
-            }
-        }
-    });
+    // Check if Chart.js is loaded
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js library not loaded');
+        return;
+    }
 
-    // Status Chart
-    const statusCtx = document.getElementById('statusChart').getContext('2d');
-    const statusStats = {{ status_stats|safe }};
-    
-    new Chart(statusCtx, {
-        type: 'doughnut',
-        data: {
-            labels: statusStats.map(item => item.status.charAt(0).toUpperCase() + item.status.slice(1)),
-            datasets: [{
-                data: statusStats.map(item => item.count),
-                backgroundColor: [
-                    '#28a745', // confirmed - green
-                    '#ffc107', // pending - yellow
-                    '#17a2b8', // completed - blue
-                    '#dc3545'  // canceled - red
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    position: 'bottom'
+    try {
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart');
+        if (revenueCtx) {
+            const monthlyRevenue = {{ monthly_revenue|safe }};
+
+            // Prepare chart data
+            const labels = monthlyRevenue.length > 0 ? 
+                monthlyRevenue.map(item => {
+                    const date = new Date(item.month);
+                    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                }) : ['No Data'];
+
+            const data = monthlyRevenue.length > 0 ? 
+                monthlyRevenue.map(item => parseFloat(item.revenue) || 0) : [0];
+
+            new Chart(revenueCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Revenue ($)',
+                        data: data,
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Revenue: $' + context.parsed.y.toLocaleString();
+                                }
+                            }
+                        }
+                    }
                 }
+            });
+        }
+
+        // Status Chart
+        const statusCtx = document.getElementById('statusChart');
+        if (statusCtx) {
+            const statusStats = {{ status_stats|safe }};
+
+            if (statusStats.length > 0) {
+                new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: statusStats.map(item => item.status.charAt(0).toUpperCase() + item.status.slice(1)),
+                        datasets: [{
+                            data: statusStats.map(item => item.count),
+                            backgroundColor: [
+                                '#28a745', // confirmed - green
+                                '#ffc107', // pending - yellow
+                                '#17a2b8', // completed - blue
+                                '#dc3545'  // canceled - red
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    usePointStyle: true
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Show no data message
+                statusCtx.parentElement.innerHTML = '<p class="text-center text-muted">No booking data available</p>';
             }
         }
-    });
+    } catch (error) {
+        console.error('Error initializing charts:', error);
+    }
 });
-
-// Export functionality
-function exportData() {
-    // Create CSV data
-    const csvData = [
-        ['Metric', 'Value'],
-        ['Total Listings', '{{ stats.total_listings }}'],
-        ['Active Listings', '{{ stats.active_listings }}'],
-        ['Total Revenue', '{{ stats.total_revenue }}'],
-        ['Occupancy Rate', '{{ stats.occupancy_rate|floatformat:2 }}%'],
-        ['Total Bookings', '{{ stats.total_bookings }}'],
-        ['Confirmed Bookings', '{{ stats.confirmed_bookings }}'],
-        ['Pending Bookings', '{{ stats.pending_bookings }}'],
-        ['Completed Bookings', '{{ stats.completed_bookings }}'],
-        ['Canceled Bookings', '{{ stats.canceled_bookings }}']
-    ];
-
-    // Convert to CSV string
-    const csvContent = csvData.map(row => row.join(',')).join('\n');
-    
-    // Create download link
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.setAttribute('hidden', '');
-    a.setAttribute('href', url);
-    a.setAttribute('download', 'host-dashboard-stats.csv');
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-}
 </script>
 
 <style>

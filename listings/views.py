@@ -222,22 +222,30 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
             )['total'] or 0,
         }
 
-        # Calculate occupancy rate
+        # Calculate occupancy rate properly
         total_possible_nights = 0
         total_booked_nights = 0
-        for listing in host_listings:
-            days_available = (end_date - listing.created_at.date()).days
+        for listing in host_listings.filter(is_active=True):
+            # Calculate available days since listing creation
+            listing_start = max(listing.created_at.date(), start_date)
+            days_available = (end_date - listing_start).days
             if days_available > 0:
                 total_possible_nights += days_available
-                booked_nights = listing.bookings.filter(
+                
+                # Get bookings for this listing in the time period
+                listing_bookings = listing.bookings.filter(
                     status__in=['completed', 'confirmed'],
                     start_date__lte=end_date,
-                    end_date__gte=listing.created_at.date()
-                ).aggregate(
-                    nights=Sum(F('end_date') - F('start_date'))
-                )['nights']
-                if booked_nights:
-                    total_booked_nights += booked_nights.days
+                    end_date__gte=listing_start
+                )
+                
+                for booking in listing_bookings:
+                    # Calculate actual nights booked within our time period
+                    booking_start = max(booking.start_date, listing_start)
+                    booking_end = min(booking.end_date, end_date)
+                    if booking_end > booking_start:
+                        nights = (booking_end - booking_start).days
+                        total_booked_nights += nights
 
         stats['occupancy_rate'] = (total_booked_nights / total_possible_nights * 100) if total_possible_nights > 0 else 0
 
@@ -262,27 +270,27 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
             ))
         )
 
-        # Top performing listings
+        # Top performing listings with proper annotations
         top_listings = host_listings.annotate(
             avg_rating=Avg('reviews__rating'),
-            review_count=Count('reviews'),
-            bookings_count=Count('bookings'),
+            review_count=Count('reviews', distinct=True),
+            bookings_count=Count('bookings', distinct=True),
             total_revenue=Sum(
                 Case(
                     When(bookings__status='completed', then='bookings__total_price'),
                     default=0,
                     output_field=DecimalField()
                 )
-            ),
-            occupancy_days=Sum(
-                Case(
-                    When(bookings__status__in=['completed', 'confirmed'], 
-                         then=F('bookings__end_date') - F('bookings__start_date')),
-                    default=0,
-                    output_field=IntegerField()
-                )
             )
-        ).order_by('-total_revenue')
+        ).prefetch_related('bookings').order_by('-total_revenue')
+        
+        # Calculate occupancy days separately to avoid aggregation issues
+        for listing in top_listings:
+            total_nights = 0
+            for booking in listing.bookings.filter(status__in=['completed', 'confirmed']):
+                nights = (booking.end_date - booking.start_date).days
+                total_nights += nights
+            listing.occupancy_days = total_nights
 
         # Recent activity (last 10)
         recent_bookings = all_bookings.select_related(
