@@ -220,12 +220,7 @@
                     <h4 class="card-title">Location</h4>
                     <p class="text-muted">{{ listing.address }}, {{ listing.city }}, {{ listing.state }}, {{ listing.country }}</p>
                     
-                    <div class="ratio ratio-16x9">
-                        <iframe 
-                            src="https://www.google.com/maps/embed/v1/place?key=AIzaSyD_S2SGUavYrWCn4et-bsIrCR3nMjbIEn4&q={{ listing.address|urlencode }},{{ listing.city|urlencode }},{{ listing.state|urlencode }},{{ listing.country|urlencode }}" 
-                            allowfullscreen>
-                        </iframe>
-                    </div>
+                    <div id="listing-map" style="width: 100%; height: 400px; border-radius: 0.375rem;"></div>
                 </div>
             </div>
 
@@ -497,10 +492,32 @@
 
 {% block extra_js %}
 <script src="{% static 'listings/js/calendar.js' %}"></script>
+<script src="https://api-maps.yandex.ru/2.1/?apikey=&lang=en_US" type="text/javascript"></script>
+<script src="{% static 'listings/js/yandex_maps.js' %}"></script>
 <script>
     // Initialize calendar with unavailable dates
     document.addEventListener('DOMContentLoaded', function() {
         const unavailableDates = {{ unavailable_dates_json|safe }};
+        
+        // Initialize Yandex Map for location display
+        {% if listing.latitude and listing.longitude %}
+            initYandexMap('listing-map', {{ listing.latitude }}, {{ listing.longitude }}, false);
+        {% else %}
+            // Fallback: geocode address if no coordinates
+            ymaps.ready(function () {
+                const fullAddress = "{{ listing.address }}, {{ listing.city }}, {{ listing.state }}, {{ listing.country }}";
+                ymaps.geocode(fullAddress).then(function (res) {
+                    const firstGeoObject = res.geoObjects.get(0);
+                    if (firstGeoObject) {
+                        const coords = firstGeoObject.geometry.getCoordinates();
+                        initYandexMap('listing-map', coords[0], coords[1], false);
+                    } else {
+                        // Default to Moscow if geocoding fails
+                        initYandexMap('listing-map', 55.751244, 37.618423, false);
+                    }
+                });
+            });
+        {% endif %}
         
         // Check if initCalendar function exists before calling it
         if (typeof initCalendar === 'function') {

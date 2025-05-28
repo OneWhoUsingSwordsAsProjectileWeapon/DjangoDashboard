@@ -8,7 +8,8 @@ class ListingForm(forms.ModelForm):
         model = Listing
         fields = [
             'title', 'description', 'address', 'city', 'state', 'country', 
-            'zip_code', 'price_per_night', 'cleaning_fee', 'service_fee',
+            'zip_code', 'latitude', 'longitude',
+            'price_per_night', 'cleaning_fee', 'service_fee',
             'bedrooms', 'bathrooms', 'accommodates', 'property_type',
             'amenities', 'house_rules', 'check_in_time', 'check_out_time',
             'minimum_nights', 'maximum_nights'
@@ -19,8 +20,10 @@ class ListingForm(forms.ModelForm):
             'check_in_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'check_out_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'amenities': forms.HiddenInput(),
+            'latitude': forms.HiddenInput(),
+            'longitude': forms.HiddenInput(),
         }
-        
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Add bootstrap classes
@@ -38,7 +41,7 @@ class ListingForm(forms.ModelForm):
             except json.JSONDecodeError:
                 return []
         return amenities or []
-        
+
     def clean_image_urls(self):
         """Convert image_urls string to list if needed"""
         image_urls = self.cleaned_data.get('image_urls')
@@ -67,7 +70,7 @@ class BookingForm(forms.ModelForm):
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         label=_("Check-out date")
     )
-    
+
     class Meta:
         model = Booking
         fields = ['start_date', 'end_date', 'guests', 'special_requests']
@@ -75,25 +78,25 @@ class BookingForm(forms.ModelForm):
             'guests': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
             'special_requests': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
         }
-    
+
     def __init__(self, listing=None, *args, **kwargs):
         self.listing = listing
         super().__init__(*args, **kwargs)
-        
+
         if listing:
             self.fields['guests'].widget.attrs['max'] = listing.accommodates
-    
+
     def clean(self):
         cleaned_data = super().clean()
         start_date = cleaned_data.get('start_date')
         end_date = cleaned_data.get('end_date')
         guests = cleaned_data.get('guests')
-        
+
         if start_date and end_date:
             # Check if end date is after start date
             if end_date <= start_date:
                 raise forms.ValidationError(_("Check-out date must be after check-in date"))
-            
+
             # Check minimum and maximum nights
             duration = (end_date - start_date).days
             if self.listing:
@@ -107,18 +110,18 @@ class BookingForm(forms.ModelForm):
                         _("Maximum stay is %(max_nights)s nights"),
                         params={'max_nights': self.listing.maximum_nights}
                     )
-                
+
                 # Check if listing is available for these dates
                 if not self.listing.is_available(start_date, end_date):
                     raise forms.ValidationError(_("The property is not available for the selected dates"))
-        
+
         # Check if guests count is valid
         if guests and self.listing and guests > self.listing.accommodates:
             raise forms.ValidationError(
                 _("Maximum guests allowed is %(max_guests)s"),
                 params={'max_guests': self.listing.accommodates}
             )
-            
+
         return cleaned_data
 
 class ReviewForm(forms.ModelForm):

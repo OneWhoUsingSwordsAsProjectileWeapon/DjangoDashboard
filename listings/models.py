@@ -18,6 +18,8 @@ class Listing(models.Model):
     state = models.CharField(_("State/Province"), max_length=100)
     country = models.CharField(_("Country"), max_length=100)
     zip_code = models.CharField(_("ZIP/Postal Code"), max_length=20)
+    latitude = models.DecimalField(_("Latitude"), max_digits=10, decimal_places=7, null=True, blank=True)
+    longitude = models.DecimalField(_("Longitude"), max_digits=10, decimal_places=7, null=True, blank=True)
     
     # Pricing
     price_per_night = models.DecimalField(_("Price per night"), max_digits=10, decimal_places=2)
