@@ -60,12 +60,14 @@ function setLocation(latitude, longitude) {
     // Reverse geocoding to get address
     ymaps.geocode([latitude, longitude]).then(function (res) {
         const firstGeoObject = res.geoObjects.get(0);
-        const address = firstGeoObject.getAddressLine();
-        
-        // Update address field if exists
-        const addressField = document.getElementById('id_address');
-        if (addressField && !addressField.value) {
-            addressField.value = address;
+        if (firstGeoObject) {
+            const address = firstGeoObject.getAddressLine();
+            
+            // Update address field if exists
+            const addressField = document.getElementById('id_address');
+            if (addressField && !addressField.value) {
+                addressField.value = address;
+            }
         }
     });
 }
