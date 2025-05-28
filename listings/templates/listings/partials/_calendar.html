@@ -1,7 +1,6 @@
-
 {% load listing_extras %}
 
-<div x-data="calendar()" class="listing-calendar">
+<div x-data="calendar()" x-init="init()" class="listing-calendar">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div class="btn-group">
             <button type="button" class="btn btn-outline-secondary" x-on:click="previousMonth()">
@@ -13,7 +12,7 @@
         </div>
         <h5 class="mb-0" x-text="currentMonthName + ' ' + currentYear"></h5>
     </div>
-    
+
     <div class="calendar-container">
         <table class="calendar-table">
             <thead>
@@ -28,27 +27,20 @@
                 </tr>
             </thead>
             <tbody>
-                <template x-for="week in calendarDays" :key="week">
+                <template x-for="(week, weekIndex) in calendarDays" :key="weekIndex">
                     <tr>
-                        <template x-for="day in week" :key="day.date || Math.random()">
+                        <template x-for="(day, dayIndex) in week" :key="weekIndex + '-' + dayIndex">
                             <td :class="{ 'empty': !day.date }">
-                                <div :class="{
-                                        'calendar-day': true,
-                                        'unavailable': day.date && isUnavailable(day.date),
+                                <div 
+                                    class="calendar-day" 
+                                    :class="{
+                                        'unavailable': day.isUnavailable,
                                         'today': day.isToday,
-                                        'selected': isSelected(day.date),
-                                        'in-range': isInRange(day.date),
-                                        'start-date': isStartDate(day.date),
-                                        'end-date': isEndDate(day.date),
                                         'empty': !day.date
                                     }"
-                                    x-on:click="selectDate(day)"
-                                    :title="day.date ? (isUnavailable(day.date) ? 'Unavailable' : 'Available - Click to select') : ''">
-                                    <template x-if="day.date">
-                                        <div class="day-content">
-                                            <span x-text="day.dayNumber"></span>
-                                        </div>
-                                    </template>
+                                    x-on:click="selectDate(day.date)"
+                                >
+                                    <div class="day-content" x-text="day.dayNumber"></div>
                                 </div>
                             </td>
                         </template>
@@ -57,24 +49,28 @@
             </tbody>
         </table>
     </div>
-    
-    <div class="d-flex justify-content-center mt-3">
-        <div class="legend-item me-3">
-            <span class="legend-box bg-success"></span>
-            <span class="legend-text">Available</span>
-        </div>
-        <div class="legend-item me-3">
-            <span class="legend-box bg-danger"></span>
+
+    <!-- Legend -->
+    <div class="d-flex justify-content-center mt-3 gap-3">
+        <div class="legend-item">
+            <div class="legend-box" style="background-color: #e74c3c;"></div>
             <span class="legend-text">Unavailable</span>
         </div>
         <div class="legend-item">
-            <span class="legend-box bg-primary"></span>
-            <span class="legend-text">Selected</span>
+            <div class="legend-box" style="background-color: #3498db;"></div>
+            <span class="legend-text">Today</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-box" style="background-color: #f8f9fa; border: 1px solid #dee2e6;"></div>
+            <span class="legend-text">Available</span>
         </div>
     </div>
 </div>
 
 <script>
+// Make unavailable dates available globally for calendar initialization
+window.unavailableDatesJson = '{{ unavailable_dates_json|safe }}';
+
 function calendar() {
     return {
         currentYear: new Date().getFullYear(),
@@ -83,10 +79,18 @@ function calendar() {
         startDate: null,
         endDate: null,
         selectionMode: 'start', // 'start' or 'end'
-        unavailableDates: {{ unavailable_dates_json|safe }} || [],
+        unavailableDates: [], // Initialize as empty array
         
         init() {
             console.log('Calendar component initialized');
+
+            // Parse the JSON string into an object
+            try {
+                this.unavailableDates = JSON.parse(window.unavailableDatesJson.replace(/&quot;/g, '"')) || [];
+            } catch (e) {
+                console.error("Error parsing unavailable dates JSON:", e);
+                this.unavailableDates = [];
+            }
             this.generateCalendar();
             
             // Get query params
@@ -144,20 +148,22 @@ function calendar() {
                 for (let j = 0; j < 7; j++) {
                     if (i === 0 && j < firstDay) {
                         // Empty cells before first day
-                        week.push({ date: null });
+                        week.push({ date: null, isUnavailable: false });
                     } else if (date > daysInMonth) {
                         // Empty cells after last day
-                        week.push({ date: null });
+                        week.push({ date: null, isUnavailable: false });
                     } else {
                         // Valid days
                         const currentDate = new Date(this.currentYear, this.currentMonth, date);
                         const dateStr = this.formatDate(currentDate);
                         const isToday = this.isToday(dateStr);
-                        
+                        const isUnavailable = this.isUnavailable(dateStr);
+
                         week.push({
                             date: dateStr,
                             dayNumber: date,
-                            isToday: isToday
+                            isToday: isToday,
+                            isUnavailable: isUnavailable
                         });
                         
                         date++;
@@ -195,48 +201,48 @@ function calendar() {
             this.generateCalendar();
         },
         
-        selectDate(day) {
-            if (!day.date || this.isUnavailable(day.date)) return;
+        selectDate(dateStr) {
+            if (!dateStr || this.isUnavailable(dateStr)) return;
             
             if (this.selectionMode === 'start') {
-                this.startDate = day.date;
+                this.startDate = dateStr;
                 this.endDate = null;
                 this.selectionMode = 'end';
                 
                 // Update check-in input if it exists
                 const checkInInput = document.getElementById('check_in');
                 if (checkInInput) {
-                    checkInInput.value = day.date;
+                    checkInInput.value = dateStr;
                     checkInInput.dispatchEvent(new Event('change'));
                 }
             } else {
                 // Ensure end date is after start date
-                if (day.date <= this.startDate) {
-                    this.startDate = day.date;
+                if (dateStr <= this.startDate) {
+                    this.startDate = dateStr;
                     this.endDate = null;
                     
                     // Update check-in input if it exists
                     const checkInInput = document.getElementById('check_in');
                     if (checkInInput) {
-                        checkInInput.value = day.date;
+                        checkInInput.value = dateStr;
                         checkInInput.dispatchEvent(new Event('change'));
                     }
                     return;
                 }
                 
                 // Check if any unavailable dates are in range
-                if (this.hasUnavailableDateInRange(this.startDate, day.date)) {
+                if (this.hasUnavailableDateInRange(this.startDate, dateStr)) {
                     alert('Your selected date range includes unavailable dates. Please choose another range.');
                     return;
                 }
                 
-                this.endDate = day.date;
+                this.endDate = dateStr;
                 this.selectionMode = 'start';
                 
                 // Update check-out input if it exists
                 const checkOutInput = document.getElementById('check_out');
                 if (checkOutInput) {
-                    checkOutInput.value = day.date;
+                    checkOutInput.value = dateStr;
                     checkOutInput.dispatchEvent(new Event('change'));
                 }
             }

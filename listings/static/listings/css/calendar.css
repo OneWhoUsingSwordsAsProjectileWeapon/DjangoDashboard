@@ -80,73 +80,15 @@
 }
 
 .calendar-day.unavailable .day-content {
-    background-color: #dc3545;
+    background-color: #e74c3c;
     color: white;
-    opacity: 0.9;
-    position: relative;
-}
-
-.calendar-day.unavailable .day-content::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 10%;
-    right: 10%;
-    height: 2px;
-    background-color: white;
-    transform: translateY(-50%);
-}
-
-.calendar-day.unavailable:hover {
-    background-color: #fff5f5 !important;
-}
-
-.calendar-day.unavailable:hover .day-content {
-    background-color: #dc3545 !important;
+    opacity: 0.8;
 }
 
 .calendar-day.today .day-content {
-    border: 2px solid #007bff;
-    background-color: #e7f3ff;
-    color: #007bff;
-    font-weight: 700;
-}
-
-.calendar-day.selected .day-content {
-    background-color: #007bff;
+    background-color: #3498db;
     color: white;
-    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
-}
-
-.calendar-day.in-range {
-    background-color: rgba(0, 123, 255, 0.1);
-}
-
-.calendar-day.in-range .day-content {
-    background-color: rgba(0, 123, 255, 0.2);
-    border-radius: 0;
-    width: 100%;
-    height: 100%;
-}
-
-.calendar-day.start-date {
-    background: linear-gradient(to right, transparent 50%, rgba(0, 123, 255, 0.1) 50%);
-}
-
-.calendar-day.start-date .day-content {
-    background-color: #007bff;
-    color: white;
-    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
-}
-
-.calendar-day.end-date {
-    background: linear-gradient(to left, transparent 50%, rgba(0, 123, 255, 0.1) 50%);
-}
-
-.calendar-day.end-date .day-content {
-    background-color: #007bff;
-    color: white;
-    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
 }
 
 .calendar-day.empty {
@@ -161,13 +103,13 @@
 .legend-item {
     display: flex;
     align-items: center;
+    gap: 0.5rem;
 }
 
 .legend-box {
     width: 12px;
     height: 12px;
     border-radius: 2px;
-    margin-right: 4px;
 }
 
 .legend-text {
@@ -181,11 +123,11 @@
         font-size: 0.75rem;
         padding: 0.5rem 0.25rem;
     }
-    
+
     .calendar-table td {
         height: 45px;
     }
-    
+
     .calendar-day .day-content {
         width: 32px;
         height: 32px;
@@ -198,17 +140,17 @@
         font-size: 0.7rem;
         padding: 0.4rem 0.2rem;
     }
-    
+
     .calendar-table td {
         height: 40px;
     }
-    
+
     .calendar-day .day-content {
         width: 28px;
         height: 28px;
         font-size: 0.8rem;
     }
-    
+
     .listing-calendar {
         padding: 0.75rem;
     }

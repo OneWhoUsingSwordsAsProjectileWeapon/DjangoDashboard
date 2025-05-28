@@ -507,11 +507,11 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Load Alpine.js first -->
-<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-
 <!-- Calendar functionality -->
 <script src="{% static 'listings/js/calendar.js' %}"></script>
+
+<!-- Load Alpine.js after calendar functions are defined -->
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
