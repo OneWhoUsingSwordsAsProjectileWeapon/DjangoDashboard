@@ -248,6 +248,22 @@ def send_new_review_notification(review):
         listing=listing
     )
 
+def create_notification(user, notification_type, title, message, **kwargs):
+    """Create an in-app notification for a user"""
+    from .models import Notification
+    
+    notification = Notification.objects.create(
+        user=user,
+        notification_type=notification_type,
+        title=title,
+        message=message,
+        booking=kwargs.get('booking'),
+        listing=kwargs.get('listing'),
+        conversation=kwargs.get('conversation'),
+        review=kwargs.get('review')
+    )
+    return notification
+
 def send_listing_approved_notification(listing):
     """Send notification when listing is approved"""
     host = listing.host

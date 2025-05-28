@@ -287,25 +287,52 @@
                     {% endif %}
 
                     {% if can_review %}
-                        <div class="mt-4">
+                        <div class="mt-4 p-4 bg-light rounded">
                             <h5>Write a Review</h5>
-                            <form method="post" action="{% url 'listings:create_review' booking_id=booking_for_review.id %}">
+                            <p class="text-muted mb-3">Share your experience with this property</p>
+                            <form method="post" action="{% url 'listings:create_review' listing_id=listing.id %}">
                                 {% csrf_token %}
                                 <div class="mb-3">
-                                    <label for="{{ review_form.rating.id_for_label }}" class="form-label">Rating</label>
-                                    <div class="rate">
-                                        {% for i in '54321' %}
-                                            <input type="radio" id="star{{ i }}" name="{{ review_form.rating.html_name }}" value="{{ i }}" />
-                                            <label for="star{{ i }}"><i class="fas fa-star"></i></label>
-                                        {% endfor %}
+                                    <label class="form-label">Rating <span class="text-danger">*</span></label>
+                                    <div class="rating-input d-flex align-items-center">
+                                        <div class="star-rating me-3">
+                                            {% for i in '12345' %}
+                                                <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}" required/>
+                                                <label for="star{{ i }}" class="star-label"><i class="fas fa-star"></i></label>
+                                            {% endfor %}
+                                        </div>
+                                        <span id="rating-text" class="text-muted"></span>
                                     </div>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="{{ review_form.comment.id_for_label }}" class="form-label">Your Review</label>
-                                    {{ review_form.comment }}
+                                    <label for="{{ review_form.comment.id_for_label }}" class="form-label">Your Review <span class="text-danger">*</span></label>
+                                    <textarea name="comment" class="form-control" rows="4" placeholder="Tell others about your experience with this property..." required></textarea>
                                 </div>
-                                <button type="submit" class="btn btn-primary">Submit Review</button>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="toggleReviewForm()">Cancel</button>
+                                </div>
                             </form>
+                        </div>
+                    {% elif user.is_authenticated and user != listing.host %}
+                        {% if user.reviews.filter|get_item:listing.id %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-check-circle me-2"></i>
+                                You have already reviewed this property.
+                            </div>
+                        {% else %}
+                            <div class="text-center py-3">
+                                <button class="btn btn-outline-primary" onclick="toggleReviewForm()">
+                                    <i class="fas fa-star me-2"></i>Write a Review
+                                </button>
+                            </div>
+                        {% endif %}
+                    {% elif not user.is_authenticated %}
+                        <div class="text-center py-3">
+                            <p class="text-muted mb-2">Want to leave a review?</p>
+                            <a href="{% url 'users:login' %}" class="btn btn-outline-primary">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login to Review
+                            </a>
                         </div>
                     {% endif %}
                 </div>
@@ -514,6 +541,37 @@
             icon.classList.add('far');
             button.classList.remove('btn-danger');
             button.classList.add('btn-outline-danger');
+        }
+    }
+
+    // Star rating functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const ratingInputs = document.querySelectorAll('.star-rating input[type="radio"]');
+        const ratingText = document.getElementById('rating-text');
+        
+        const ratingLabels = {
+            '1': 'Poor',
+            '2': 'Fair', 
+            '3': 'Good',
+            '4': 'Very Good',
+            '5': 'Excellent'
+        };
+
+        ratingInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                if (ratingText) {
+                    ratingText.textContent = ratingLabels[this.value];
+                }
+            });
+        });
+    });
+
+    // Toggle review form
+    function toggleReviewForm() {
+        // This would toggle the review form if it was hidden
+        const form = document.querySelector('form[action*="review"]');
+        if (form) {
+            form.scrollIntoView({ behavior: 'smooth' });
         }
     }
 </script>

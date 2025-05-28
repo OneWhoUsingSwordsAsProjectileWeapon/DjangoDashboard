@@ -115,21 +115,22 @@ class ListingDetailView(DetailView):
         # Check if user can leave a review
         user = self.request.user
         can_review = False
-        if user.is_authenticated:
-            # User can review if they have completed a booking and haven't reviewed yet
-            completed_bookings = Booking.objects.filter(
-                guest=user,
-                listing=listing,
-                status='completed'
-            )
-            if completed_bookings.exists() and not Review.objects.filter(
+        if user.is_authenticated and user != listing.host:
+            # User can review if they haven't reviewed this listing yet
+            existing_review = Review.objects.filter(
                 reviewer=user, 
-                listing=listing, 
-                booking__in=completed_bookings
-            ).exists():
+                listing=listing
+            ).first()
+            if not existing_review:
                 context['review_form'] = ReviewForm()
                 context['can_review'] = True
-                context['booking_for_review'] = completed_bookings.first()
+                # Find any completed booking for this user and listing
+                completed_booking = Booking.objects.filter(
+                    guest=user,
+                    listing=listing,
+                    status='completed'
+                ).first()
+                context['booking_for_review'] = completed_booking
 
         # Unavailable dates for calendar
         unavailable_dates = listing.get_unavailable_dates()
@@ -717,38 +718,54 @@ def update_booking_status(request, reference, status):
         raise Http404("Booking not found")
 
 @login_required
-def create_review(request, booking_id):
-    """View for creating a review for a booking"""
-    booking = get_object_or_404(
-        Booking, 
-        id=booking_id, 
-        guest=request.user, 
-        status='completed'
-    )
+def create_review(request, listing_id):
+    """View for creating a review for a listing"""
+    listing = get_object_or_404(Listing, id=listing_id)
+    
+    # Check if user is the host
+    if request.user == listing.host:
+        messages.error(request, "You cannot review your own listing.")
+        return redirect('listings:listing_detail', pk=listing.pk)
 
     # Check if review already exists
-    if Review.objects.filter(booking=booking).exists():
-        messages.error(request, "You have already reviewed this booking.")
-        return redirect('listings:listing_detail', pk=booking.listing.pk)
+    if Review.objects.filter(reviewer=request.user, listing=listing).exists():
+        messages.error(request, "You have already reviewed this listing.")
+        return redirect('listings:listing_detail', pk=listing.pk)
 
     if request.method == 'POST':
         form = ReviewForm(request.POST)
         if form.is_valid():
             review = form.save(commit=False)
-            review.listing = booking.listing
+            review.listing = listing
             review.reviewer = request.user
-            review.booking = booking
+            # Try to find a completed booking for this user and listing
+            completed_booking = Booking.objects.filter(
+                guest=request.user,
+                listing=listing,
+                status='completed'
+            ).first()
+            review.booking = completed_booking
             review.save()
 
+            # Send notification to host
+            from notifications.tasks import create_notification
+            create_notification(
+                user=listing.host,
+                notification_type='review_received',
+                title=f"New review for {listing.title}",
+                message=f"{request.user.get_full_name() or request.user.username} left a {review.rating}-star review for your listing.",
+                listing=listing,
+                review=review
+            )
+
             messages.success(request, "Your review has been submitted!")
-            return redirect('listings:listing_detail', pk=booking.listing.pk)
+            return redirect('listings:listing_detail', pk=listing.pk)
     else:
         form = ReviewForm()
 
     return render(request, 'listings/review_form.html', {
         'form': form,
-        'booking': booking,
-        'listing': booking.listing
+        'listing': listing
     })
 
 def get_listing_calendar_data(request, pk):

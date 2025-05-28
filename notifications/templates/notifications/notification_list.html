@@ -1,103 +1,133 @@
+
 {% extends 'base.html' %}
-{% load notify_tags %}
 
 {% block title %}Notifications - Rental Aggregator{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container mt-4">
     <div class="row">
-        <div class="col-12">
+        <div class="col-md-8 mx-auto">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Notifications</h2>
+                <h2>Your Notifications</h2>
                 {% if notifications %}
-                <a href="{% url 'notifications:mark_all_read' %}" class="btn btn-outline-secondary">
-                    <i class="fas fa-check-double"></i> Mark all as read
-                </a>
+                <button class="btn btn-outline-secondary btn-sm" onclick="markAllNotificationsRead()">
+                    Mark All as Read
+                </button>
                 {% endif %}
             </div>
-            
+
             {% if notifications %}
-                <div class="card shadow-sm">
-                    <div class="list-group list-group-flush">
-                        {% for notification in notifications %}
-                            <div class="list-group-item d-flex {% if not notification.is_read %}bg-light{% endif %}">
-                                <div class="me-3 pt-1">
-                                    {{ notification.notification_type|notification_icon }}
-                                </div>
-                                <div class="flex-grow-1">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h5 class="mb-1 {% if not notification.is_read %}fw-bold{% endif %}">{{ notification.title }}</h5>
-                                        <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
-                                    </div>
-                                    <p class="mb-1">{{ notification.message }}</p>
-                                    <div class="mt-2">
-                                        <a href="{{ notification|notification_target_url }}" class="btn btn-sm btn-primary">
-                                            View Details
-                                        </a>
-                                        {% if not notification.is_read %}
-                                        <a href="{% url 'notifications:mark_notification_read' pk=notification.pk %}" class="btn btn-sm btn-outline-secondary ms-2">
-                                            Mark as Read
-                                        </a>
-                                        {% endif %}
-                                    </div>
-                                </div>
+                {% for notification in notifications %}
+                <div class="card mb-3 notification-card {% if not notification.is_read %}border-primary{% endif %}" 
+                     data-notification-id="{{ notification.id }}">
+                    <div class="card-body">
+                        <div class="d-flex">
+                            <div class="notification-icon me-3">
+                                {% if notification.notification_type == 'booking_request' %}
+                                    <i class="fas fa-calendar-plus text-primary fa-2x"></i>
+                                {% elif notification.notification_type == 'booking_confirmed' %}
+                                    <i class="fas fa-calendar-check text-success fa-2x"></i>
+                                {% elif notification.notification_type == 'message_received' %}
+                                    <i class="fas fa-envelope text-info fa-2x"></i>
+                                {% elif notification.notification_type == 'review_received' %}
+                                    <i class="fas fa-star text-warning fa-2x"></i>
+                                {% elif notification.notification_type == 'listing_approved' %}
+                                    <i class="fas fa-check-circle text-success fa-2x"></i>
+                                {% else %}
+                                    <i class="fas fa-bell text-secondary fa-2x"></i>
+                                {% endif %}
                             </div>
-                        {% endfor %}
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title mb-0 {% if not notification.is_read %}fw-bold{% endif %}">
+                                        {{ notification.title }}
+                                    </h5>
+                                    {% if not notification.is_read %}
+                                        <span class="badge bg-primary">New</span>
+                                    {% endif %}
+                                </div>
+                                <p class="card-text">{{ notification.message }}</p>
+                                <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                                
+                                <!-- Action links based on notification type -->
+                                {% if notification.booking %}
+                                    <div class="mt-2">
+                                        <a href="{% url 'listings:booking_detail' reference=notification.booking.booking_reference %}" 
+                                           class="btn btn-sm btn-outline-primary">View Booking</a>
+                                    </div>
+                                {% elif notification.listing %}
+                                    <div class="mt-2">
+                                        <a href="{% url 'listings:listing_detail' pk=notification.listing.pk %}" 
+                                           class="btn btn-sm btn-outline-primary">View Listing</a>
+                                    </div>
+                                {% elif notification.conversation %}
+                                    <div class="mt-2">
+                                        <a href="{% url 'chat:conversation_detail' pk=notification.conversation.pk %}" 
+                                           class="btn btn-sm btn-outline-primary">View Conversation</a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                {% if is_paginated %}
-                <nav aria-label="Page navigation" class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page=1" aria-label="First">
-                                <span aria-hidden="true">&laquo;&laquo;</span>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                        {% endif %}
-                        
-                        {% for num in page_obj.paginator.page_range %}
-                            {% if page_obj.number == num %}
-                                <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
-                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                                </li>
-                            {% endif %}
-                        {% endfor %}
-                        
-                        {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
-                                <span aria-hidden="true">&raquo;&raquo;</span>
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
-                
+                {% endfor %}
             {% else %}
                 <div class="text-center py-5">
-                    <div class="mb-4">
-                        <i class="fas fa-bell-slash fa-3x text-muted"></i>
-                    </div>
-                    <h4>No notifications</h4>
-                    <p class="text-muted">You don't have any notifications yet.</p>
+                    <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No notifications yet</h4>
+                    <p class="text-muted">You'll see notifications about bookings, messages, and more here.</p>
                 </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<script>
+    function markAllNotificationsRead() {
+        fetch('{% url "notifications:mark_all_read" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error marking notifications as read:', error);
+        });
+    }
+
+    // Mark individual notifications as read when clicked
+    document.addEventListener('click', function(e) {
+        const notificationCard = e.target.closest('.notification-card');
+        if (notificationCard && notificationCard.classList.contains('border-primary')) {
+            const notificationId = notificationCard.dataset.notificationId;
+            fetch(`/notifications/${notificationId}/read/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    notificationCard.classList.remove('border-primary');
+                    const badge = notificationCard.querySelector('.badge');
+                    if (badge) badge.remove();
+                    const title = notificationCard.querySelector('.card-title');
+                    if (title) title.classList.remove('fw-bold');
+                }
+            })
+            .catch(error => {
+                console.error('Error marking notification as read:', error);
+            });
+        }
+    });
+</script>
 {% endblock %}
