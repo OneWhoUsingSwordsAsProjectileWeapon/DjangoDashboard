@@ -114,13 +114,19 @@ class ListingDetailView(DetailView):
 
         # Check if user can leave a review
         user = self.request.user
+        user_has_reviewed = False
         can_review = False
+        
         if user.is_authenticated and user != listing.host:
-            # User can review if they haven't reviewed this listing yet
+            # Check if user has already reviewed this listing
             existing_review = Review.objects.filter(
                 reviewer=user, 
                 listing=listing
             ).first()
+            
+            user_has_reviewed = existing_review is not None
+            context['user_has_reviewed'] = user_has_reviewed
+            
             if not existing_review:
                 context['review_form'] = ReviewForm()
                 context['can_review'] = True

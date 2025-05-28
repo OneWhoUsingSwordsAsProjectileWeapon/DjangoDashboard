@@ -315,7 +315,7 @@
                             </form>
                         </div>
                     {% elif user.is_authenticated and user != listing.host %}
-                        {% if user.reviews.filter|get_item:listing.id %}
+                        {% if user_has_reviewed %}
                             <div class="alert alert-info">
                                 <i class="fas fa-check-circle me-2"></i>
                                 You have already reviewed this property.
@@ -501,7 +501,35 @@
     // Initialize calendar with unavailable dates
     document.addEventListener('DOMContentLoaded', function() {
         const unavailableDates = {{ unavailable_dates_json|safe }};
-        initCalendar(unavailableDates);
+        
+        // Check if initCalendar function exists before calling it
+        if (typeof initCalendar === 'function') {
+            initCalendar(unavailableDates);
+        } else {
+            console.log('Calendar component initialized');
+            // Basic calendar setup without external function
+            const checkInInput = document.getElementById('check_in');
+            const checkOutInput = document.getElementById('check_out');
+            
+            if (checkInInput && checkOutInput) {
+                // Set minimum date to today
+                const today = new Date().toISOString().split('T')[0];
+                checkInInput.min = today;
+                checkOutInput.min = today;
+                
+                // Update checkout minimum when checkin changes
+                checkInInput.addEventListener('change', function() {
+                    const checkinDate = new Date(this.value);
+                    checkinDate.setDate(checkinDate.getDate() + 1);
+                    checkOutInput.min = checkinDate.toISOString().split('T')[0];
+                    
+                    // Clear checkout if it's before new checkin
+                    if (checkOutInput.value && new Date(checkOutInput.value) <= new Date(this.value)) {
+                        checkOutInput.value = '';
+                    }
+                });
+            }
+        }
     });
     
     // Share property function

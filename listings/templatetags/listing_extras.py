@@ -19,26 +19,26 @@ def star_rating(value):
     """Convert a numeric rating to star icons"""
     if value is None:
         return mark_safe('<span class="text-muted">No ratings yet</span>')
-    
+
     try:
         rating = float(value)
         full_stars = int(rating)
         half_star = rating - full_stars >= 0.5
         empty_stars = 5 - full_stars - (1 if half_star else 0)
-        
+
         stars_html = ''
         # Full stars
         for _ in range(full_stars):
             stars_html += '<i class="fas fa-star text-warning"></i>'
-        
+
         # Half star
         if half_star:
             stars_html += '<i class="fas fa-star-half-alt text-warning"></i>'
-        
+
         # Empty stars
         for _ in range(empty_stars):
             stars_html += '<i class="far fa-star text-warning"></i>'
-        
+
         return mark_safe(stars_html)
     except (ValueError, TypeError):
         return mark_safe('<span class="text-muted">Invalid rating</span>')
@@ -50,9 +50,9 @@ def date_range(start_date, end_date):
         start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
     if isinstance(end_date, str):
         end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-        
+
     nights = (end_date - start_date).days
-    
+
     return f"{start_date.strftime('%b %d, %Y')} - {end_date.strftime('%b %d, %Y')} · {nights} night{'s' if nights != 1 else ''}"
 
 @register.filter
@@ -81,7 +81,7 @@ def get_booking_status_badge(status):
         'canceled': 'bg-danger',
         'completed': 'bg-info'
     }
-    
+
     badge_class = badge_classes.get(status, 'bg-secondary')
     return mark_safe(f'<span class="badge {badge_class}">{status.title()}</span>')
 
@@ -111,7 +111,7 @@ def amenity_icon(amenity):
         'pets_allowed': 'fas fa-paw',
         'wheelchair_accessible': 'fas fa-wheelchair',
     }
-    
+
     icon_class = icons.get(amenity.lower().replace(' ', '_'), 'fas fa-check')
     return mark_safe(f'<i class="{icon_class}"></i>')
 
@@ -120,9 +120,9 @@ def display_amenities(amenities, max_display=6):
     """Display amenities with icons"""
     if not amenities:
         return mark_safe('<p>No amenities listed</p>')
-    
+
     html = '<div class="row">'
-    
+
     # Show only first few amenities
     for i, amenity in enumerate(amenities[:max_display]):
         html += f'''
@@ -133,7 +133,7 @@ def display_amenities(amenities, max_display=6):
             </div>
         </div>
         '''
-    
+
     # Add a "more" button if there are additional amenities
     if len(amenities) > max_display:
         html += f'''
@@ -145,6 +145,22 @@ def display_amenities(amenities, max_display=6):
             </button>
         </div>
         '''
-    
+
     html += '</div>'
     return mark_safe(html)
+
+@register.filter
+def get_item(dictionary, key):
+    """Get an item from a dictionary or queryset by key"""
+    try:
+        if hasattr(dictionary, 'filter'):
+            # It's a QuerySet or Manager
+            return dictionary.filter(listing_id=key).exists()
+        elif hasattr(dictionary, 'get'):
+            # It's a dictionary-like object
+            return dictionary.get(key)
+        else:
+            # Try to access it like a list/tuple
+            return dictionary[key]
+    except (KeyError, IndexError, TypeError, AttributeError):
+        return None
