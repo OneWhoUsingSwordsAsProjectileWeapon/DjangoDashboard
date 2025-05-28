@@ -1,6 +1,7 @@
+
 {% load listing_extras %}
 
-<div x-data="calendar()" x-init="init()" class="listing-calendar">
+<div x-data="calendarComponent()" x-init="initCalendar()" class="listing-calendar">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div class="btn-group">
             <button type="button" class="btn btn-outline-secondary" x-on:click="previousMonth()">
@@ -27,9 +28,9 @@
                 </tr>
             </thead>
             <tbody>
-                <template x-for="(week, weekIndex) in calendarDays" :key="weekIndex">
+                <template x-for="(week, weekIndex) in calendarDays" :key="'week-' + weekIndex">
                     <tr>
-                        <template x-for="(day, dayIndex) in week" :key="weekIndex + '-' + dayIndex">
+                        <template x-for="(day, dayIndex) in week" :key="'day-' + weekIndex + '-' + dayIndex">
                             <td :class="{ 'empty': !day.date }">
                                 <div 
                                     class="calendar-day" 
@@ -38,9 +39,9 @@
                                         'today': day.isToday,
                                         'empty': !day.date
                                     }"
-                                    x-on:click="selectDate(day.date)"
+                                    x-on:click="day.date ? selectDate(day.date) : null"
                                 >
-                                    <div class="day-content" x-text="day.dayNumber"></div>
+                                    <div class="day-content" x-text="day.dayNumber || ''"></div>
                                 </div>
                             </td>
                         </template>
@@ -68,69 +69,40 @@
 </div>
 
 <script>
-// Make unavailable dates available globally for calendar initialization
-window.unavailableDatesJson = '{{ unavailable_dates_json|safe }}';
-
-function calendar() {
+function calendarComponent() {
     return {
         currentYear: new Date().getFullYear(),
         currentMonth: new Date().getMonth(),
         calendarDays: [],
         startDate: null,
         endDate: null,
-        selectionMode: 'start', // 'start' or 'end'
-        unavailableDates: [], // Initialize as empty array
+        selectionMode: 'start',
+        unavailableDates: [],
         
-        init() {
+        initCalendar() {
             console.log('Calendar component initialized');
-
-            // Parse the JSON string into an object
+            
+            // Parse unavailable dates from the context
             try {
-                this.unavailableDates = JSON.parse(window.unavailableDatesJson.replace(/&quot;/g, '"')) || [];
+                const unavailableDatesJson = '{{ unavailable_dates_json|safe }}';
+                this.unavailableDates = JSON.parse(unavailableDatesJson.replace(/&quot;/g, '"')) || [];
             } catch (e) {
                 console.error("Error parsing unavailable dates JSON:", e);
                 this.unavailableDates = [];
             }
+            
             this.generateCalendar();
             
-            // Get query params
-            const urlParams = new URLSearchParams(window.location.search);
-            const checkIn = urlParams.get('check_in');
-            const checkOut = urlParams.get('check_out');
-            
-            // Set dates from URL if available
-            if (checkIn) {
-                this.startDate = checkIn;
-                this.selectionMode = 'end';
-            }
-            if (checkOut) {
-                this.endDate = checkOut;
-                this.selectionMode = 'start';
-            }
-            
-            // Listen for date selection from inputs
-            const checkInInput = document.getElementById('check_in');
-            const checkOutInput = document.getElementById('check_out');
-            
-            if (checkInInput) {
-                checkInInput.addEventListener('change', (event) => {
-                    this.startDate = event.target.value;
-                    this.selectionMode = 'end';
-                    this.generateCalendar();
-                });
-            }
-            
-            if (checkOutInput) {
-                checkOutInput.addEventListener('change', (event) => {
-                    this.endDate = event.target.value;
-                    this.selectionMode = 'start';
-                    this.generateCalendar();
-                });
-            }
+            // Set up date input event listeners
+            this.setupDateInputs();
         },
         
         get currentMonthName() {
-            return new Date(this.currentYear, this.currentMonth).toLocaleString('default', { month: 'long' });
+            const months = [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ];
+            return months[this.currentMonth];
         },
         
         generateCalendar() {
@@ -148,10 +120,10 @@ function calendar() {
                 for (let j = 0; j < 7; j++) {
                     if (i === 0 && j < firstDay) {
                         // Empty cells before first day
-                        week.push({ date: null, isUnavailable: false });
+                        week.push({ date: null, dayNumber: null, isUnavailable: false, isToday: false });
                     } else if (date > daysInMonth) {
                         // Empty cells after last day
-                        week.push({ date: null, isUnavailable: false });
+                        week.push({ date: null, dayNumber: null, isUnavailable: false, isToday: false });
                     } else {
                         // Valid days
                         const currentDate = new Date(this.currentYear, this.currentMonth, date);
@@ -209,7 +181,7 @@ function calendar() {
                 this.endDate = null;
                 this.selectionMode = 'end';
                 
-                // Update check-in input if it exists
+                // Update check-in input
                 const checkInInput = document.getElementById('check_in');
                 if (checkInInput) {
                     checkInInput.value = dateStr;
@@ -221,7 +193,7 @@ function calendar() {
                     this.startDate = dateStr;
                     this.endDate = null;
                     
-                    // Update check-in input if it exists
+                    // Update check-in input
                     const checkInInput = document.getElementById('check_in');
                     if (checkInInput) {
                         checkInInput.value = dateStr;
@@ -239,7 +211,7 @@ function calendar() {
                 this.endDate = dateStr;
                 this.selectionMode = 'start';
                 
-                // Update check-out input if it exists
+                // Update check-out input
                 const checkOutInput = document.getElementById('check_out');
                 if (checkOutInput) {
                     checkOutInput.value = dateStr;
@@ -248,6 +220,27 @@ function calendar() {
             }
             
             this.generateCalendar();
+        },
+        
+        setupDateInputs() {
+            const checkInInput = document.getElementById('check_in');
+            const checkOutInput = document.getElementById('check_out');
+            
+            if (checkInInput) {
+                checkInInput.addEventListener('change', (event) => {
+                    this.startDate = event.target.value;
+                    this.selectionMode = 'end';
+                    this.generateCalendar();
+                });
+            }
+            
+            if (checkOutInput) {
+                checkOutInput.addEventListener('change', (event) => {
+                    this.endDate = event.target.value;
+                    this.selectionMode = 'start';
+                    this.generateCalendar();
+                });
+            }
         },
         
         formatDate(date) {
@@ -285,23 +278,6 @@ function calendar() {
             }
             
             return false;
-        },
-        
-        isSelected(dateStr) {
-            return dateStr === this.startDate || dateStr === this.endDate;
-        },
-        
-        isStartDate(dateStr) {
-            return dateStr === this.startDate;
-        },
-        
-        isEndDate(dateStr) {
-            return dateStr === this.endDate;
-        },
-        
-        isInRange(dateStr) {
-            if (!this.startDate || !this.endDate) return false;
-            return dateStr > this.startDate && dateStr < this.endDate;
         }
     };
 }

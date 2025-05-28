@@ -1,3 +1,4 @@
+
 {% extends 'base.html' %}
 {% load static %}
 {% load listing_extras %}
@@ -507,24 +508,11 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Calendar functionality -->
-<script src="{% static 'listings/js/calendar.js' %}"></script>
-
-<!-- Load Alpine.js after calendar functions are defined -->
+<!-- Load Alpine.js before calendar initialization -->
 <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize calendar with unavailable dates
-    const unavailableDates = {{ unavailable_dates_json|safe }};
-
-    // Initialize the calendar functionality
-    if (typeof initCalendar === 'function') {
-        initCalendar(unavailableDates);
-    } else {
-        console.log('Calendar.js library not loaded');
-    }
-
     // Set up date input constraints
     const checkInInput = document.getElementById('check_in');
     const checkOutInput = document.getElementById('check_out');
