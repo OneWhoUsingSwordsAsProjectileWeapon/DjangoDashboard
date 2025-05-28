@@ -556,7 +556,7 @@
           animation: pulse 2s infinite;
         }
 
-        
+
 
         .notification-item {
           padding: 1rem;
@@ -639,20 +639,20 @@
           body {
             font-size: 14px;
           }
-          
+
           .card-body {
             padding: 1rem;
           }
-          
+
           .listing-card .card-body {
             padding: 1rem;
           }
-          
+
           .btn {
             font-size: 0.875rem;
             padding: 0.5rem 1rem;
           }
-          
+
           h1 { font-size: 1.75rem; }
           h2 { font-size: 1.5rem; }
           h3 { font-size: 1.25rem; }
@@ -662,17 +662,17 @@
           .card-img-top {
             height: 200px;
           }
-          
+
           .listing-card .card-img-top {
             height: 180px;
           }
-          
+
           .calendar-day {
             width: 35px;
             height: 35px;
             font-size: 0.875rem;
           }
-          
+
           .navbar-collapse {
             background: white;
             margin-top: 1rem;
@@ -680,12 +680,12 @@
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
           }
-          
+
           .navbar-nav .nav-link {
             padding: 0.75rem 0;
             border-bottom: 1px solid var(--medium-gray);
           }
-          
+
           .navbar-nav .nav-link:last-child {
             border-bottom: none;
           }
@@ -763,41 +763,49 @@
             }
         }
 
+        // Function to get CSRF token
         function getCSRFToken() {
-            // Try multiple ways to get CSRF token
-            const tokenElement = document.querySelector('[name=csrfmiddlewaretoken]') || 
-                                document.querySelector('meta[name="csrf-token"]') ||
-                                document.querySelector('input[name="csrfmiddlewaretoken"]');
-
-            if (tokenElement) {
-                return tokenElement.value || tokenElement.content || tokenElement.getAttribute('content');
+            const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfInput) {
+                return csrfInput.value;
             }
-
-            // Fallback to cookie
-            const cookieValue = document.cookie
-                .split('; ')
-                .find(row => row.startsWith('csrftoken='))
-                ?.split('=')[1];
-
-            return cookieValue || '';
+            // Try to get from cookie if input not found
+            const name = 'csrftoken';
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
         }
 
         // Function to update notification badge
         function updateNotificationBadge() {
-            fetch('/notifications/api/unread-count/')
-                .then(response => response.json())
-                .then(data => {
-                    const badge = document.getElementById('notification-badge');
-                    if (badge) {
-                        if (data.count > 0) {
-                            badge.textContent = data.count;
-                            badge.style.display = 'inline';
-                        } else {
-                            badge.style.display = 'none';
-                        }
-                    }
-                })
-                .catch(error => console.error('Error updating notification badge:', error));
+            fetch('/notifications/get-unread-count/', {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Network response was not ok');
+            })
+            .then(data => {
+                const badge = document.getElementById('notification-badge');
+                if (badge) {
+                    badge.textContent = data.count;
+                    badge.style.display = data.count > 0 ? 'inline' : 'none';
+                }
+            })
+            .catch(error => console.error('Error updating notification badge:', error));
         }
 
         // Function to mark notification as read
@@ -840,34 +848,55 @@
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': csrfToken,
-                    'Content-Type': 'application/json',
-                },
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             })
             .then(response => {
                 if (response.ok) {
                     updateNotificationBadge();
                     // Remove all notifications from the dropdown
-                    const notificationsList = document.querySelector('.notifications-list');
-                    if (notificationsList) {
-                        notificationsList.innerHTML = '<div class="dropdown-item text-muted">No new notifications</div>';
+                    const notificationItems = document.querySelectorAll('.notification-item');
+                    notificationItems.forEach(item => item.remove());
+                    // Show empty state
+                    const dropdown = document.querySelector('.notification-dropdown');
+                    if (dropdown && notificationItems.length > 0) {
+                        dropdown.innerHTML = `
+                            <div class="empty-notifications">
+                                <i class="fas fa-bell-slash fa-2x"></i>
+                                <p class="mb-0">No notifications</p>
+                            </div>
+                        `;
                     }
                 }
             })
             .catch(error => console.error('Error marking all notifications as read:', error));
         }
 
-        // Auto-mark notifications as read when clicked
-        document.addEventListener('click', function(e) {
-            const notificationItem = e.target.closest('.notification-item');
-            if (notificationItem && notificationItem.classList.contains('unread')) {
-                const notificationId = notificationItem.dataset.notificationId;
-                markNotificationRead(notificationId);
+        // Function to handle notification click and redirect
+        function handleNotificationClick(notificationId, targetUrl) {
+            // Mark as read first
+            markNotificationRead(notificationId);
+            // Then redirect
+            if (targetUrl) {
+                window.location.href = targetUrl;
             }
-        });
+        }
 
-        // Update badge on page load
+        // Add click handlers to notification items when dropdown opens
         document.addEventListener('DOMContentLoaded', function() {
-            updateNotificationBadge();
+            // Handle notification dropdown clicks
+            document.addEventListener('click', function(event) {
+                const notificationItem = event.target.closest('.notification-item');
+                if (notificationItem) {
+                    const notificationId = notificationItem.dataset.notificationId;
+                    const targetUrl = notificationItem.dataset.targetUrl;
+
+                    if (notificationId) {
+                        event.preventDefault();
+                        handleNotificationClick(notificationId, targetUrl);
+                    }
+                }
+            });
         });
     </script>
 
