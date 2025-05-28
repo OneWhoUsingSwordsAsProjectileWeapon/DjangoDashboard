@@ -91,13 +91,20 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle position-relative" href="#" id="notificationDropdown" 
                            role="button" data-bs-toggle="dropdown" aria-expanded="false"
-                           onclick="loadNotifications()">
+                           onclick="loadNotifications()"
+                           data-bs-auto-close="outside">
                             <i class="fas fa-bell"></i>
                             <span class="position-absolute top-0 start-100 translate-middle" 
                                   id="notification-badge-container"
                                   hx-get="{% url 'notifications:get_unread_count' %}"
                                   hx-trigger="load, every 30s"
                                   hx-swap="innerHTML">
+                                <!-- Initial load -->
+                                {% load notify_tags %}
+                                {% notification_count as count %}
+                                {% if count > 0 %}
+                                <span class="badge bg-danger" id="notification-badge">{{ count }}</span>
+                                {% endif %}
                             </span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end notification-dropdown" 

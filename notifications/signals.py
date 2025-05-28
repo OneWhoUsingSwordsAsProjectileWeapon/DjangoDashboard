@@ -5,7 +5,7 @@ This module contains signal handlers for notification-related events
 and connections to other app signals that should generate notifications.
 """
 
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
 
@@ -38,38 +38,49 @@ if MODELS_AVAILABLE:
                         message=f"New message from {instance.sender.username}",
                         conversation=instance.conversation,
                     )
-    
+
+    @receiver(pre_save, sender=Booking)
+    def store_booking_original_status(sender, instance, **kwargs):
+        """Store original booking status before save"""
+        if instance.pk:
+            try:
+                instance._original_status = Booking.objects.get(pk=instance.pk).status
+            except Booking.DoesNotExist:
+                instance._original_status = None
+        else:
+            instance._original_status = None
+
     @receiver(post_save, sender=Booking)
     def create_booking_notification(sender, instance, created, **kwargs):
         """
         Create a notification when a booking status changes.
         """
-        if created:
-            # Notify host of new booking
+        if not created and hasattr(instance, '_original_status'):
+            # Check if status changed
+            if instance._original_status and instance._original_status != instance.status:
+                # Notify guest of booking status change
+                if instance.status == 'confirmed':
+                    notification_type = 'booking_confirmed'
+                    title = "Booking Confirmed"
+                    message = f"Your booking for {instance.listing.title} has been confirmed!"
+                elif instance.status == 'canceled':
+                    notification_type = 'booking_canceled'
+                    title = "Booking Canceled"
+                    message = f"Your booking for {instance.listing.title} has been canceled."
+                else:
+                    notification_type = 'system'
+                    title = f"Booking {instance.status.capitalize()}"
+                    message = f"Your booking for {instance.listing.title} status changed to {instance.status}"
+
             Notification.objects.create(
-                user=instance.listing.host,
-                notification_type='booking_request',
-                title="New Booking Request",
-                message=f"New booking request for {instance.listing.title}",
+                user=instance.guest,
+                notification_type=notification_type,
+                title=title,
+                message=message,
                 booking=instance,
                 listing=instance.listing,
             )
-        else:
-            # Check if status changed
-            if hasattr(instance, 'tracker') and instance.tracker.has_changed('status'):
-                # Notify guest of booking status change
-                # Determine notification type based on status
-                notification_type = 'booking_confirmed' if instance.status == 'confirmed' else 'booking_canceled'
-                
-                Notification.objects.create(
-                    user=instance.guest,
-                    notification_type=notification_type,
-                    title=f"Booking {instance.status.capitalize()}",
-                    message=f"Your booking for {instance.listing.title} is now {instance.status}",
-                    booking=instance,
-                    listing=instance.listing,
-                )
-    
+
     @receiver(post_save, sender=Review)
     def create_review_notification(sender, instance, created, **kwargs):
         """

@@ -44,13 +44,9 @@ def mark_all_read(request):
 def get_unread_count(request):
     """API to get unread notification count"""
     count = request.user.notifications.filter(is_read=False).count()
-    if request.headers.get('HX-Request'):
-        # Return HTML for HTMX
-        if count > 0:
-            return render(request, 'notifications/partials/notification_badge.html', {'count': count})
-        else:
-            return render(request, 'notifications/partials/notification_badge.html', {'count': 0})
-    return JsonResponse({'count': count})
+    
+    # Always return HTML template for consistency
+    return render(request, 'notifications/partials/notification_badge.html', {'count': count})
 
 @login_required
 def recent_notifications(request):
