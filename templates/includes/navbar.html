@@ -130,21 +130,21 @@
                                 </a>
                             </li>
                             <li>
-                                <a class="nav-link" href="{% url 'moderation:dashboard' %}">
+                                <a class="dropdown-item" href="{% url 'moderation:dashboard' %}">
                                     <i class="fas fa-shield-alt"></i> Moderation
                                 </a>
                             </li>
                             {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'moderation:file_complaint' %}">
-                            <i class="fas fa-exclamation-triangle"></i> File Complaint
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'moderation:my_complaints' %}">
-                            <i class="fas fa-list"></i> My Complaints
-                        </a>
-                    </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'moderation:file_complaint' %}">
+                                    <i class="fas fa-exclamation-triangle"></i> File Complaint
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'moderation:my_complaints' %}">
+                                    <i class="fas fa-list"></i> My Complaints
+                                </a>
+                            </li>
                             {% endif %}
                             <li><hr class="dropdown-divider"></li>
                             <li>
