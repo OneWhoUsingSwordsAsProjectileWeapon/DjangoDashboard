@@ -100,6 +100,21 @@
     visibility: hidden;
 }
 
+.calendar-day.selected .day-content {
+    background-color: #2ecc71;
+    color: white;
+    box-shadow: 0 2px 4px rgba(46, 204, 113, 0.3);
+}
+
+.calendar-day.in-range {
+    background-color: #ecf0f1;
+}
+
+.calendar-day.in-range .day-content {
+    background-color: #95a5a6;
+    color: white;
+}
+
 .legend-item {
     display: flex;
     align-items: center;
