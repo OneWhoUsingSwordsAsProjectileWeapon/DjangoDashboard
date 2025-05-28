@@ -1,11 +1,48 @@
 {% extends 'base.html' %}
-{% load static %}
 {% load listing_extras %}
 
 {% block title %}{{ listing.title }} - Rental Aggregator{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'listings/css/calendar.css' %}">
+<style>
+    .listing-image {
+        width: 100%;
+        height: 400px;
+        object-fit: cover;
+        border-radius: 0.375rem;
+    }
+
+    .amenity-tag {
+        background-color: #e9ecef;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        margin: 0.125rem;
+        display: inline-block;
+        font-size: 0.875rem;
+    }
+
+    .review-card {
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .rating-stars {
+        color: #ffc107;
+    }
+
+    .booking-card {
+        position: sticky;
+        top: 2rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1.5rem;
+        background-color: #fff;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -518,5 +555,44 @@
             button.classList.add('btn-outline-danger');
         }
     }
+</script>
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<script src="{% static 'listings/js/calendar.js' %}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize calendar with unavailable dates
+    const unavailableDates = {{ unavailable_dates_json|safe }};
+
+    // Initialize the calendar functionality
+    if (typeof initCalendar === 'function') {
+        initCalendar(unavailableDates);
+    }
+
+    // Set up date input constraints
+    const checkInInput = document.getElementById('check_in');
+    const checkOutInput = document.getElementById('check_out');
+
+    if (checkInInput && checkOutInput) {
+        // Set minimum date to today
+        const today = new Date().toISOString().split('T')[0];
+        checkInInput.min = today;
+        checkOutInput.min = today;
+
+        // Update minimum checkout date when checkin changes
+        checkInInput.addEventListener('change', function() {
+            if (this.value) {
+                const checkInDate = new Date(this.value);
+                checkInDate.setDate(checkInDate.getDate() + 1);
+                checkOutInput.min = checkInDate.toISOString().split('T')[0];
+
+                // Clear checkout if it's before the new checkin
+                if (checkOutInput.value && checkOutInput.value <= this.value) {
+                    checkOutInput.value = '';
+                }
+            }
+        });
+    }
+});
 </script>
 {% endblock %}

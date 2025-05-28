@@ -1,8 +1,11 @@
+
 /**
  * Calendar functionality for listing availability
  */
 
 function initCalendar(unavailableDates) {
+    console.log('Initializing calendar with unavailable dates:', unavailableDates);
+    
     // Set up date inputs
     const checkInInput = document.getElementById('check_in');
     const checkOutInput = document.getElementById('check_out');
@@ -106,7 +109,7 @@ function validateDateRange(startDateStr, endDateStr, unavailableDates) {
     
     // Check each date in the range
     let currentDate = new Date(startDate);
-    while (currentDate <= endDate) {
+    while (currentDate < endDate) {
         const dateStr = formatDateForInput(currentDate);
         if (isDateUnavailable(dateStr, unavailableDates)) {
             // Show alert about unavailable dates in range
@@ -123,7 +126,7 @@ function validateDateRange(startDateStr, endDateStr, unavailableDates) {
  * Check if a date is unavailable
  */
 function isDateUnavailable(dateStr, unavailableDates) {
-    return unavailableDates.includes(dateStr);
+    return unavailableDates && unavailableDates.includes(dateStr);
 }
 
 /**
@@ -151,6 +154,12 @@ function isValidDate(dateStr) {
  * Show an alert for unavailable date selection
  */
 function showUnavailableAlert(inputElement) {
+    // Remove any existing alerts
+    const existingAlert = inputElement.parentNode.querySelector('.alert-danger');
+    if (existingAlert) {
+        existingAlert.remove();
+    }
+    
     // Create and show alert
     const alertElement = document.createElement('div');
     alertElement.className = 'alert alert-danger mt-2';
