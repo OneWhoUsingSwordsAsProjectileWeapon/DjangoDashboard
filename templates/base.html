@@ -93,31 +93,45 @@
             }
         }
 
-        // Mark notification as read
+        function getCSRFToken() {
+            // Try multiple ways to get CSRF token
+            const tokenElement = document.querySelector('[name=csrfmiddlewaretoken]') || 
+                                document.querySelector('meta[name="csrf-token"]') ||
+                                document.querySelector('input[name="csrfmiddlewaretoken"]');
+
+            if (tokenElement) {
+                return tokenElement.value || tokenElement.content || tokenElement.getAttribute('content');
+            }
+
+            // Fallback to cookie
+            const cookieValue = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                ?.split('=')[1];
+
+            return cookieValue || '';
+        }
+
         function markNotificationRead(notificationId) {
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
-            fetch(`/notifications/${notificationId}/read/`, {
+            fetch(`/notifications/${notificationId}/mark-read/`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': csrfToken,
+                    'X-CSRFToken': getCSRFToken(),
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Update the notification appearance
-                    const notificationItem = document.querySelector(`[data-notification-id="${notificationId}"]`);
-                    if (notificationItem) {
-                        notificationItem.classList.remove('unread');
-                        const dot = notificationItem.querySelector('.notification-dot');
-                        if (dot) dot.remove();
-                    }
-                    // Update badge count
-                    const badgeContainer = document.getElementById('notification-badge-container');
-                    if (badgeContainer) {
-                        htmx.trigger(badgeContainer, 'load');
-                    }
+                    // Update notification badge
+                    fetch('/notifications/api/unread-count/')
+                        .then(response => response.text())
+                        .then(html => {
+                            const badgeContainer = document.getElementById('notification-badge-container');
+                            if (badgeContainer) {
+                                badgeContainer.innerHTML = html;
+                            }
+                        });
                 }
             })
             .catch(error => {

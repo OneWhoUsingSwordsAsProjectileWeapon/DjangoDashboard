@@ -1,4 +1,3 @@
-
 {% extends 'base.html' %}
 {% csrf_token %}
 
@@ -112,7 +111,7 @@
                                 </div>
                                 <p class="card-text">{{ notification.message }}</p>
                                 <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
-                                
+
                                 <!-- Action links based on notification type -->
                                 {% if notification.booking %}
                                     <div class="mt-2">
@@ -147,22 +146,62 @@
 </div>
 
 <script>
+    function getCSRFToken() {
+        // Try multiple ways to get CSRF token
+        const tokenElement = document.querySelector('[name=csrfmiddlewaretoken]') || 
+                            document.querySelector('meta[name="csrf-token"]') ||
+                            document.querySelector('input[name="csrfmiddlewaretoken"]');
+
+        if (tokenElement) {
+            return tokenElement.value || tokenElement.content || tokenElement.getAttribute('content');
+        }
+
+        // Fallback to Django template variable
+        return '{{ csrf_token }}';
+    }
+
+    function updateNotificationBadge() {
+        // Update the navbar badge count
+        fetch('/notifications/api/unread-count/', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            const badgeContainer = document.getElementById('notification-badge-container');
+            if (badgeContainer) {
+                badgeContainer.innerHTML = html;
+            }
+        })
+        .catch(error => {
+            console.error('Error updating notification badge:', error);
+        });
+    }
+
     function markAllNotificationsRead() {
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]') || 
-                         document.querySelector('meta[name="csrf-token"]') ||
-                         document.querySelector('input[name="csrfmiddlewaretoken"]');
-        
         fetch('{% url "notifications:mark_all_read" %}', {
             method: 'POST',
             headers: {
-                'X-CSRFToken': csrfToken ? csrfToken.value || csrfToken.content : '{{ csrf_token }}',
+                'X-CSRFToken': getCSRFToken(),
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                location.reload();
+                // Remove visual indicators from all notifications
+                document.querySelectorAll('.notification-card.border-primary').forEach(card => {
+                    card.classList.remove('border-primary');
+                    const badge = card.querySelector('.badge');
+                    if (badge) badge.remove();
+                    const title = card.querySelector('.card-title');
+                    if (title) title.classList.remove('fw-bold');
+                });
+
+                // Update the navbar badge
+                updateNotificationBadge();
             }
         })
         .catch(error => {
@@ -175,14 +214,11 @@
         const notificationCard = e.target.closest('.notification-card');
         if (notificationCard && notificationCard.classList.contains('border-primary')) {
             const notificationId = notificationCard.dataset.notificationId;
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]') || 
-                             document.querySelector('meta[name="csrf-token"]') ||
-                             document.querySelector('input[name="csrfmiddlewaretoken"]');
-            
-            fetch(`/notifications/${notificationId}/read/`, {
+
+            fetch(`/notifications/${notificationId}/mark-read/`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': csrfToken ? csrfToken.value || csrfToken.content : '{{ csrf_token }}',
+                    'X-CSRFToken': getCSRFToken(),
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
@@ -194,6 +230,9 @@
                     if (badge) badge.remove();
                     const title = notificationCard.querySelector('.card-title');
                     if (title) title.classList.remove('fw-bold');
+
+                    // Update the navbar badge
+                    updateNotificationBadge();
                 }
             })
             .catch(error => {
