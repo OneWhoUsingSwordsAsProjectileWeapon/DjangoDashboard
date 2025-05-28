@@ -32,7 +32,7 @@
                         <input type="number" class="form-control" id="guests" name="guests" min="1" 
                                value="{{ form.guests.value|default:'1' }}">
                     </div>
-                    
+
                     <!-- Advanced Filters (hidden by default) -->
                     <div class="collapse" id="advancedFilters">
                         <div class="row g-3 mt-2">
@@ -69,7 +69,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="col-12 d-flex justify-content-between align-items-center">
                         <button class="btn btn-link ps-0" type="button" data-bs-toggle="collapse" 
                                 data-bs-target="#advancedFilters" aria-expanded="false" aria-controls="advancedFilters">
@@ -83,7 +83,7 @@
             </div>
         </div>
     </section>
-    
+
     <!-- Listings Section -->
     <section class="mb-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -109,7 +109,7 @@
                 </ul>
             </div>
         </div>
-        
+
         {% if listings %}
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                 {% for listing in listings %}
@@ -148,7 +148,7 @@
                 </div>
                 {% endfor %}
             </div>
-            
+
             <!-- Pagination -->
             {% if is_paginated %}
             <nav aria-label="Page navigation" class="mt-5">
@@ -165,7 +165,7 @@
                         </a>
                     </li>
                     {% endif %}
-                    
+
                     {% for num in page_obj.paginator.page_range %}
                         {% if page_obj.number == num %}
                             <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
@@ -175,7 +175,7 @@
                             </li>
                         {% endif %}
                     {% endfor %}
-                    
+
                     {% if page_obj.has_next %}
                     <li class="page-item">
                         <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" aria-label="Next">
@@ -191,7 +191,7 @@
                 </ul>
             </nav>
             {% endif %}
-            
+
         {% else %}
             <div class="text-center py-5">
                 <div class="mb-4">
@@ -205,7 +205,7 @@
             </div>
         {% endif %}
     </section>
-    
+
     <!-- Featured Destinations -->
     <section class="mb-5">
         <h3 class="mb-4">Popular Destinations</h3>

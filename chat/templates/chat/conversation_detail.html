@@ -36,7 +36,7 @@
                         <img src="{{ conversation.listing.main_image_url }}" class="rounded" alt="{{ conversation.listing.title }}" style="width: 50px; height: 50px; object-fit: cover;">
                     {% endif %}
                 </div>
-                
+
                 <div class="card-body p-0">
                     <!-- Message display area -->
                     <div class="chat-messages p-3" id="messageContainer" style="height: 400px; overflow-y: auto;">
@@ -60,7 +60,7 @@
                             </div>
                         {% endif %}
                     </div>
-                    
+
                     <!-- Message input form -->
                     <div class="chat-input border-top p-3">
                         <form id="messageForm" method="post" class="d-flex">
@@ -84,20 +84,20 @@
         // Scroll to bottom of message container
         const messageContainer = document.getElementById('messageContainer');
         messageContainer.scrollTop = messageContainer.scrollHeight;
-        
+
         // Set up WebSocket
         const conversationId = "{{ conversation.id }}";
         const chatSocket = new WebSocket(
             'ws://' + window.location.host + '/ws/chat/' + conversationId + '/'
         );
-        
+
         chatSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
-            
+
             // Create message element
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message mb-3';
-            
+
             // Check if message is from current user
             const isOutgoing = data.sender_id === "{{ request.user.id }}";
             if (isOutgoing) {
@@ -105,14 +105,14 @@
             } else {
                 messageDiv.classList.add('message-incoming');
             }
-            
+
             // Create message content wrapper
             const contentWrapper = document.createElement('div');
             contentWrapper.className = 'd-flex';
             if (isOutgoing) {
                 contentWrapper.classList.add('justify-content-end');
             }
-            
+
             // Create message content
             const content = document.createElement('div');
             content.className = isOutgoing ? 'message-content bg-primary text-white' : 'message-content bg-light';
@@ -120,14 +120,14 @@
             content.style.borderRadius = '1rem';
             content.style.padding = '0.75rem';
             content.innerHTML = data.message.replace(/\n/g, '<br>');
-            
+
             // Create message metadata
             const meta = document.createElement('div');
             meta.className = 'message-meta small text-muted';
             if (isOutgoing) {
                 meta.classList.add('text-end');
             }
-            
+
             const now = new Date();
             const timeStr = now.toLocaleString('en-US', { 
                 month: 'short', 
@@ -136,32 +136,32 @@
                 minute: '2-digit',
                 hour12: true
             });
-            
+
             meta.textContent = data.sender_name + ' • ' + timeStr;
-            
+
             // Assemble the message
             contentWrapper.appendChild(content);
             messageDiv.appendChild(contentWrapper);
             messageDiv.appendChild(meta);
-            
+
             // Add the message to the container
             messageContainer.appendChild(messageDiv);
-            
+
             // Scroll to the bottom
             messageContainer.scrollTop = messageContainer.scrollHeight;
         };
-        
+
         chatSocket.onclose = function(e) {
             console.error('Chat socket closed unexpectedly');
         };
-        
+
         // Setup message form
         const messageForm = document.getElementById('messageForm');
         const messageInput = document.getElementById('messageInput');
-        
+
         messageForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            
+
             const message = messageInput.value.trim();
             if (message) {
                 chatSocket.send(JSON.stringify({
@@ -170,7 +170,7 @@
                 messageInput.value = '';
             }
         });
-        
+
         // Allow sending messages with Enter key (but Shift+Enter for newline)
         messageInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
