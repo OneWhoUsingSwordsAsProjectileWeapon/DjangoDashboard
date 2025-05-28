@@ -1,4 +1,5 @@
 modules = ["web", "python-3.11", "nodejs-20"]
+run = "python3 manage.py runserver 0.0.0.0:3000"
 
 [nix]
 channel = "stable-24_05"
@@ -32,3 +33,6 @@ args = "daphne -b 0.0.0.0 -p 5000 core.asgi:application"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[deployment]
+run = ["sh", "-c", "python3 manage.py runserver 0.0.0.0:3000"]
