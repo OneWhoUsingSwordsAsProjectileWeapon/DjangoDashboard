@@ -1,6 +1,9 @@
 
 {% load listing_extras %}
 
+<!-- Hidden data element for unavailable dates -->
+<script type="application/json" id="unavailable-dates-data">{{ unavailable_dates_json|safe }}</script>
+
 <div x-data="calendarComponent()" x-init="initCalendar()" class="listing-calendar">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div class="btn-group">
@@ -28,18 +31,20 @@
                 </tr>
             </thead>
             <tbody>
-                <template x-for="(week, weekIndex) in calendarDays" :key="'week-' + weekIndex">
+                <template x-for="(week, weekIndex) in calendarDays" :key="weekIndex">
                     <tr>
-                        <template x-for="(day, dayIndex) in week" :key="'day-' + weekIndex + '-' + dayIndex">
+                        <template x-for="(day, dayIndex) in week" :key="weekIndex + '-' + dayIndex"></template>
                             <td :class="{ 'empty': !day.date }">
                                 <div 
                                     class="calendar-day" 
                                     :class="{
                                         'unavailable': day.isUnavailable,
                                         'today': day.isToday,
-                                        'empty': !day.date
+                                        'empty': !day.date,
+                                        'selected': (startDate === day.date) || (endDate === day.date),
+                                        'in-range': isInRange(day.date)
                                     }"
-                                    x-on:click="day.date ? selectDate(day.date) : null"
+                                    x-on:click="day.date && !day.isUnavailable ? selectDate(day.date) : null"
                                 >
                                     <div class="day-content" x-text="day.dayNumber || ''"></div>
                                 </div>
@@ -84,10 +89,14 @@ function calendarComponent() {
             
             // Parse unavailable dates from the context
             try {
-                const unavailableDatesJson = '{{ unavailable_dates_json|safe }}';
-                this.unavailableDates = JSON.parse(unavailableDatesJson.replace(/&quot;/g, '"')) || [];
+                const unavailableDatesElement = document.getElementById('unavailable-dates-data');
+                if (unavailableDatesElement) {
+                    this.unavailableDates = JSON.parse(unavailableDatesElement.textContent || '[]');
+                } else {
+                    this.unavailableDates = [];
+                }
             } catch (e) {
-                console.error("Error parsing unavailable dates JSON:", e);
+                console.error("Error parsing unavailable dates:", e);
                 this.unavailableDates = [];
             }
             
@@ -278,6 +287,11 @@ function calendarComponent() {
             }
             
             return false;
+        },
+        
+        isInRange(dateStr) {
+            if (!this.startDate || !this.endDate || !dateStr) return false;
+            return dateStr > this.startDate && dateStr < this.endDate;
         }
     };
 }
