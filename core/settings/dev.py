@@ -38,3 +38,19 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
+
+ASGI_APPLICATION = 'core.asgi:application'
+
+# Channel layers for Django Channels
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],
+        },
+    },
+}
+
+# WebSocket settings for secure connections
+SECURE_WEBSOCKET = True
+WEBSOCKET_URL = f"wss://{ALLOWED_HOSTS[0] if ALLOWED_HOSTS[0] != '*' else 'localhost'}"

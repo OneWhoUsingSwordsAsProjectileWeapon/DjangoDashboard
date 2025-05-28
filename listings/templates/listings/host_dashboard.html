@@ -537,3 +537,74 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 </style>
 {% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Calendar JavaScript -->
+<script src="{% static 'listings/js/calendar.js' %}"></script>
+
+<script>
+    // Dashboard initialization
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize performance chart if canvas exists
+        const ctx = document.getElementById('performanceChart');
+        if (ctx && typeof Chart !== 'undefined') {
+            initializePerformanceChart();
+        } else {
+            console.log('Chart.js library not loaded');
+        }
+
+        // Initialize calendar if function exists
+        if (typeof initCalendar !== 'undefined') {
+            const unavailableDates = {{ unavailable_dates_json|safe }};
+            initCalendar(unavailableDates);
+        }
+    });
+
+    function initializePerformanceChart() {
+        const ctx = document.getElementById('performanceChart');
+        if (!ctx) return;
+
+        // Sample data for the performance chart
+        const data = {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            datasets: [{
+                label: 'Bookings',
+                data: [12, 19, 3, 5, 2, 3],
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1
+            }, {
+                label: 'Revenue',
+                data: [1200, 1900, 300, 500, 200, 300],
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                tension: 0.1
+            }]
+        };
+
+        const config = {
+            type: 'line',
+            data: data,
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Listing Performance'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        };
+
+        new Chart(ctx, config);
+    }
+</script>
+{% endblock %}

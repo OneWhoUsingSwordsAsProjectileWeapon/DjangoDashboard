@@ -209,7 +209,7 @@
                 <div class="card-body">
                     <h4 class="card-title">Availability</h4>
                     <p class="text-muted mb-3">Check which dates are available for your stay</p>
-                    
+
                     {% include 'listings/partials/_calendar.html' with unavailable_dates_json=unavailable_dates_json %}
                 </div>
             </div>
@@ -219,7 +219,7 @@
                 <div class="card-body">
                     <h4 class="card-title">Location</h4>
                     <p class="text-muted">{{ listing.address }}, {{ listing.city }}, {{ listing.state }}, {{ listing.country }}</p>
-                    
+
                     <div class="ratio ratio-16x9">
                         <iframe 
                             src="https://www.google.com/maps/embed/v1/place?key=AIzaSyD_S2SGUavYrWCn4et-bsIrCR3nMjbIEn4&q={{ listing.address|urlencode }},{{ listing.city|urlencode }},{{ listing.state|urlencode }},{{ listing.country|urlencode }}" 
@@ -469,14 +469,16 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Calendar functionality -->
 <script src="{% static 'listings/js/calendar.js' %}"></script>
 <script>
-    // Initialize calendar with unavailable dates
     document.addEventListener('DOMContentLoaded', function() {
         const unavailableDates = {{ unavailable_dates_json|safe }};
-        initCalendar(unavailableDates);
+        if (typeof initCalendar !== 'undefined') {
+            initCalendar(unavailableDates);
+        }
     });
-    
+
     // Share property function
     function shareProperty() {
         if (navigator.share) {
@@ -498,12 +500,12 @@
                 });
         }
     }
-    
+
     // Save property function
     function saveProperty() {
         const button = event.currentTarget;
         const icon = button.querySelector('i');
-        
+
         if (icon.classList.contains('far')) {
             icon.classList.remove('far');
             icon.classList.add('fas');
