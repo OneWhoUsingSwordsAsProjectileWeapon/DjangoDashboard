@@ -1,0 +1,253 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Welcome to Rental Aggregator - Find Your Perfect Stay{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Additional homepage specific styles */
+.hero-search {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    margin-top: 2rem;
+}
+
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin: 3rem 0;
+}
+
+.category-card {
+    position: relative;
+    height: 200px;
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.category-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(0,0,0,0.4), rgba(0,0,0,0.1));
+    z-index: 1;
+}
+
+.category-card:hover {
+    transform: scale(1.03);
+}
+
+.category-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: var(--transition);
+}
+
+.category-card:hover .category-image {
+    transform: scale(1.1);
+}
+
+.category-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1.5rem;
+    color: white;
+    z-index: 2;
+}
+
+.category-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.category-subtitle {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.stats-section {
+    background: var(--gradient-primary);
+    color: white;
+    padding: 4rem 0;
+    margin: 4rem 0;
+    border-radius: var(--border-radius-lg);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                <h1 class="display-4 fw-bold mb-4 fade-in">Find Your Perfect Stay</h1>
+                <p class="lead mb-4 fade-in">Discover amazing places to stay around the world with our curated selection of properties</p>
+                
+                <!-- Hero Search -->
+                <div class="hero-search fade-in">
+                    <form action="{% url 'listings:listing_list' %}" method="get" class="row g-3 align-items-center">
+                        <div class="col-md-8">
+                            <input type="text" name="location" class="form-control form-control-lg" 
+                                   placeholder="Where do you want to go?" 
+                                   value="{{ request.GET.location|default:'' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-accent btn-lg w-100">
+                                <i class="fas fa-search me-2"></i>Search
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Categories Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold">Explore by Category</h2>
+            <p class="lead text-muted">Choose from our diverse range of accommodations</p>
+        </div>
+        
+        <div class="category-grid">
+            <div class="category-card interactive-element">
+                <img src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                     alt="Luxury Homes" class="category-image">
+                <div class="category-content">
+                    <h3 class="category-title">Luxury Homes</h3>
+                    <p class="category-subtitle">Experience the finest accommodations</p>
+                </div>
+            </div>
+            
+            <div class="category-card interactive-element">
+                <img src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                     alt="Beach Houses" class="category-image">
+                <div class="category-content">
+                    <h3 class="category-title">Beach Houses</h3>
+                    <p class="category-subtitle">Wake up to ocean views</p>
+                </div>
+            </div>
+            
+            <div class="category-card interactive-element">
+                <img src="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                     alt="Mountain Cabins" class="category-image">
+                <div class="category-content">
+                    <h3 class="category-title">Mountain Cabins</h3>
+                    <p class="category-subtitle">Escape to nature's embrace</p>
+                </div>
+            </div>
+            
+            <div class="category-card interactive-element">
+                <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                     alt="City Apartments" class="category-image">
+                <div class="category-content">
+                    <h3 class="category-title">City Apartments</h3>
+                    <p class="category-subtitle">Urban comfort and convenience</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold">Why Choose Us</h2>
+            <p class="lead text-muted">We make finding and booking your perfect stay simple and secure</p>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card slide-up">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h4>Secure Booking</h4>
+                    <p class="text-muted">Your payments and personal information are always protected with enterprise-grade security.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="feature-card slide-up" style="animation-delay: 0.1s;">
+                    <div class="feature-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h4>24/7 Support</h4>
+                    <p class="text-muted">Our dedicated support team is available around the clock to assist you with any questions.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="feature-card slide-up" style="animation-delay: 0.2s;">
+                    <div class="feature-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <h4>Best Price Guarantee</h4>
+                    <p class="text-muted">Find a lower price elsewhere? We'll match it and give you an additional discount.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-section">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3 mb-4">
+                <span class="stats-counter">10,000+</span>
+                <span class="stats-label">Properties</span>
+            </div>
+            <div class="col-md-3 mb-4">
+                <span class="stats-counter">50,000+</span>
+                <span class="stats-label">Happy Guests</span>
+            </div>
+            <div class="col-md-3 mb-4">
+                <span class="stats-counter">100+</span>
+                <span class="stats-label">Cities</span>
+            </div>
+            <div class="col-md-3 mb-4">
+                <span class="stats-counter">4.8★</span>
+                <span class="stats-label">Average Rating</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center">
+            <h2 class="display-5 fw-bold mb-4">Ready to Start Your Journey?</h2>
+            <p class="lead text-muted mb-4">Join thousands of travelers who have found their perfect stay with us</p>
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+                <a href="{% url 'listings:listing_list' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-search me-2"></i>Browse Properties
+                </a>
+                {% if not user.is_authenticated %}
+                <a href="{% url 'users:register' %}" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-user-plus me-2"></i>Sign Up Free
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
