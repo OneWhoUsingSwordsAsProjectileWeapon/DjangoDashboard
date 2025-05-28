@@ -25,6 +25,11 @@ function initChatSocket(conversationId, currentUserId) {
     console.log('Attempting to connect to:', wsUrl);
 
     // Create WebSocket connection
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}/ws/chat/${conversationId}/`;
+
+    console.log('Connecting to WebSocket:', wsUrl);
     chatSocket = new WebSocket(wsUrl);
 
     // Connection opened
