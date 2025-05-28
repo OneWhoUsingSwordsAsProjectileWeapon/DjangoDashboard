@@ -26,3 +26,8 @@ CSRF_TRUSTED_ORIGINS = ['https://*.replit.dev', 'https://*.repl.co', 'https://*.
 INSTALLED_APPS += [
     'django_extensions',
 ]
+
+# WebSocket settings for Replit environment
+USE_TLS = True
+SECURE_SSL_REDIRECT = False
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
