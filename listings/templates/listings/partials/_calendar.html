@@ -33,7 +33,7 @@
             <tbody>
                 <template x-for="(week, weekIndex) in calendarDays" :key="weekIndex">
                     <tr>
-                        <template x-for="(day, dayIndex) in week" :key="weekIndex + '-' + dayIndex"></template>
+                        <template x-for="(day, dayIndex) in week" :key="weekIndex + '-' + dayIndex">
                             <td :class="{ 'empty': !day.date }">
                                 <div 
                                     class="calendar-day" 
