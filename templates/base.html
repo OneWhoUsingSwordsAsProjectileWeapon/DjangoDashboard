@@ -352,6 +352,28 @@
           backdrop-filter: blur(10px);
           border-bottom: 1px solid rgba(255, 255, 255, 0.2);
           transition: var(--transition);
+          z-index: 1050;
+        }
+
+        /* Ensure dropdown menus appear above all content */
+        .navbar .dropdown-menu {
+          z-index: 1060;
+          position: absolute;
+        }
+
+        .navbar .dropdown {
+          z-index: 1060;
+        }
+
+        /* Notification dropdown specific styling */
+        .notification-dropdown {
+          min-width: 320px;
+          max-height: 400px;
+          overflow-y: auto;
+          border: none;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+          border-radius: var(--border-radius-lg);
+          z-index: 1070 !important;
         }
 
         .navbar-brand {
@@ -534,14 +556,7 @@
           animation: pulse 2s infinite;
         }
 
-        .notification-dropdown {
-          min-width: 320px;
-          max-height: 400px;
-          overflow-y: auto;
-          border: none;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-          border-radius: var(--border-radius-lg);
-        }
+        
 
         .notification-item {
           padding: 1rem;
