@@ -648,7 +648,7 @@
         const unavailableDates = {{ unavailable_dates_json|safe }};
 
         // Initialize Yandex Map for location display
-        {% if listing.latitude and listing.longitude %}
+         {% if listing.latitude and listing.longitude %} 
             initYandexMap('listing-map', {{ listing.latitude }}, {{ listing.longitude }}, false);
         {% else %}
             // Fallback: geocode address if no coordinates
@@ -656,3 +656,83 @@
                 const fullAddress = "{{ listing.address }}, {{ listing.city }}, {{ listing.state }}, {{ listing.country }}";
                 ymaps.geocode(fullAddress).then(function (res) {
                     const firstGeoObject = res.geoObjects.get(0);
+                    if (firstGeoObject) {
+                        const coords = firstGeoObject.geometry.getCoordinates();
+                        initYandexMap('listing-map', coords[0], coords[1], false);
+                    }
+                });
+            });
+        {% endif %}
+    });
+
+    // JavaScript functions for image gallery modal
+    let currentImageIndex = 0;
+    const images = [
+        {% for image in listing.images.all %}
+            "{{ image.image.url }}",
+        {% endfor %}
+        {% for image_url in listing.image_urls %}
+            "{{ image_url }}",
+        {% endfor %}
+    ];
+
+    function openImageGalleryModal(index) {
+        currentImageIndex = index;
+        updateModalImage();
+        const imageGalleryModal = new bootstrap.Modal(document.getElementById('imageGalleryModal'));
+        imageGalleryModal.show();
+    }
+
+    function updateModalImage() {
+        const mainImage = document.getElementById('modalMainImage');
+        const imageCounter = document.getElementById('imageCounter');
+
+        if (images.length === 0) {
+            mainImage.src = "{% static 'img/no_image.png' %}";
+            imageCounter.textContent = "Нет изображений";
+            document.getElementById('prevImageBtn').disabled = true;
+            document.getElementById('nextImageBtn').disabled = true;
+            return;
+        }
+
+        mainImage.src = images[currentImageIndex];
+        imageCounter.textContent = `${currentImageIndex + 1} / ${images.length}`;
+
+        // Enable/disable navigation buttons based on image index
+        document.getElementById('prevImageBtn').disabled = currentImageIndex === 0;
+        document.getElementById('nextImageBtn').disabled = currentImageIndex === images.length - 1;
+    }
+
+    function changeModalImage(direction) {
+        currentImageIndex += direction;
+        if (currentImageIndex < 0) {
+            currentImageIndex = images.length - 1;
+        } else if (currentImageIndex >= images.length) {
+            currentImageIndex = 0;
+        }
+        updateModalImage();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const thumbnailsContainer = document.getElementById('modalThumbnails');
+        let thumbnailsHTML = '';
+
+        if (images.length === 0) {
+            thumbnailsHTML = '<p class="text-muted">Нет изображений для отображения.</p>';
+        } else {
+            for (let i = 0; i < images.length; i++) {
+                thumbnailsHTML += `
+                    <img src="${images[i]}" class="img-fluid modal-thumbnail" onclick="openImageGalleryModal(${i})" style="width: 100px; height: 80px; object-fit: cover; cursor: pointer;" alt="Thumbnail ${i + 1}">
+                `;
+            }
+        }
+
+        thumbnailsContainer.innerHTML = thumbnailsHTML;
+
+        // Set the first image as active initially
+        if (images.length > 0) {
+            updateModalImage();
+        }
+    });
+</script>
+{% endblock %}
