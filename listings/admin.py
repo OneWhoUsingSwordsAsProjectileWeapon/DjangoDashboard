@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Listing, Booking, Review
+from .models import Listing, Booking, Review, ListingImage
 
 @admin.register(Listing)
 class ListingAdmin(admin.ModelAdmin):
@@ -28,6 +28,8 @@ class ListingAdmin(admin.ModelAdmin):
             'fields': ('is_active', 'is_approved')
         }),
     )
+    
+    inlines = [ListingImageInline]
 
     def approve_listings(self, request, queryset):
         queryset.update(is_approved=True)
@@ -48,6 +50,10 @@ class ListingAdmin(admin.ModelAdmin):
         queryset.update(is_active=False)
         self.message_user(request, f"{queryset.count()} listings have been deactivated.")
     deactivate_listings.short_description = "Deactivate selected listings"
+
+class ListingImageInline(admin.TabularInline):
+    model = ListingImage
+    extra = 1
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
@@ -112,3 +118,10 @@ class ReviewAdmin(admin.ModelAdmin):
         queryset.update(is_approved=False)
         self.message_user(request, f"{queryset.count()} reviews have been unapproved.")
     unapprove_reviews.short_description = "Unapprove selected reviews"
+
+@admin.register(ListingImage)
+class ListingImageAdmin(admin.ModelAdmin):
+    """Admin interface for listing images"""
+    list_display = ['listing', 'is_main', 'uploaded_at']
+    list_filter = ['is_main', 'uploaded_at']
+    search_fields = ['listing__title']

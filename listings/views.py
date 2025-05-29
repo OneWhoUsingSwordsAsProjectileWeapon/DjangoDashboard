@@ -13,7 +13,7 @@ from django.utils import timezone
 import json
 import calendar
 
-from .models import Listing, Booking, Review
+from .models import Listing, Booking, Review, ListingImage
 from .forms import ListingForm, BookingForm, ReviewForm, ListingSearchForm, ListingImageForm
 from notifications.tasks import send_email_notification
 
@@ -116,17 +116,17 @@ class ListingDetailView(DetailView):
         user = self.request.user
         user_has_reviewed = False
         can_review = False
-        
+
         if user.is_authenticated and user != listing.host:
             # Check if user has already reviewed this listing
             existing_review = Review.objects.filter(
                 reviewer=user, 
                 listing=listing
             ).first()
-            
+
             user_has_reviewed = existing_review is not None
             context['user_has_reviewed'] = user_has_reviewed
-            
+
             if not existing_review:
                 context['review_form'] = ReviewForm()
                 context['can_review'] = True
@@ -181,7 +181,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
 
         # Get host's listings
         host_listings = Listing.objects.filter(host=user)
-        
+
         # Apply listing filter
         if listing_filter != 'all' and listing_filter.isdigit():
             filtered_listings = host_listings.filter(id=listing_filter)
@@ -205,7 +205,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
 
         # Calculate comprehensive statistics
         all_bookings = Booking.objects.filter(listing__host=user)
-        
+
         stats = {
             'total_listings': host_listings.count(),
             'active_listings': host_listings.filter(is_active=True).count(),
@@ -238,14 +238,14 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
             days_available = (end_date - listing_start).days
             if days_available > 0:
                 total_possible_nights += days_available
-                
+
                 # Get bookings for this listing in the time period
                 listing_bookings = listing.bookings.filter(
                     status__in=['completed', 'confirmed'],
                     start_date__lte=end_date,
                     end_date__gte=listing_start
                 )
-                
+
                 for booking in listing_bookings:
                     # Calculate actual nights booked within our time period
                     booking_start = max(booking.start_date, listing_start)
@@ -290,7 +290,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                 )
             )
         ).prefetch_related('bookings').order_by('-total_revenue')
-        
+
         # Calculate occupancy days separately to avoid aggregation issues
         for listing in top_listings:
             total_nights = 0
@@ -701,7 +701,7 @@ def update_booking_status(request, reference, status):
                 auto_message = f"❌ Booking request has been declined."
             else:
                 auto_message = f"ℹ️ Booking status updated to {booking.get_status_display()}."
-            
+
             # Create system message
             Message.objects.create(
                 conversation=conversation,
@@ -712,12 +712,12 @@ def update_booking_status(request, reference, status):
             pass
 
         messages.success(request, f"Booking status updated to {status}.")
-        
+
         # Check for redirect parameter
         redirect_to = request.POST.get('redirect_to')
         if redirect_to:
             return redirect(redirect_to)
-        
+
         return redirect('listings:booking_detail', reference=reference)
 
     except Booking.DoesNotExist:
@@ -727,7 +727,7 @@ def update_booking_status(request, reference, status):
 def create_review(request, listing_id):
     """View for creating a review for a listing"""
     listing = get_object_or_404(Listing, id=listing_id)
-    
+
     # Check if user is the host
     if request.user == listing.host:
         messages.error(request, "You cannot review your own listing.")
@@ -847,3 +847,36 @@ def toggle_listing_status(request, pk):
 
     except Listing.DoesNotExist:
         return JsonResponse({'error': 'Listing not found'}, status=404)
+
+@login_required
+def remove_image_file(request, pk, image_id):
+    """View for removing a file image from a listing"""
+    listing = get_object_or_404(Listing, pk=pk, host=request.user)
+    image = get_object_or_404(ListingImage, pk=image_id, listing=listing)
+
+    # If removing main image, set another image as main
+    if image.is_main:
+        other_image = ListingImage.objects.filter(listing=listing).exclude(pk=image_id).first()
+        if other_image:
+            other_image.is_main = True
+            other_image.save()
+
+    image.delete()
+    messages.success(request, 'Изображение удалено.')
+    return redirect('listings:listing_images', pk=listing.pk)
+
+@login_required  
+def set_main_image(request, pk, image_id):
+    """View for setting an image as main"""
+    listing = get_object_or_404(Listing, pk=pk, host=request.user)
+    image = get_object_or_404(ListingImage, pk=image_id, listing=listing)
+
+    # Unset current main image
+    ListingImage.objects.filter(listing=listing, is_main=True).update(is_main=False)
+
+    # Set new main image
+    image.is_main = True
+    image.save()
+
+    messages.success(request, 'Главное изображение обновлено.')
+    return redirect('listings:listing_images', pk=listing.pk)

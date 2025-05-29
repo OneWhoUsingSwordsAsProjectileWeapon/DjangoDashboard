@@ -1,0 +1,90 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Добавить изображение - {{ listing.title }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Добавить изображение</h4>
+                    <p class="mb-0 text-muted">{{ listing.title }}</p>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.image.id_for_label }}" class="form-label">Выберите изображение</label>
+                            {{ form.image }}
+                            {% if form.image.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.image.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Поддерживаемые форматы: JPG, PNG, GIF. Максимальный размер: 10 МБ.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.is_main }}
+                                <label class="form-check-label" for="{{ form.is_main.id_for_label }}">
+                                    Сделать главным изображением
+                                </label>
+                            </div>
+                            {% if form.is_main.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.is_main.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'listings:listing_images' pk=listing.pk %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Назад
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload"></i> Загрузить изображение
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelector('input[type="file"]').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Показать превью изображения
+            let preview = document.getElementById('image-preview');
+            if (!preview) {
+                preview = document.createElement('div');
+                preview.id = 'image-preview';
+                preview.className = 'mt-3';
+                e.target.parentNode.appendChild(preview);
+            }
+            preview.innerHTML = `
+                <label class="form-label">Превью:</label>
+                <br>
+                <img src="${e.target.result}" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
+            `;
+        };
+        reader.readAsDataURL(file);
+    }
+});
+</script>
+{% endblock %}

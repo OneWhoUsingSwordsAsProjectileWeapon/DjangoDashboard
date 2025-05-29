@@ -1,0 +1,74 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Управление изображениями - {{ listing.title }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Управление изображениями</h2>
+                <a href="{% url 'listings:listing_detail' pk=listing.pk %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Назад к объявлению
+                </a>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ listing.title }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">{{ listing.city }}, {{ listing.country }}</p>
+                    <a href="{% url 'listings:add_image' pk=listing.pk %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Добавить изображение
+                    </a>
+                </div>
+            </div>
+
+            {% if listing.listingimage_set.all %}
+                <div class="row g-3">
+                    {% for image in listing.listingimage_set.all %}
+                        <div class="col-md-4 col-sm-6">
+                            <div class="card">
+                                <img src="{{ image.image.url }}" class="card-img-top" alt="Изображение недвижимости" style="height: 200px; object-fit: cover;">
+                                <div class="card-body">
+                                    {% if image.is_main %}
+                                        <span class="badge bg-primary mb-2">Главное фото</span>
+                                    {% endif %}
+                                    <div class="d-flex justify-content-between">
+                                        {% if not image.is_main %}
+                                            <form method="post" action="{% url 'listings:set_main_image' pk=listing.pk image_id=image.pk %}" class="me-2">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                    Сделать главным
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                        <form method="post" action="{% url 'listings:remove_image' pk=listing.pk image_id=image.pk %}" onsubmit="return confirm('Удалить это изображение?')">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-trash"></i> Удалить
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-images fa-3x text-muted mb-3"></i>
+                    <h4>Изображения не добавлены</h4>
+                    <p class="text-muted">Добавьте изображения для привлечения гостей</p>
+                    <a href="{% url 'listings:add_image' pk=listing.pk %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Добавить первое изображение
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
