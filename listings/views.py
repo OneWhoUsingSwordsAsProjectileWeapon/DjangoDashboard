@@ -90,6 +90,20 @@ class ListingListView(ListView):
             review_count=Count('reviews')
         )
 
+        # Handle sorting
+        sort_by = self.request.GET.get('sort')
+        if sort_by == 'price_asc':
+            queryset = queryset.order_by('price_per_night')
+        elif sort_by == 'price_desc':
+            queryset = queryset.order_by('-price_per_night')
+        elif sort_by == 'rating':
+            queryset = queryset.order_by('-avg_rating', '-review_count')
+        elif sort_by == 'newest':
+            queryset = queryset.order_by('-created_at')
+        else:
+            # Default sorting by creation date
+            queryset = queryset.order_by('-created_at')
+
         return queryset
 
     def get_context_data(self, **kwargs):
