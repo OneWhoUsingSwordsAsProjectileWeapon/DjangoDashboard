@@ -26,58 +26,47 @@
                 </div>
             </div>
 
-            {% if listing.listingimage_set.all %}
-                <div class="image-gallery-grid">
-                    {% for image in listing.listingimage_set.all %}
-                        <div class="image-card">
-                            <div class="position-relative">
-                                <img src="{{ image.image.url }}" alt="Изображение недвижимости">
-                                {% if image.is_main %}
-                                    <div class="main-image-badge">
-                                        <i class="fas fa-star"></i> Главное фото
+            {% if listing.images.all %}
+                <div class="row">
+                    {% for image in listing.images.all %}
+                        <div class="col-md-4 mb-4">
+                            <div class="card h-100">
+                                <div class="position-relative">
+                                    <img src="{{ image.image.url }}" alt="{{ listing.title }}" class="card-img-top" style="height: 250px; object-fit: cover;">
+                                    {% if image.is_main %}
+                                        <span class="position-absolute top-0 start-0 badge bg-primary m-2">
+                                            <i class="fas fa-star"></i> Главное
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock"></i> Загружено {{ image.uploaded_at|date:"d.m.Y" }}
+                                        </small>
                                     </div>
-                                {% endif %}
-                                
-                                <div class="image-overlay">
-                                    <div class="quick-actions">
+
+                                    <div class="mt-3 d-flex gap-2">
                                         {% if not image.is_main %}
                                             <form method="post" action="{% url 'listings:set_main_image' pk=listing.pk image_id=image.pk %}" style="display: inline;">
                                                 {% csrf_token %}
-                                                <button type="submit" class="btn-icon" title="Сделать главным">
-                                                    <i class="fas fa-star"></i>
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-star"></i> Сделать главным
                                                 </button>
                                             </form>
                                         {% endif %}
-                                        <button type="button" class="btn-icon" onclick="confirmDeleteImage({{ image.pk }}, '{{ image.image.url }}')" title="Удалить изображение">
-                                            <i class="fas fa-trash"></i>
+
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#deleteImageModal"
+                                                data-image-id="{{ image.pk }}"
+                                                data-image-url="{{ image.image.url }}">
+                                            <i class="fas fa-trash"></i> Удалить
                                         </button>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div class="card-body">
-                                <div class="image-actions">
-                                    <small class="text-muted">
-                                        <i class="fas fa-clock"></i> Загружено {{ image.uploaded_at|date:"d.m.Y" }}
-                                    </small>
-                                    {% if not image.is_main %}
-                                        <form method="post" action="{% url 'listings:set_main_image' pk=listing.pk image_id=image.pk %}" style="display: inline;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-star"></i> Главное
-                                            </button>
-                                        </form>
-                                    {% else %}
-                                        <span class="badge bg-primary">
-                                            <i class="fas fa-star"></i> Главное фото
-                                        </span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            
-                            <form id="delete-form-{{ image.pk }}" method="post" action="{% url 'listings:remove_image' pk=listing.pk image_id=image.pk %}" style="display: none;">
-                                {% csrf_token %}
-                            </form>
                         </div>
                     {% endfor %}
                 </div>
@@ -106,22 +95,39 @@
             <div class="modal-body">
                 <p>Вы уверены, что хотите удалить это изображение?</p>
                 <div class="text-center">
-                    <img id="deleteImagePreview" src="" class="img-thumbnail" style="max-width: 200px; max-height: 150px;">
-                </div>
-                <div class="alert alert-warning mt-3">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <strong>Внимание:</strong> Это действие нельзя отменить.
+                    <img id="modal-image-preview" src="" alt="Preview" class="img-fluid" style="max-height: 200px;">
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
-                    <i class="fas fa-trash"></i> Удалить изображение
-                </button>
+                <form id="delete-form" method="post" action="" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Удалить</button>
+                </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteModal = document.getElementById('deleteImageModal');
+    const deleteForm = document.getElementById('delete-form');
+    const modalImagePreview = document.getElementById('modal-image-preview');
+
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const imageId = button.getAttribute('data-image-id');
+        const imageUrl = button.getAttribute('data-image-url');
+
+        // Обновляем действие формы
+        deleteForm.action = "{% url 'listings:remove_image' pk=listing.pk image_id=0 %}".replace('0', imageId);
+
+        // Показываем превью изображения
+        modalImagePreview.src = imageUrl;
+    });
+});
+</script>
 
 <style>
 .image-gallery-grid {
@@ -130,124 +136,12 @@
     gap: 1rem;
 }
 
-.image-card {
-    border: 1px solid #dee2e6;
-    border-radius: 0.375rem;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    position: relative;
-}
-
-.image-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-.image-card img {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
+.card-img-top {
     transition: transform 0.3s ease;
 }
 
-.image-card:hover img {
+.card:hover .card-img-top {
     transform: scale(1.05);
 }
-
-.image-actions {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.main-image-badge {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: rgba(0, 123, 255, 0.9);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.image-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.image-card:hover .image-overlay {
-    opacity: 1;
-}
-
-.quick-actions {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.btn-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid white;
-    background: rgba(255,255,255,0.2);
-    color: white;
-    transition: all 0.3s ease;
-}
-
-.btn-icon:hover {
-    background: white;
-    color: #333;
-}
 </style>
-
-<script>
-let imageToDelete = null;
-
-function confirmDeleteImage(imageId, imageUrl) {
-    imageToDelete = imageId;
-    document.getElementById('deleteImagePreview').src = imageUrl;
-    
-    const modal = new bootstrap.Modal(document.getElementById('deleteImageModal'));
-    modal.show();
-}
-
-document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
-    if (imageToDelete) {
-        document.getElementById('delete-form-' + imageToDelete).submit();
-    }
-});
-
-// Добавляем анимацию при загрузке страницы
-document.addEventListener('DOMContentLoaded', function() {
-    const imageCards = document.querySelectorAll('.image-card');
-    imageCards.forEach((card, index) => {
-        setTimeout(() => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(20px)';
-            card.style.transition = 'all 0.5s ease';
-            
-            requestAnimationFrame(() => {
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            });
-        }, index * 100);
-    });
-});
-</script>
 {% endblock %}
