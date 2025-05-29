@@ -1,86 +1,55 @@
-
 {% extends 'base.html' %}
 {% load static %}
 
 {% block title %}File a Complaint{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h4><i class="fas fa-exclamation-triangle"></i> File a Complaint</h4>
+                    <h4>Подать жалобу</h4>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted mb-4">
-                        Use this form to report issues or concerns. Our moderation team will review your complaint and respond as soon as possible.
-                    </p>
-                    
+                    {% if booking %}
+                    <div class="alert alert-info">
+                        <strong>Бронирование:</strong> {{ booking.booking_reference }}<br>
+                        <strong>Объявление:</strong> {{ booking.listing.title }}<br>
+                        <strong>Даты:</strong> {{ booking.start_date }} - {{ booking.end_date }}<br>
+                        <strong>Хост:</strong> {{ booking.listing.host.get_full_name|default:booking.listing.host.username }}<br>
+                        <strong>Гость:</strong> {{ booking.guest.get_full_name|default:booking.guest.username }}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <strong>Объявление:</strong> {{ listing.title }}<br>
+                        <strong>Владелец:</strong> {{ listing.host.get_full_name|default:listing.host.username }}
+                    </div>
+                    {% endif %}
+
                     <form method="post">
                         {% csrf_token %}
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.complaint_type.id_for_label }}" class="form-label">
-                                    {{ form.complaint_type.label }}
-                                </label>
-                                {{ form.complaint_type }}
-                                {% if form.complaint_type.errors %}
-                                    <div class="text-danger small">{{ form.complaint_type.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.priority.id_for_label }}" class="form-label">
-                                    {{ form.priority.label }}
-                                </label>
-                                {{ form.priority }}
-                                {% if form.priority.errors %}
-                                    <div class="text-danger small">{{ form.priority.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
+
                         <div class="mb-3">
-                            <label for="{{ form.subject.id_for_label }}" class="form-label">
-                                {{ form.subject.label }}
-                            </label>
-                            {{ form.subject }}
-                            {% if form.subject.errors %}
-                                <div class="text-danger small">{{ form.subject.errors.0 }}</div>
-                            {% endif %}
+                            {{ form.complaint_type.label_tag }}
+                            {{ form.complaint_type }}
                         </div>
-                        
+
                         <div class="mb-3">
-                            <label for="{{ form.description.id_for_label }}" class="form-label">
-                                {{ form.description.label }}
-                            </label>
+                            {{ form.description.label_tag }}
                             {{ form.description }}
-                            <small class="form-text text-muted">Minimum 20 characters required</small>
-                            {% if form.description.errors %}
-                                <div class="text-danger small">{{ form.description.errors.0 }}</div>
-                            {% endif %}
+                            <small class="form-text text-muted">
+                                Опишите проблему как можно подробнее. Это поможет нашей команде модерации быстрее разрешить ситуацию.
+                            </small>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.contact_email.id_for_label }}" class="form-label">
-                                {{ form.contact_email.label }}
-                            </label>
-                            {{ form.contact_email }}
-                            <small class="form-text text-muted">Leave blank to use your account email</small>
-                            {% if form.contact_email.errors %}
-                                <div class="text-danger small">{{ form.contact_email.errors.0 }}</div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            {% if booking %}
+                                <a href="{% url 'listings:booking_detail' reference=booking.booking_reference %}" class="btn btn-secondary me-md-2">Отмена</a>
+                            {% else %}
+                                <a href="{% url 'listings:listing_detail' pk=listing.pk %}" class="btn btn-secondary me-md-2">Отмена</a>
                             {% endif %}
-                        </div>
-                        
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'moderation:my_complaints' %}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i> My Complaints
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-paper-plane"></i> Submit Complaint
-                            </button>
+                            <button type="submit" class="btn btn-danger">Отправить жалобу</button>
                         </div>
                     </form>
                 </div>

@@ -1,4 +1,3 @@
-
 from django import forms
 from django.utils.translation import gettext_lazy as _
 from .models import Report, ReportCategory
@@ -16,7 +15,7 @@ class ReportForm(forms.ModelForm):
                 'placeholder': 'Please describe the issue in detail...'
             })
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['category'].queryset = ReportCategory.objects.filter(is_active=True)
@@ -34,20 +33,20 @@ class UserComplaintForm(forms.Form):
         ('safety_concern', _('Safety Concern')),
         ('other', _('Other')),
     ]
-    
+
     PRIORITY_CHOICES = [
         ('low', _('Low')),
         ('medium', _('Medium')),
         ('high', _('High')),
         ('urgent', _('Urgent')),
     ]
-    
+
     complaint_type = forms.ChoiceField(
         choices=COMPLAINT_TYPES,
         widget=forms.Select(attrs={'class': 'form-control'}),
         label=_("Complaint Type")
     )
-    
+
     subject = forms.CharField(
         max_length=200,
         widget=forms.TextInput(attrs={
@@ -56,7 +55,7 @@ class UserComplaintForm(forms.Form):
         }),
         label=_("Subject")
     )
-    
+
     description = forms.CharField(
         widget=forms.Textarea(attrs={
             'class': 'form-control',
@@ -65,14 +64,14 @@ class UserComplaintForm(forms.Form):
         }),
         label=_("Description")
     )
-    
+
     priority = forms.ChoiceField(
         choices=PRIORITY_CHOICES,
         initial='medium',
         widget=forms.Select(attrs={'class': 'form-control'}),
         label=_("Priority")
     )
-    
+
     contact_email = forms.EmailField(
         required=False,
         widget=forms.EmailInput(attrs={
@@ -81,7 +80,7 @@ class UserComplaintForm(forms.Form):
         }),
         label=_("Contact Email (optional)")
     )
-    
+
     def clean_description(self):
         description = self.cleaned_data.get('description')
         if len(description) < 20:
@@ -97,13 +96,13 @@ class ComplaintResponseForm(forms.Form):
         ('rejected', _('Rejected')),
         ('escalated', _('Escalated')),
     ]
-    
+
     status = forms.ChoiceField(
         choices=STATUS_CHOICES,
         widget=forms.Select(attrs={'class': 'form-control'}),
         label=_("Status")
     )
-    
+
     response = forms.CharField(
         widget=forms.Textarea(attrs={
             'class': 'form-control',
@@ -112,7 +111,7 @@ class ComplaintResponseForm(forms.Form):
         }),
         label=_("Response")
     )
-    
+
     internal_notes = forms.CharField(
         required=False,
         widget=forms.Textarea(attrs={

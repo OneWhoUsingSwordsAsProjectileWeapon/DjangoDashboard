@@ -262,20 +262,25 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         total_possible_nights = 0
         total_booked_nights = 0
         
-        for listing in host_listings.filter(is_active=True, is_approved=True):
+        active_listings = host_listings.filter(is_active=True, is_approved=True)
+        
+        for listing in active_listings:
             # Calculate available days since listing creation or start_date, whichever is later
-            listing_start = max(listing.created_at.date(), start_date)
+            listing_created = listing.created_at.date() if listing.created_at else start_date
+            listing_start = max(listing_created, start_date)
             listing_end = min(timezone.now().date(), end_date)
             
-            days_available = (listing_end - listing_start).days
-            if days_available > 0:
+            # Only calculate if we have a valid period
+            if listing_end > listing_start:
+                days_available = (listing_end - listing_start).days
                 total_possible_nights += days_available
 
                 # Get bookings for this listing in the time period
                 listing_bookings = listing.bookings.filter(
-                    status__in=['completed', 'confirmed'],
-                    start_date__lt=listing_end,
-                    end_date__gt=listing_start
+                    status__in=['completed', 'confirmed']
+                ).filter(
+                    start_date__lte=listing_end,
+                    end_date__gte=listing_start
                 )
 
                 for booking in listing_bookings:
@@ -286,7 +291,13 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                         nights = (booking_end - booking_start).days
                         total_booked_nights += nights
 
-        stats['occupancy_rate'] = round((total_booked_nights / total_possible_nights * 100), 1) if total_possible_nights > 0 else 0
+        # Calculate occupancy rate as percentage
+        if total_possible_nights > 0:
+            occupancy_percentage = (total_booked_nights / total_possible_nights) * 100
+            stats['occupancy_rate'] = round(occupancy_percentage, 1)
+        else:
+            stats['occupancy_rate'] = 0
+            
         stats['total_booked_nights'] = total_booked_nights
         stats['total_possible_nights'] = total_possible_nights
 
