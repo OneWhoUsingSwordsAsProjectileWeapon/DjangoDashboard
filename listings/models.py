@@ -279,3 +279,30 @@ class Review(models.Model):
         
     def __str__(self):
         return f"Review by {self.reviewer.username} for {self.listing.title}"
+
+class ListingImage(models.Model):
+    """Model for listing images"""
+    listing = models.ForeignKey(
+        Listing,
+        on_delete=models.CASCADE,
+        related_name='images'
+    )
+    image = models.ImageField(
+        _("Image"),
+        upload_to='listing_images/',
+        help_text=_("Upload listing image")
+    )
+    is_main = models.BooleanField(
+        _("Main image"),
+        default=False,
+        help_text=_("Mark as main listing image")
+    )
+    uploaded_at = models.DateTimeField(_("Uploaded at"), auto_now_add=True)
+    
+    class Meta:
+        verbose_name = _("Listing Image")
+        verbose_name_plural = _("Listing Images")
+        ordering = ['-is_main', '-uploaded_at']
+    
+    def __str__(self):
+        return f"Image for {self.listing.title}"

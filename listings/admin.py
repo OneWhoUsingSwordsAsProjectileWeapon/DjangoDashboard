@@ -1,6 +1,10 @@
 from django.contrib import admin
 from .models import Listing, Booking, Review, ListingImage
 
+class ListingImageInline(admin.TabularInline):
+    model = ListingImage
+    extra = 1
+
 @admin.register(Listing)
 class ListingAdmin(admin.ModelAdmin):
     """Admin interface for listings"""
@@ -50,10 +54,6 @@ class ListingAdmin(admin.ModelAdmin):
         queryset.update(is_active=False)
         self.message_user(request, f"{queryset.count()} listings have been deactivated.")
     deactivate_listings.short_description = "Deactivate selected listings"
-
-class ListingImageInline(admin.TabularInline):
-    model = ListingImage
-    extra = 1
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
