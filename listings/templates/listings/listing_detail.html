@@ -7,6 +7,59 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'listings/css/calendar.css' %}">
 <link rel="stylesheet" href="{% static 'static/css/global.css' %}">
+<style>
+    .image-gallery-scroll {
+        position: relative;
+    }
+    
+    .image-gallery-scroll::-webkit-scrollbar {
+        height: 8px;
+    }
+    
+    .image-gallery-scroll::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+    
+    .image-gallery-scroll::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+    
+    .image-gallery-scroll::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    .gallery-scroll-image {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .gallery-scroll-image:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    .gallery-main-image:hover,
+    .gallery-thumbnail:hover {
+        opacity: 0.9;
+        transition: opacity 0.2s ease;
+    }
+    
+    .modal-thumbnail {
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.2s ease;
+    }
+    
+    .modal-thumbnail:hover,
+    .modal-thumbnail.active {
+        opacity: 1;
+    }
+    
+    .modal-thumbnail.active {
+        border: 2px solid #007bff;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -42,17 +95,61 @@
 
     <!-- Image Gallery -->
     <div class="row mb-4">
-        {% if listing.image_urls %}
+        {% if listing.images.all or listing.image_urls %}
+            <!-- Main Image -->
             <div class="col-md-8 mb-3 mb-md-0">
-                <img src="{{ listing.image_urls.0 }}" class="img-fluid rounded" alt="{{ listing.title }}" style="width: 100%; height: 400px; object-fit: cover;">
+                {% if listing.images.all %}
+                    <img src="{{ listing.main_image_url }}" class="img-fluid rounded gallery-main-image" alt="{{ listing.title }}" style="width: 100%; height: 400px; object-fit: cover; cursor: pointer;" onclick="openImageModal(0)">
+                {% elif listing.image_urls %}
+                    <img src="{{ listing.image_urls.0 }}" class="img-fluid rounded gallery-main-image" alt="{{ listing.title }}" style="width: 100%; height: 400px; object-fit: cover; cursor: pointer;" onclick="openImageModal(0)">
+                {% endif %}
             </div>
+            
+            <!-- Image Thumbnails -->
             <div class="col-md-4">
                 <div class="row g-2">
-                    {% for image_url in listing.image_urls|slice:"1:5" %}
-                        <div class="col-6">
-                            <img src="{{ image_url }}" class="img-fluid rounded" alt="{{ listing.title }}" style="width: 100%; height: 196px; object-fit: cover;">
-                        </div>
-                    {% endfor %}
+                    {% if listing.images.all %}
+                        {% for image in listing.images.all|slice:"1:5" %}
+                            <div class="col-6">
+                                <img src="{{ image.image.url }}" class="img-fluid rounded gallery-thumbnail" alt="{{ listing.title }}" style="width: 100%; height: 196px; object-fit: cover; cursor: pointer;" onclick="openImageModal({{ forloop.counter }})">
+                            </div>
+                        {% endfor %}
+                    {% elif listing.image_urls %}
+                        {% for image_url in listing.image_urls|slice:"1:5" %}
+                            <div class="col-6">
+                                <img src="{{ image_url }}" class="img-fluid rounded gallery-thumbnail" alt="{{ listing.title }}" style="width: 100%; height: 196px; object-fit: cover; cursor: pointer;" onclick="openImageModal({{ forloop.counter }})">
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Horizontal Scrollable Gallery -->
+            <div class="col-12 mt-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="mb-0">Все изображения</h5>
+                    {% if listing.images.all %}
+                        <span class="text-muted">{{ listing.images.count }} изображений</span>
+                    {% elif listing.image_urls %}
+                        <span class="text-muted">{{ listing.image_urls|length }} изображений</span>
+                    {% endif %}
+                </div>
+                <div class="image-gallery-scroll">
+                    <div class="d-flex gap-2" style="overflow-x: auto; padding-bottom: 10px;">
+                        {% if listing.images.all %}
+                            {% for image in listing.images.all %}
+                                <div class="flex-shrink-0">
+                                    <img src="{{ image.image.url }}" class="rounded gallery-scroll-image" alt="{{ listing.title }}" style="width: 120px; height: 80px; object-fit: cover; cursor: pointer;" onclick="openImageModal({{ forloop.counter0 }})">
+                                </div>
+                            {% endfor %}
+                        {% elif listing.image_urls %}
+                            {% for image_url in listing.image_urls %}
+                                <div class="flex-shrink-0">
+                                    <img src="{{ image_url }}" class="rounded gallery-scroll-image" alt="{{ listing.title }}" style="width: 120px; height: 80px; object-fit: cover; cursor: pointer;" onclick="openImageModal({{ forloop.counter0 }})">
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         {% else %}
@@ -459,6 +556,46 @@
     </div>
 </div>
 
+<!-- Image Gallery Modal -->
+<div class="modal fade" id="imageGalleryModal" tabindex="-1" aria-labelledby="imageGalleryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageGalleryModalLabel">{{ listing.title }} - Галерея изображений</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="position-relative">
+                    <!-- Main Image Display -->
+                    <div class="text-center" style="background: #000;">
+                        <img id="modalMainImage" src="" class="img-fluid" alt="{{ listing.title }}" style="max-height: 70vh; object-fit: contain;">
+                    </div>
+                    
+                    <!-- Navigation Arrows -->
+                    <button class="btn btn-dark position-absolute top-50 start-0 translate-middle-y ms-3" id="prevImageBtn" onclick="changeModalImage(-1)" style="z-index: 1000;">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="btn btn-dark position-absolute top-50 end-0 translate-middle-y me-3" id="nextImageBtn" onclick="changeModalImage(1)" style="z-index: 1000;">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    
+                    <!-- Image Counter -->
+                    <div class="position-absolute bottom-0 start-50 translate-middle-x mb-3">
+                        <span class="badge bg-dark bg-opacity-75" id="imageCounter">1 / 1</span>
+                    </div>
+                </div>
+                
+                <!-- Thumbnail Navigation -->
+                <div class="p-3 border-top">
+                    <div class="d-flex gap-2 overflow-auto" id="modalThumbnails">
+                        <!-- Thumbnails will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Amenities Modal -->
 <div class="modal fade" id="amenitiesModal" tabindex="-1" aria-labelledby="amenitiesModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable">
@@ -620,5 +757,95 @@
             form.scrollIntoView({ behavior: 'smooth' });
         }
     }
+
+    // Image Gallery Functionality
+    let currentImageIndex = 0;
+    let galleryImages = [];
+
+    // Initialize gallery images
+    document.addEventListener('DOMContentLoaded', function() {
+        // Collect all images
+        {% if listing.images.all %}
+            galleryImages = [
+                {% for image in listing.images.all %}
+                    "{{ image.image.url }}"{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ];
+        {% elif listing.image_urls %}
+            galleryImages = {{ listing.image_urls|safe }};
+        {% endif %}
+    });
+
+    function openImageModal(index) {
+        currentImageIndex = index;
+        updateModalImage();
+        
+        // Generate thumbnails
+        const thumbnailContainer = document.getElementById('modalThumbnails');
+        thumbnailContainer.innerHTML = '';
+        
+        galleryImages.forEach((imageUrl, idx) => {
+            const thumbnail = document.createElement('img');
+            thumbnail.src = imageUrl;
+            thumbnail.className = 'modal-thumbnail rounded';
+            thumbnail.style.cssText = 'width: 60px; height: 40px; object-fit: cover;';
+            thumbnail.onclick = () => {
+                currentImageIndex = idx;
+                updateModalImage();
+            };
+            
+            if (idx === currentImageIndex) {
+                thumbnail.classList.add('active');
+            }
+            
+            thumbnailContainer.appendChild(thumbnail);
+        });
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('imageGalleryModal'));
+        modal.show();
+    }
+
+    function updateModalImage() {
+        const modalImage = document.getElementById('modalMainImage');
+        const counter = document.getElementById('imageCounter');
+        const thumbnails = document.querySelectorAll('.modal-thumbnail');
+        
+        if (galleryImages.length > 0) {
+            modalImage.src = galleryImages[currentImageIndex];
+            counter.textContent = `${currentImageIndex + 1} / ${galleryImages.length}`;
+            
+            // Update active thumbnail
+            thumbnails.forEach((thumb, idx) => {
+                thumb.classList.toggle('active', idx === currentImageIndex);
+            });
+            
+            // Show/hide navigation buttons
+            document.getElementById('prevImageBtn').style.display = currentImageIndex > 0 ? 'block' : 'none';
+            document.getElementById('nextImageBtn').style.display = currentImageIndex < galleryImages.length - 1 ? 'block' : 'none';
+        }
+    }
+
+    function changeModalImage(direction) {
+        const newIndex = currentImageIndex + direction;
+        if (newIndex >= 0 && newIndex < galleryImages.length) {
+            currentImageIndex = newIndex;
+            updateModalImage();
+        }
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        const modal = document.getElementById('imageGalleryModal');
+        if (modal.classList.contains('show')) {
+            if (e.key === 'ArrowLeft') {
+                changeModalImage(-1);
+            } else if (e.key === 'ArrowRight') {
+                changeModalImage(1);
+            } else if (e.key === 'Escape') {
+                bootstrap.Modal.getInstance(modal).hide();
+            }
+        }
+    });
 </script>
 {% endblock %}
