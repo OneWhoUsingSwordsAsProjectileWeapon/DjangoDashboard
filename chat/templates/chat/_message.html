@@ -4,7 +4,7 @@
     {% if message.sender == request.user %}
         <div class="chat-bubble sent">
             <p class="mb-0">{{ message.content }}</p>
-            
+
             <!-- Message options for sender (own messages) -->
             <div class="message-options position-absolute top-0 end-0 d-none">
                 <div class="dropdown">
@@ -30,11 +30,11 @@
                     {{ message.sender.username|first|upper }}
                 </div>
             {% endif %}
-            
+
             <div>
                 <div class="chat-bubble received">
                     <p class="mb-0">{{ message.content }}</p>
-                    
+
                     <!-- Message options for receiver (others' messages) -->
                     <div class="message-options position-absolute top-0 end-0 d-none">
                         <div class="dropdown">
