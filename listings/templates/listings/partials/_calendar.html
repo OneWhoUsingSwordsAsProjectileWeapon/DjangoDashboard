@@ -8,10 +8,10 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div class="btn-group">
             <button type="button" class="btn btn-outline-secondary" x-on:click="previousMonth()">
-                <i class="fas fa-chevron-left"></i> Previous
+                <i class="fas fa-chevron-left"></i> Назад
             </button>
             <button type="button" class="btn btn-outline-secondary" x-on:click="nextMonth()">
-                Next <i class="fas fa-chevron-right"></i>
+                Вперёд <i class="fas fa-chevron-right"></i>
             </button>
         </div>
         <h5 class="mb-0" x-text="currentMonthName + ' ' + currentYear"></h5>
@@ -21,13 +21,13 @@
         <table class="calendar-table">
             <thead>
                 <tr>
-                    <th>Su</th>
-                    <th>Mo</th>
-                    <th>Tu</th>
-                    <th>We</th>
-                    <th>Th</th>
-                    <th>Fr</th>
-                    <th>Sa</th>
+                    <th>Вс</th>
+                    <th>Пн</th>
+                    <th>Вт</th>
+                    <th>Ср</th>
+                    <th>Чт</th>
+                    <th>Пт</th>
+                    <th>Сб</th>
                 </tr>
             </thead>
             <tbody>
@@ -60,15 +60,15 @@
     <div class="d-flex justify-content-center mt-3 gap-3">
         <div class="legend-item">
             <div class="legend-box" style="background-color: #e74c3c;"></div>
-            <span class="legend-text">Unavailable</span>
+            <span class="legend-text">Недоступно</span>
         </div>
         <div class="legend-item">
             <div class="legend-box" style="background-color: #3498db;"></div>
-            <span class="legend-text">Today</span>
+            <span class="legend-text">Сегодня</span>
         </div>
         <div class="legend-item">
             <div class="legend-box" style="background-color: #f8f9fa; border: 1px solid #dee2e6;"></div>
-            <span class="legend-text">Available</span>
+            <span class="legend-text">Доступно</span>
         </div>
     </div>
 </div>

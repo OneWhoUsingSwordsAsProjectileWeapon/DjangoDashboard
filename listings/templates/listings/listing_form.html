@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-{% if form.instance.id %}Edit Listing: {{ form.instance.title }}{% else %}Create New Listing{% endif %} - Rental Aggregator
+{% if form.instance.id %}Редактировать объявление: {{ form.instance.title }}{% else %}Создать новое объявление{% endif %} - Агрегатор Аренды
 {% endblock %}
 
 {% block extra_css %}
@@ -55,7 +55,7 @@
         <div class="col-lg-8 mx-auto">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h3 class="mb-0">{% if form.instance.id %}Edit Listing{% else %}Create New Listing{% endif %}</h3>
+                    <h3 class="mb-0">{% if form.instance.id %}Редактировать объявление{% else %}Создать новое объявление{% endif %}</h3>
                 </div>
                 <div class="card-body">
                     <form method="post" enctype="multipart/form-data" id="listingForm">
@@ -70,34 +70,34 @@
                         {% endif %}
 
                         <!-- Basic Information -->
-                        <h5 class="mt-3 mb-3">Basic Information</h5>
+                        <h5 class="mt-3 mb-3">Основная информация</h5>
                         <div class="row">
                             <div class="col-md-12 mb-3">
-                                <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
+                                <label for="{{ form.title.id_for_label }}" class="form-label">Название</label>
                                 {{ form.title }}
                                 {% if form.title.errors %}
                                     <div class="text-danger">{{ form.title.errors }}</div>
                                 {% endif %}
-                                <div class="form-text">Create a catchy title that highlights your property's best features.</div>
+                                <div class="form-text">Создайте привлекательное название, которое подчеркивает лучшие особенности вашей недвижимости.</div>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-12 mb-3">
-                                <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                                <label for="{{ form.description.id_for_label }}" class="form-label">Описание</label>
                                 {{ form.description }}
                                 {% if form.description.errors %}
                                     <div class="text-danger">{{ form.description.errors }}</div>
                                 {% endif %}
-                                <div class="form-text">Describe your property in detail. Include unique features and attractions nearby.</div>
+                                <div class="form-text">Подробно опишите вашу недвижимость. Включите уникальные особенности и достопримечательности поблизости.</div>
                             </div>
                         </div>
 
                         <!-- Location -->
-                        <h5 class="mt-4 mb-3">Location</h5>
+                        <h5 class="mt-4 mb-3">Местоположение</h5>
                         <div class="row">
                             <div class="col-md-12 mb-3">
-                                <label for="{{ form.address.id_for_label }}" class="form-label">{{ form.address.label }}</label>
+                                <label for="{{ form.address.id_for_label }}" class="form-label">Адрес</label>
                                 {{ form.address }}
                                 {% if form.address.errors %}
                                     <div class="text-danger">{{ form.address.errors }}</div>
@@ -107,14 +107,14 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.city.id_for_label }}" class="form-label">{{ form.city.label }}</label>
+                                <label for="{{ form.city.id_for_label }}" class="form-label">Город</label>
                                 {{ form.city }}
                                 {% if form.city.errors %}
                                     <div class="text-danger">{{ form.city.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.state.id_for_label }}" class="form-label">{{ form.state.label }}</label>
+                                <label for="{{ form.state.id_for_label }}" class="form-label">Область/Штат</label>
                                 {{ form.state }}
                                 {% if form.state.errors %}
                                     <div class="text-danger">{{ form.state.errors }}</div>
@@ -124,14 +124,14 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.country.id_for_label }}" class="form-label">{{ form.country.label }}</label>
+                                <label for="{{ form.country.id_for_label }}" class="form-label">Страна</label>
                                 {{ form.country }}
                                 {% if form.country.errors %}
                                     <div class="text-danger">{{ form.country.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.zip_code.id_for_label }}" class="form-label">{{ form.zip_code.label }}</label>
+                                <label for="{{ form.zip_code.id_for_label }}" class="form-label">Почтовый индекс</label>
                                 {{ form.zip_code }}
                                 {% if form.zip_code.errors %}
                                     <div class="text-danger">{{ form.zip_code.errors }}</div>
@@ -141,13 +141,13 @@
 
                         <!-- Map Section -->
                         <div class="mb-3">
-                            <label class="form-label">Property Location</label>
+                            <label class="form-label">Местоположение недвижимости</label>
                             <div class="map-instructions">
-                                Click on the map to set the exact location of your property, or use the search box to find an address.
+                                Нажмите на карту, чтобы указать точное местоположение вашей недвижимости, или используйте поиск адреса.
                             </div>
                             <div class="mb-2">
                                 <button type="button" class="btn btn-outline-primary btn-sm" onclick="geocodeAddress()">
-                                    <i class="fas fa-search"></i> Find Address on Map
+                                    <i class="fas fa-search"></i> Найти адрес на карте
                                 </button>
                             </div>
                             <div id="map"></div>
@@ -156,35 +156,35 @@
                         </div>
 
                         <!-- Property Details -->
-                        <h5 class="mt-4 mb-3">Property Details</h5>
+                        <h5 class="mt-4 mb-3">Детали недвижимости</h5>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.property_type.id_for_label }}" class="form-label">{{ form.property_type.label }}</label>
+                                <label for="{{ form.property_type.id_for_label }}" class="form-label">Тип недвижимости</label>
                                 {{ form.property_type }}
                                 {% if form.property_type.errors %}
                                     <div class="text-danger">{{ form.property_type.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.accommodates.id_for_label }}" class="form-label">{{ form.accommodates.label }}</label>
+                                <label for="{{ form.accommodates.id_for_label }}" class="form-label">Вместимость</label>
                                 {{ form.accommodates }}
                                 {% if form.accommodates.errors %}
                                     <div class="text-danger">{{ form.accommodates.errors }}</div>
                                 {% endif %}
-                                <div class="form-text">Maximum number of guests allowed.</div>
+                                <div class="form-text">Максимальное количество разрешенных гостей.</div>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.bedrooms.id_for_label }}" class="form-label">{{ form.bedrooms.label }}</label>
+                                <label for="{{ form.bedrooms.id_for_label }}" class="form-label">Спальни</label>
                                 {{ form.bedrooms }}
                                 {% if form.bedrooms.errors %}
                                     <div class="text-danger">{{ form.bedrooms.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.bathrooms.id_for_label }}" class="form-label">{{ form.bathrooms.label }}</label>
+                                <label for="{{ form.bathrooms.id_for_label }}" class="form-label">Ванные комнаты</label>
                                 {{ form.bathrooms }}
                                 {% if form.bathrooms.errors %}
                                     <div class="text-danger">{{ form.bathrooms.errors }}</div>
@@ -193,7 +193,7 @@
                         </div>
 
                         <!-- Amenities -->
-                        <h5 class="mt-4 mb-3">Amenities</h5>
+                        <h5 class="mt-4 mb-3">Удобства</h5>
                         <div class="mb-4">
                             {{ form.amenities }}
                             <div id="amenities-container" class="mt-2">
@@ -205,12 +205,12 @@
                         </div>
 
                         <!-- Pricing -->
-                        <h5 class="mt-4 mb-3">Pricing</h5>
+                        <h5 class="mt-4 mb-3">Ценообразование</h5>
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label for="{{ form.price_per_night.id_for_label }}" class="form-label">{{ form.price_per_night.label }}</label>
+                                <label for="{{ form.price_per_night.id_for_label }}" class="form-label">Цена за ночь</label>
                                 <div class="input-group">
-                                    <span class="input-group-text">$</span>
+                                    <span class="input-group-text">₽</span>
                                     {{ form.price_per_night }}
                                 </div>
                                 {% if form.price_per_night.errors %}
@@ -218,9 +218,9 @@
                                 {% endif %}
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="{{ form.cleaning_fee.id_for_label }}" class="form-label">{{ form.cleaning_fee.label }}</label>
+                                <label for="{{ form.cleaning_fee.id_for_label }}" class="form-label">Плата за уборку</label>
                                 <div class="input-group">
-                                    <span class="input-group-text">$</span>
+                                    <span class="input-group-text">₽</span>
                                     {{ form.cleaning_fee }}
                                 </div>
                                 {% if form.cleaning_fee.errors %}
@@ -228,9 +228,9 @@
                                 {% endif %}
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="{{ form.service_fee.id_for_label }}" class="form-label">{{ form.service_fee.label }}</label>
+                                <label for="{{ form.service_fee.id_for_label }}" class="form-label">Сервисный сбор</label>
                                 <div class="input-group">
-                                    <span class="input-group-text">$</span>
+                                    <span class="input-group-text">₽</span>
                                     {{ form.service_fee }}
                                 </div>
                                 {% if form.service_fee.errors %}
@@ -240,10 +240,10 @@
                         </div>
 
                         <!-- Rules and Availability -->
-                        <h5 class="mt-4 mb-3">Rules and Availability</h5>
+                        <h5 class="mt-4 mb-3">Правила и доступность</h5>
                         <div class="row">
                             <div class="col-md-12 mb-3">
-                                <label for="{{ form.house_rules.id_for_label }}" class="form-label">{{ form.house_rules.label }}</label>
+                                <label for="{{ form.house_rules.id_for_label }}" class="form-label">Правила дома</label>
                                 {{ form.house_rules }}
                                 {% if form.house_rules.errors %}
                                     <div class="text-danger">{{ form.house_rules.errors }}</div>
@@ -253,14 +253,14 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.check_in_time.id_for_label }}" class="form-label">{{ form.check_in_time.label }}</label>
+                                <label for="{{ form.check_in_time.id_for_label }}" class="form-label">Время заезда</label>
                                 {{ form.check_in_time }}
                                 {% if form.check_in_time.errors %}
                                     <div class="text-danger">{{ form.check_in_time.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.check_out_time.id_for_label }}" class="form-label">{{ form.check_out_time.label }}</label>
+                                <label for="{{ form.check_out_time.id_for_label }}" class="form-label">Время выезда</label>
                                 {{ form.check_out_time }}
                                 {% if form.check_out_time.errors %}
                                     <div class="text-danger">{{ form.check_out_time.errors }}</div>
@@ -270,14 +270,14 @@
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.minimum_nights.id_for_label }}" class="form-label">{{ form.minimum_nights.label }}</label>
+                                <label for="{{ form.minimum_nights.id_for_label }}" class="form-label">Минимум ночей</label>
                                 {{ form.minimum_nights }}
                                 {% if form.minimum_nights.errors %}
                                     <div class="text-danger">{{ form.minimum_nights.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.maximum_nights.id_for_label }}" class="form-label">{{ form.maximum_nights.label }}</label>
+                                <label for="{{ form.maximum_nights.id_for_label }}" class="form-label">Максимум ночей</label>
                                 {{ form.maximum_nights }}
                                 {% if form.maximum_nights.errors %}
                                     <div class="text-danger">{{ form.maximum_nights.errors }}</div>
@@ -286,8 +286,8 @@
                         </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                            <a href="{% if form.instance.id %}{% url 'listings:listing_detail' pk=form.instance.id %}{% else %}{% url 'listings:host_listings' %}{% endif %}" class="btn btn-outline-secondary me-md-2">Cancel</a>
-                            <button type="submit" class="btn btn-primary">Save Listing</button>
+                            <a href="{% if form.instance.id %}{% url 'listings:listing_detail' pk=form.instance.id %}{% else %}{% url 'listings:host_listings' %}{% endif %}" class="btn btn-outline-secondary me-md-2">Отмена</a>
+                            <button type="submit" class="btn btn-primary">Сохранить объявление</button>
                         </div>
                     </form>
                 </div>
@@ -296,9 +296,9 @@
             {% if form.instance.id %}
             <div class="card shadow-sm mt-4">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Manage Images</h5>
+                    <h5 class="mb-0">Управление изображениями</h5>
                     <a href="{% url 'listings:listing_images' pk=form.instance.id %}" class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-images me-1"></i> Edit Images
+                        <i class="fas fa-images me-1"></i> Редактировать изображения
                     </a>
                 </div>
                 <div class="card-body">
@@ -306,12 +306,12 @@
                         <div class="row row-cols-1 row-cols-md-3 g-3">
                             {% for image_url in form.instance.image_urls %}
                             <div class="col">
-                                <img src="{{ image_url }}" class="img-thumbnail" alt="Listing image">
+                                <img src="{{ image_url }}" class="img-thumbnail" alt="Изображение объявления">
                             </div>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <p class="text-muted">No images have been added yet. Click 'Edit Images' to add some.</p>
+                        <p class="text-muted">Изображения еще не добавлены. Нажмите 'Редактировать изображения', чтобы добавить их.</p>
                     {% endif %}
                 </div>
             </div>
@@ -349,13 +349,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const amenitiesInput = document.getElementById('{{ form.amenities.id_for_label }}');
         const amenitiesContainer = document.getElementById('amenities-container');
 
-        // Common amenities
+        // Common amenities in Russian
         const commonAmenities = [
-            'Wifi', 'Kitchen', 'Free parking', 'Air conditioning', 'Heating', 'TV',
-            'Washer', 'Dryer', 'Iron', 'Hair dryer', 'Pool', 'Hot tub', 'Gym',
-            'Elevator', 'Wheelchair accessible', 'BBQ grill', 'Balcony', 'Garden view',
-            'Sea view', 'Mountain view', 'Smoke alarm', 'Carbon monoxide alarm',
-            'Essentials', 'Cable TV', 'Breakfast', 'Pets allowed'
+            'Wi-Fi', 'Кухня', 'Бесплатная парковка', 'Кондиционер', 'Отопление', 'ТВ',
+            'Стиральная машина', 'Сушильная машина', 'Утюг', 'Фен', 'Бассейн', 'Джакузи', 'Тренажерный зал',
+            'Лифт', 'Доступ для инвалидов', 'Барбекю', 'Балкон', 'Вид на сад',
+            'Вид на море', 'Вид на горы', 'Пожарная сигнализация', 'Датчик угарного газа',
+            'Необходимые принадлежности', 'Кабельное ТВ', 'Завтрак', 'Разрешены домашние животные'
         ];
 
         // Get existing amenities, if any

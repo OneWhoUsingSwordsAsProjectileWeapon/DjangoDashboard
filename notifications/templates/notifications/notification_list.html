@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% csrf_token %}
 
-{% block title %}Notifications - Rental Aggregator{% endblock %}
+{% block title %}Уведомления - Агрегатор Аренды{% endblock %}
 
 {% block content %}
 <style>
@@ -71,10 +71,10 @@
     <div class="row">
         <div class="col-md-8 mx-auto">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Your Notifications</h2>
+                <h2>Ваши уведомления</h2>
                 {% if notifications %}
                 <button class="btn btn-outline-secondary btn-sm" onclick="markAllNotificationsRead()">
-                    Mark All as Read
+                    Отметить все как прочитанные
                 </button>
                 {% endif %}
             </div>
@@ -106,7 +106,7 @@
                                         {{ notification.title }}
                                     </h5>
                                     {% if not notification.is_read %}
-                                        <span class="badge bg-primary">New</span>
+                                        <span class="badge bg-primary">Новое</span>
                                     {% endif %}
                                 </div>
                                 <p class="card-text">{{ notification.message }}</p>
@@ -116,17 +116,17 @@
                                 {% if notification.booking %}
                                     <div class="mt-2">
                                         <a href="{% url 'listings:booking_detail' reference=notification.booking.booking_reference %}" 
-                                           class="btn btn-sm btn-outline-primary">View Booking</a>
+                                           class="btn btn-sm btn-outline-primary">Посмотреть бронирование</a>
                                     </div>
                                 {% elif notification.listing %}
                                     <div class="mt-2">
                                         <a href="{% url 'listings:listing_detail' pk=notification.listing.pk %}" 
-                                           class="btn btn-sm btn-outline-primary">View Listing</a>
+                                           class="btn btn-sm btn-outline-primary">Посмотреть объявление</a>
                                     </div>
                                 {% elif notification.conversation %}
                                     <div class="mt-2">
                                         <a href="{% url 'chat:conversation_detail' pk=notification.conversation.pk %}" 
-                                           class="btn btn-sm btn-outline-primary">View Conversation</a>
+                                           class="btn btn-sm btn-outline-primary">Посмотреть беседу</a>
                                     </div>
                                 {% endif %}
                             </div>
@@ -137,8 +137,8 @@
             {% else %}
                 <div class="empty-state">
                     <i class="fas fa-bell-slash fa-3x"></i>
-                    <h4>No notifications yet</h4>
-                    <p>You'll see notifications about bookings, messages, and more here.</p>
+                    <h4>Пока нет уведомлений</h4>
+                    <p>Здесь вы увидите уведомления о бронированиях, сообщениях и многом другом.</p>
                 </div>
             {% endif %}
         </div>

@@ -61,10 +61,10 @@
                         </div>
                         <div class="col-md-6">
                             <h6 class="text-muted">Данные об оплате</h6>
-                            <p class="mb-1"><strong>Базовая стоимость:</strong> ${{ booking.base_price|floatformat:2 }}</p>
-                            <p class="mb-1"><strong>Плата за уборку:</strong> ${{ booking.cleaning_fee|floatformat:2 }}</p>
-                            <p class="mb-1"><strong>Сервисный сбор:</strong> ${{ booking.service_fee|floatformat:2 }}</p>
-                            <p class="mb-0"><strong>Итого:</strong> ${{ booking.total_price|floatformat:2 }}</p>
+                            <p class="mb-1"><strong>Базовая стоимость:</strong> ₽{{ booking.base_price|floatformat:2 }}</p>
+                            <p class="mb-1"><strong>Плата за уборку:</strong> ₽{{ booking.cleaning_fee|floatformat:2 }}</p>
+                            <p class="mb-1"><strong>Сервисный сбор:</strong> ₽{{ booking.service_fee|floatformat:2 }}</p>
+                            <p class="mb-0"><strong>Итого:</strong> ₽{{ booking.total_price|floatformat:2 }}</p>
                         </div>
                     </div>
                     

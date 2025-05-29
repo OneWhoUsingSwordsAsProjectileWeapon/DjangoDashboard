@@ -1,33 +1,33 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}My Trips - Rental Aggregator{% endblock %}
+{% block title %}Мои поездки - Агрегатор Аренды{% endblock %}
 
 {% block content %}
 <div class="container py-4">
     <div class="row">
         <div class="col-12">
-            <h2 class="mb-4">My Trips</h2>
+            <h2 class="mb-4">Мои поездки</h2>
 
             <ul class="nav nav-tabs mb-4">
                 <li class="nav-item">
                     <a class="nav-link {% if not current_status %}active{% endif %}" href="{% url 'listings:user_bookings' %}">
-                        All Trips
+                        Все поездки
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if current_status == 'upcoming' %}active{% endif %}" href="{% url 'listings:user_bookings' %}?status=upcoming">
-                        Upcoming
+                        Предстоящие
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if current_status == 'completed' %}active{% endif %}" href="{% url 'listings:user_bookings' %}?status=completed">
-                        Past Trips
+                        Прошедшие поездки
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if current_status == 'canceled' %}active{% endif %}" href="{% url 'listings:user_bookings' %}?status=canceled">
-                        Canceled
+                        Отмененные
                     </a>
                 </li>
             </ul>
@@ -49,21 +49,25 @@
                                         <i class="fas fa-calendar"></i> {{ booking.start_date|date:"M d" }} - {{ booking.end_date|date:"M d, Y" }}
                                     </span>
                                     <span class="badge {% if booking.status == 'confirmed' %}bg-success{% elif booking.status == 'pending' %}bg-warning text-dark{% elif booking.status == 'canceled' %}bg-danger{% elif booking.status == 'completed' %}bg-secondary{% endif %}">
-                                        {{ booking.get_status_display }}
+                                        {% if booking.status == 'confirmed' %}Подтверждено
+                                        {% elif booking.status == 'pending' %}В ожидании
+                                        {% elif booking.status == 'canceled' %}Отменено
+                                        {% elif booking.status == 'completed' %}Завершено
+                                        {% endif %}
                                     </span>
                                 </div>
 
                                 <p class="card-text mb-2">
-                                    <i class="fas fa-user"></i> {{ booking.guests }} guests
+                                    <i class="fas fa-user"></i> {{ booking.guests }} гост{{ booking.guests|pluralize:"ь,я,ей" }}
                                 </p>
                                 <p class="card-text">
-                                    <strong>Total:</strong> ${{ booking.total_price }}
+                                    <strong>Итого:</strong> ${{ booking.total_price }}
                                 </p>
                             </div>
                             <div class="card-footer bg-white">
                                 <div class="d-grid">
                                     <a href="{% url 'listings:booking_detail' reference=booking.booking_reference %}" class="btn btn-outline-primary">
-                                        View Details
+                                        Подробности
                                     </a>
                                 </div>
                             </div>
@@ -76,10 +80,10 @@
                     <div class="mb-4">
                         <i class="fas fa-suitcase fa-3x text-muted"></i>
                     </div>
-                    <h4>No trips found</h4>
-                    <p class="text-muted">You don't have any {{ current_status|default:"" }} bookings.</p>
+                    <h4>Поездки не найдены</h4>
+                    <p class="text-muted">У вас нет {% if current_status == 'upcoming' %}предстоящих{% elif current_status == 'completed' %}прошедших{% elif current_status == 'canceled' %}отмененных{% endif %} бронирований.</p>
                     <a href="{% url 'listings:listing_list' %}" class="btn btn-primary mt-2">
-                        Find a Place to Stay
+                        Найти место для проживания
                     </a>
                 </div>
             {% endif %}

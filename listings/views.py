@@ -521,7 +521,7 @@ def create_booking(request, pk):
             # Send notifications
             guest_message = f"Your booking for {listing.title} has been created. " \
                            f"Check-in: {start_date}, Check-out: {end_date}. " \
-                           f"Total price: ${booking.total_price}"
+                           f"Total price: ₽{booking.total_price}"
 
             host_message = f"New booking request for your listing '{listing.title}'. " \
                           f"Guest: {request.user.get_full_name() or request.user.username}, " \

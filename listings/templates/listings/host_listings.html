@@ -11,10 +11,10 @@
                 <h2>My Listings</h2>
                 <div>
                     <a href="{% url 'listings:host_dashboard' %}" class="btn btn-outline-secondary me-2">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                        <i class="fas fa-tachometer-alt"></i> Панель управления
                     </a>
                     <a href="{% url 'listings:listing_create' %}" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Create New Listing
+                        <i class="fas fa-plus"></i> Создать объявление
                     </a>
                 </div>
             </div>
@@ -30,11 +30,11 @@
                                 <!-- Status badges -->
                                 <div class="position-absolute top-0 start-0 m-2">
                                     {% if not listing.is_active %}
-                                        <span class="badge bg-secondary">Inactive</span>
+                                        <span class="badge bg-secondary">Отключено</span>
                                     {% elif not listing.is_approved %}
-                                        <span class="badge bg-warning">Pending Approval</span>
+                                        <span class="badge bg-warning">На рассмотрении</span>
                                     {% else %}
-                                        <span class="badge bg-success">Active</span>
+                                        <span class="badge bg-success">Активно</span>
                                     {% endif %}
                                 </div>
                             </div>
@@ -48,15 +48,15 @@
                                     </small>
                                 </div>
                                 <div class="mb-2">
-                                    <strong>${{ listing.price_per_night }}/night</strong>
-                                    <small class="text-muted">• {{ listing.bedrooms }} bed • {{ listing.bathrooms }} bath</small>
+                                    <strong>₽{{ listing.price_per_night }}/Ночь</strong>
+                                    <small class="text-muted">• {{ listing.bedrooms }} Спальни • {{ listing.bathrooms }} Ванные</small>
                                 </div>
 
                                 {% if listing.average_rating %}
                                 <div class="mb-2">
                                     <i class="fas fa-star text-warning"></i>
                                     <span>{{ listing.average_rating|floatformat:1 }}</span>
-                                    <small class="text-muted">({{ listing.total_reviews }} reviews)</small>
+                                    <small class="text-muted">({{ listing.total_reviews }} Отзывы)</small>
                                 </div>
                                 {% endif %}
                             </div>
@@ -65,13 +65,13 @@
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div class="btn-group" role="group">
                                         <a href="{% url 'listings:listing_detail' pk=listing.pk %}" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-eye"></i> View
+                                            <i class="fas fa-eye"></i> Просмотр
                                         </a>
                                         <a href="{% url 'listings:listing_update' pk=listing.pk %}" class="btn btn-sm btn-outline-secondary">
-                                            <i class="fas fa-edit"></i> Edit
+                                            <i class="fas fa-edit"></i> Изменить
                                         </a>
                                         <a href="{% url 'listings:listing_images' pk=listing.pk %}" class="btn btn-sm btn-outline-info">
-                                            <i class="fas fa-images"></i> Images
+                                            <i class="fas fa-images"></i> Изображения
                                         </a>
                                     </div>
 
@@ -82,16 +82,16 @@
                                         <ul class="dropdown-menu">
                                             {% if listing.is_active %}
                                                 <li><a class="dropdown-item" href="#" onclick="toggleListingStatus({{ listing.pk }}, false)">
-                                                    <i class="fas fa-pause"></i> Deactivate
+                                                    <i class="fas fa-pause"></i> Деактивировать
                                                 </a></li>
                                             {% else %}
                                                 <li><a class="dropdown-item" href="#" onclick="toggleListingStatus({{ listing.pk }}, true)">
-                                                    <i class="fas fa-play"></i> Activate
+                                                    <i class="fas fa-play"></i> Активировать
                                                 </a></li>
                                             {% endif %}
                                             <li><hr class="dropdown-divider"></li>
                                             <li><a class="dropdown-item text-danger" href="{% url 'listings:listing_delete' pk=listing.pk %}">
-                                                <i class="fas fa-trash"></i> Delete
+                                                <i class="fas fa-trash"></i> Удалить
                                             </a></li>
                                         </ul>
                                     </div>
