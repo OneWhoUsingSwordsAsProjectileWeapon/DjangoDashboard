@@ -86,10 +86,10 @@ function enhanceSearchForm() {
                 <div class="card-body p-2">
                     <p class="small text-muted mb-2">Popular destinations:</p>
                     <div class="suggestion-chips">
-                        <button type="button" class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="setLocation('New York')">New York</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="setLocation('Miami')">Miami</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="setLocation('Los Angeles')">Los Angeles</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="setLocation('Chicago')">Chicago</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="setLocation('Москва')">Москва</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="setLocation('Санкт-Петербург')">Санкт-Петербург</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="setLocation('Сочи')">Сочи</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="setLocation('Казань')">Казань</button>
                     </div>
                 </div>
             `;
