@@ -63,53 +63,104 @@ class Command(BaseCommand):
         
         # Create listings for hosts
         listings = []
-        property_types = ['Квартира', 'Дом', 'Студия', 'Лофт', 'Комната']
-        cities = ['Москва', 'Санкт-Петербург', 'Казань', 'Нижний Новгород', 'Екатеринбург']
+        property_types = ['Квартира', 'Дом', 'Студия', 'Лофт', 'Комната', 'Апартаменты', 'Пентхаус', 'Таунхаус']
+        cities = ['Москва', 'Санкт-Петербург', 'Казань', 'Нижний Новгород', 'Екатеринбург', 'Новосибирск', 'Сочи', 'Калининград', 'Ростов-на-Дону', 'Уфа', 'Чита']
         
-        for host in hosts:
-            for i in range(random.randint(2, 4)):
+        descriptions = [
+            'Уютная {} в центре города {}. Прекрасное место для отдыха.',
+            'Современная {} в престижном районе {}. Идеально для командировок.',
+            'Просторная {} с отличным видом в {}. Все удобства включены.',
+            'Стильная {} в тихом районе {}. Рядом парк и транспорт.',
+            'Комфортная {} для семейного отдыха в {}. Детская площадка во дворе.',
+            'Элегантная {} в историческом центре {}. Множество достопримечательностей.',
+            'Светлая {} с балконом в {}. Прекрасный вид на город.',
+            'Дизайнерская {} в новостройке {}. Современный ремонт.',
+        ]
+        
+        amenities_list = [
+            ['Wi-Fi', 'Кухня', 'Стиральная машина'],
+            ['Wi-Fi', 'Кухня', 'Кондиционер', 'Парковка'],
+            ['Wi-Fi', 'Кухня', 'Джакузи', 'Балкон'],
+            ['Wi-Fi', 'Кухня', 'Стиральная машина', 'Телевизор'],
+            ['Wi-Fi', 'Кухня', 'Посудомоечная машина', 'Лифт'],
+            ['Wi-Fi', 'Мини-кухня', 'Кондиционер'],
+            ['Wi-Fi', 'Полная кухня', 'Стиральная машина', 'Сушилка', 'Парковка'],
+        ]
+        
+        # Create more listings per host to reach ~20 total
+        total_listings_needed = 20
+        listings_per_host = total_listings_needed // len(hosts) if hosts else 0
+        extra_listings = total_listings_needed % len(hosts) if hosts else 0
+        
+        for i, host in enumerate(hosts):
+            num_listings = listings_per_host
+            if i < extra_listings:
+                num_listings += 1
+                
+            for j in range(num_listings):
                 city = random.choice(cities)
                 property_type = random.choice(property_types)
+                description_template = random.choice(descriptions)
+                
+                # Generate more varied data
+                bedrooms = random.randint(1, 4)
+                bathrooms = random.choice([1, 1.5, 2, 2.5, 3])
+                accommodates = random.randint(bedrooms, bedrooms * 2 + 2)
                 
                 listing = Listing.objects.create(
-                    title=f'{property_type} в центре {city}',
-                    description=f'Уютная {property_type.lower()} в центре города {city}. Прекрасное место для отдыха.',
-                    address=f'ул. Центральная, {random.randint(1, 100)}',
+                    title=f'{property_type} в {city} - {bedrooms} комн.',
+                    description=description_template.format(property_type.lower(), city),
+                    address=f'ул. {random.choice(["Центральная", "Ленина", "Пушкина", "Гагарина", "Мира", "Советская"])}, {random.randint(1, 200)}',
                     city=city,
                     state=f'{city} область',
                     country='Россия',
                     zip_code=f'{random.randint(100000, 999999)}',
-                    price_per_night=Decimal(str(random.randint(2000, 8000))),
-                    cleaning_fee=Decimal(str(random.randint(500, 1500))),
-                    service_fee=Decimal(str(random.randint(300, 800))),
-                    bedrooms=random.randint(1, 3),
-                    bathrooms=Decimal(str(random.choice([1, 1.5, 2, 2.5]))),
-                    accommodates=random.randint(2, 6),
+                    price_per_night=Decimal(str(random.randint(1500, 12000))),
+                    cleaning_fee=Decimal(str(random.randint(300, 2000))),
+                    service_fee=Decimal(str(random.randint(200, 1000))),
+                    bedrooms=bedrooms,
+                    bathrooms=Decimal(str(bathrooms)),
+                    accommodates=accommodates,
                     property_type=property_type,
+                    amenities=random.choice(amenities_list),
+                    minimum_nights=random.choice([1, 2, 3]),
+                    maximum_nights=random.choice([7, 14, 30]),
                     host=host,
-                    is_active=True,
-                    is_approved=True
+                    is_active=random.choice([True, True, True, False]),  # 75% active
+                    is_approved=random.choice([True, True, False])  # 66% approved
                 )
                 listings.append(listing)
                 self.stdout.write(f'Created listing: {listing.title}')
         
         # Create bookings with non-conflicting dates
         statuses = ['pending', 'confirmed', 'completed', 'canceled']
-        status_weights = [0.1, 0.3, 0.5, 0.1]  # More completed bookings for better stats
+        status_weights = [0.15, 0.25, 0.5, 0.1]  # More completed bookings for better stats
         
         today = date.today()
         
-        for _ in range(25):  # Create 25 bookings
-            if not guests or not listings:
+        # Create more bookings for better statistics (50-80 bookings)
+        num_bookings = random.randint(50, 80)
+        successful_bookings = 0
+        
+        for _ in range(num_bookings * 2):  # Try more times to ensure we get enough bookings
+            if not guests or not listings or successful_bookings >= num_bookings:
                 break
                 
-            listing = random.choice(listings)
+            listing = random.choice([l for l in listings if l.is_active and l.is_approved])
+            if not listing:
+                continue
+                
             guest = random.choice(guests)
             
-            # Generate random dates
-            days_ago = random.randint(1, 180)  # Within last 6 months
-            start_date = today - timedelta(days=days_ago)
-            duration = random.randint(2, 7)  # 2-7 nights
+            # Generate random dates with better distribution
+            if random.random() > 0.7:  # 30% future bookings
+                days_ahead = random.randint(1, 60)
+                start_date = today + timedelta(days=days_ahead)
+            else:  # 70% past bookings
+                days_ago = random.randint(1, 365)  # Within last year
+                start_date = today - timedelta(days=days_ago)
+                
+            duration = random.randint(1, 14)  # 1-14 nights
             end_date = start_date + timedelta(days=duration)
             
             # Check if dates are available
@@ -117,14 +168,20 @@ class Command(BaseCommand):
                 # Calculate pricing
                 price_data = listing.calculate_price(start_date, end_date)
                 
-                status = random.choices(statuses, weights=status_weights)[0]
+                # Adjust status based on dates
+                if start_date > today:
+                    status = random.choices(['pending', 'confirmed'], weights=[0.3, 0.7])[0]
+                elif end_date < today:
+                    status = random.choices(['completed', 'canceled'], weights=[0.85, 0.15])[0]
+                else:
+                    status = 'confirmed'
                 
                 booking = Booking.objects.create(
                     listing=listing,
                     guest=guest,
                     start_date=start_date,
                     end_date=end_date,
-                    guests=random.randint(1, listing.accommodates),
+                    guests=random.randint(1, min(listing.accommodates, 6)),
                     status=status,
                     base_price=price_data['base_price'],
                     cleaning_fee=price_data['cleaning_fee'],
@@ -132,24 +189,28 @@ class Command(BaseCommand):
                     total_price=price_data['total_price'],
                     special_requests=random.choice([
                         '', 'Поздний заезд', 'Раннее заселение', 
-                        'Дополнительные полотенца', 'Детская кроватка'
+                        'Дополнительные полотенца', 'Детская кроватка',
+                        'Тихий номер', 'Высокий этаж', 'Парковочное место'
                     ])
                 )
                 
+                successful_bookings += 1
+                
                 # Create reviews for completed bookings
-                if status == 'completed' and random.random() > 0.3:  # 70% chance of review
+                if status == 'completed' and random.random() > 0.25:  # 75% chance of review
+                    rating = random.choices([3, 4, 5], weights=[0.1, 0.3, 0.6])[0]  # Mostly good ratings
+                    comments = {
+                        3: ['Неплохо, но есть недочеты.', 'Средний уровень сервиса.', 'Ожидал большего.'],
+                        4: ['Хорошее место, рекомендую!', 'Все понравилось, чисто и уютно.', 'Хорошее расположение, удобно добираться.'],
+                        5: ['Отличное место, превзошло ожидания!', 'Идеально для отдыха!', 'Приятный хозяин, все как на фото.', 'Отдохнули прекрасно, спасибо!', 'Обязательно приедем еще!']
+                    }
+                    
                     Review.objects.create(
                         listing=listing,
                         reviewer=guest,
                         booking=booking,
-                        rating=random.randint(3, 5),  # Mostly good ratings
-                        comment=random.choice([
-                            'Отличное место, рекомендую!',
-                            'Все понравилось, чисто и уютно.',
-                            'Хорошее расположение, удобно добираться.',
-                            'Приятный хозяин, все как на фото.',
-                            'Отдохнули прекрасно, спасибо!'
-                        ])
+                        rating=rating,
+                        comment=random.choice(comments[rating])
                     )
                 
                 self.stdout.write(f'Created booking: {booking.booking_reference} ({status})')

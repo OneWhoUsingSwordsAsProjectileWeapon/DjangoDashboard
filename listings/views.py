@@ -261,29 +261,34 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         # Calculate occupancy rate properly
         total_possible_nights = 0
         total_booked_nights = 0
-        for listing in host_listings.filter(is_active=True):
-            # Calculate available days since listing creation
+        
+        for listing in host_listings.filter(is_active=True, is_approved=True):
+            # Calculate available days since listing creation or start_date, whichever is later
             listing_start = max(listing.created_at.date(), start_date)
-            days_available = (end_date - listing_start).days
+            listing_end = min(timezone.now().date(), end_date)
+            
+            days_available = (listing_end - listing_start).days
             if days_available > 0:
                 total_possible_nights += days_available
 
                 # Get bookings for this listing in the time period
                 listing_bookings = listing.bookings.filter(
                     status__in=['completed', 'confirmed'],
-                    start_date__lte=end_date,
-                    end_date__gte=listing_start
+                    start_date__lt=listing_end,
+                    end_date__gt=listing_start
                 )
 
                 for booking in listing_bookings:
                     # Calculate actual nights booked within our time period
                     booking_start = max(booking.start_date, listing_start)
-                    booking_end = min(booking.end_date, end_date)
+                    booking_end = min(booking.end_date, listing_end)
                     if booking_end > booking_start:
                         nights = (booking_end - booking_start).days
                         total_booked_nights += nights
 
-        stats['occupancy_rate'] = (total_booked_nights / total_possible_nights * 100) if total_possible_nights > 0 else 0
+        stats['occupancy_rate'] = round((total_booked_nights / total_possible_nights * 100), 1) if total_possible_nights > 0 else 0
+        stats['total_booked_nights'] = total_booked_nights
+        stats['total_possible_nights'] = total_possible_nights
 
         # Revenue by month (last 12 months)
         monthly_revenue = all_bookings.filter(

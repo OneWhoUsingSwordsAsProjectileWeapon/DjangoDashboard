@@ -6,7 +6,19 @@
 {% block title %}Панель владельца недвижимости - Агрегатор Аренды{% endblock %}
 
 {% block extra_head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<style>
+.chart-container {
+    position: relative;
+    height: 400px;
+    width: 100%;
+}
+
+.chart-container canvas {
+    max-height: 400px !important;
+    max-width: 100% !important;
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -470,149 +482,196 @@
 </div>
 
 <script>
-// Chart.js configurations
+// Chart.js configurations with improved error handling
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if Chart.js is loaded
-    if (typeof Chart === 'undefined') {
-        console.error('Chart.js library not loaded');
-        return;
-    }
-
-    try {
-        // Revenue Chart
-        const revenueCtx = document.getElementById('revenueChart');
-        if (revenueCtx) {
-            const monthlyRevenue = {{ monthly_revenue|safe }};
-
-            // Prepare chart data
-            const labels = monthlyRevenue.length > 0 ? 
-                monthlyRevenue.map(item => {
-                    const date = new Date(item.month);
-                    return date.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' });
-                }) : ['Нет данных'];
-
-            const data = monthlyRevenue.length > 0 ? 
-                monthlyRevenue.map(item => parseFloat(item.revenue) || 0) : [0];
-
-            new Chart(revenueCtx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Доход (₽)',
-                        data: data,
-                        borderColor: '#28a745',
-                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '₽' + value.toLocaleString('ru-RU');
-                                }
-                            }
-                        }
-                    },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return 'Доход: ₽' + context.parsed.y.toLocaleString('ru-RU');
-                                }
-                            }
-                        }
-                    }
-                }
+    // Wait a bit for Chart.js to load completely
+    setTimeout(function() {
+        // Check if Chart.js is loaded
+        if (typeof Chart === 'undefined') {
+            console.log('Chart.js library not loaded');
+            // Hide chart containers and show message
+            const chartContainers = document.querySelectorAll('.chart-container');
+            chartContainers.forEach(container => {
+                container.innerHTML = '<div class="alert alert-warning">Графики временно недоступны</div>';
             });
+            return;
         }
 
-        // Status Chart
-        const statusCtx = document.getElementById('statusChart');
-        if (statusCtx) {
-            const statusStats = {{ status_stats|safe }};
+        try {
+            // Revenue Chart
+            const revenueCtx = document.getElementById('revenueChart');
+            if (revenueCtx) {
+                const monthlyRevenue = {{ monthly_revenue|safe }};
+                console.log('Monthly revenue data:', monthlyRevenue);
 
-            if (statusStats.length > 0) {
-                const statusLabels = statusStats.map(item => {
-                    const statusMap = {
-                        'confirmed': 'Подтверждено',
-                        'pending': 'В ожидании',
-                        'completed': 'Завершено',
-                        'canceled': 'Отменено'
-                    };
-                    return statusMap[item.status] || item.status;
-                });
+                // Prepare chart data
+                let labels, data;
+                
+                if (monthlyRevenue && monthlyRevenue.length > 0) {
+                    labels = monthlyRevenue.map(item => {
+                        const date = new Date(item.month);
+                        return date.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' });
+                    });
+                    data = monthlyRevenue.map(item => parseFloat(item.revenue) || 0);
+                } else {
+                    labels = ['Нет данных'];
+                    data = [0];
+                }
 
-                const statusColors = {
-                    'Подтверждено': '#28a745',
-                    'В ожидании': '#ffc107',
-                    'Завершено': '#17a2b8',
-                    'Отменено': '#dc3545'
-                };
-
-                new Chart(statusCtx, {
-                    type: 'doughnut',
+                new Chart(revenueCtx, {
+                    type: 'line',
                     data: {
-                        labels: statusLabels,
+                        labels: labels,
                         datasets: [{
-                            data: statusStats.map(item => item.count),
-                            backgroundColor: statusLabels.map(label => statusColors[label] || '#6c757d'),
-                            borderWidth: 2,
-                            borderColor: '#fff'
+                            label: 'Доход (₽)',
+                            data: data,
+                            borderColor: '#28a745',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 5,
+                            pointHoverRadius: 7
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    padding: 20,
-                                    usePointStyle: true
+                        interaction: {
+                            intersect: false,
+                        },
+                        scales: {
+                            x: {
+                                display: true,
+                                grid: {
+                                    display: false
                                 }
                             },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                        const percentage = ((context.raw / total) * 100).toFixed(1);
-                                        return context.label + ': ' + context.raw + ' (' + percentage + '%)';
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0,0,0,0.1)'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₽' + new Intl.NumberFormat('ru-RU').format(value);
                                     }
                                 }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                backgroundColor: 'rgba(0,0,0,0.8)',
+                                titleColor: 'white',
+                                bodyColor: 'white',
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'Доход: ₽' + new Intl.NumberFormat('ru-RU').format(context.parsed.y);
+                                    }
+                                }
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top'
                             }
                         }
                     }
                 });
-            } else {
-                // Show no data message
-                statusCtx.parentElement.innerHTML = '<p class="text-center text-muted mt-5">Нет данных о бронированиях</p>';
+                console.log('Revenue chart created successfully');
             }
-        }
-    } catch (error) {
-        console.error('Error initializing charts:', error);
-    }
 
-    // Custom date range toggle
-    const timeFilterSelect = document.getElementById('timeFilterSelect');
-    const customDateRange = document.getElementById('customDateRange');
-    
-    if (timeFilterSelect && customDateRange) {
-        timeFilterSelect.addEventListener('change', function() {
-            if (this.value === 'custom') {
-                customDateRange.style.display = 'block';
-            } else {
-                customDateRange.style.display = 'none';
+            // Status Chart
+            const statusCtx = document.getElementById('statusChart');
+            if (statusCtx) {
+                const statusStats = {{ status_stats|safe }};
+                console.log('Status stats data:', statusStats);
+
+                if (statusStats && statusStats.length > 0) {
+                    const statusLabels = statusStats.map(item => {
+                        const statusMap = {
+                            'confirmed': 'Подтверждено',
+                            'pending': 'В ожидании',
+                            'completed': 'Завершено',
+                            'canceled': 'Отменено'
+                        };
+                        return statusMap[item.status] || item.status;
+                    });
+
+                    const statusColors = {
+                        'Подтверждено': '#28a745',
+                        'В ожидании': '#ffc107',
+                        'Завершено': '#17a2b8',
+                        'Отменено': '#dc3545'
+                    };
+
+                    new Chart(statusCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: statusLabels,
+                            datasets: [{
+                                data: statusStats.map(item => item.count),
+                                backgroundColor: statusLabels.map(label => statusColors[label] || '#6c757d'),
+                                borderWidth: 3,
+                                borderColor: '#fff',
+                                hoverBorderWidth: 5
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 20,
+                                        usePointStyle: true,
+                                        pointStyle: 'circle'
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0,0,0,0.8)',
+                                    titleColor: 'white',
+                                    bodyColor: 'white',
+                                    callbacks: {
+                                        label: function(context) {
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = ((context.raw / total) * 100).toFixed(1);
+                                            return context.label + ': ' + context.raw + ' (' + percentage + '%)';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    console.log('Status chart created successfully');
+                } else {
+                    // Show no data message
+                    statusCtx.parentElement.innerHTML = '<div class="d-flex align-items-center justify-content-center h-100"><p class="text-center text-muted">Нет данных о бронированиях</p></div>';
+                }
             }
-        });
-    }
+        } catch (error) {
+            console.error('Error initializing charts:', error);
+            // Show error message in chart containers
+            const chartContainers = document.querySelectorAll('.chart-container');
+            chartContainers.forEach(container => {
+                container.innerHTML = '<div class="alert alert-danger">Ошибка загрузки графиков</div>';
+            });
+        }
+
+        // Custom date range toggle
+        const timeFilterSelect = document.getElementById('timeFilterSelect');
+        const customDateRange = document.getElementById('customDateRange');
+        
+        if (timeFilterSelect && customDateRange) {
+            timeFilterSelect.addEventListener('change', function() {
+                if (this.value === 'custom') {
+                    customDateRange.style.display = 'block';
+                } else {
+                    customDateRange.style.display = 'none';
+                }
+            });
+        }
+    }, 500); // Wait 500ms for Chart.js to load
 });
 </script>
 
@@ -628,14 +687,6 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 .border-left-danger {
     border-left: 4px solid #dc3545;
-}
-
-.chart-container {
-    min-height: 400px;
-}
-
-.chart-container canvas {
-    max-height: 400px !important;
 }
 </style>
 {% endblock %}
