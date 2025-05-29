@@ -131,11 +131,11 @@ def calculate_stay_price(
         'nights': nights
     }
 
-def format_price(price: Decimal, currency: str = '$') -> str:
+def format_price(price: Decimal, currency: str = '₽') -> str:
     """
     Format a price with currency symbol
     """
-    return f"{currency}{price:.2f}"
+    return f"{price:.0f} {currency}"
 
 def calculate_host_payout(total: Decimal, host_fee_percentage: Decimal = Decimal('3')) -> Decimal:
     """

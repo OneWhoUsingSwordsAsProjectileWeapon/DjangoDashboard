@@ -10,15 +10,15 @@ def currency(value):
     """Format a number as currency"""
     try:
         value = float(value)
-        return f"${value:,.2f}"
+        return f"{value:,.0f} ₽"
     except (ValueError, TypeError):
-        return "$0.00"
+        return "0 ₽"
 
 @register.filter
 def star_rating(value):
     """Convert a numeric rating to star icons"""
     if value is None:
-        return mark_safe('<span class="text-muted">No ratings yet</span>')
+        return mark_safe('<span class="text-muted">Пока нет оценок</span>')
 
     try:
         rating = float(value)
@@ -41,7 +41,7 @@ def star_rating(value):
 
         return mark_safe(stars_html)
     except (ValueError, TypeError):
-        return mark_safe('<span class="text-muted">Invalid rating</span>')
+        return mark_safe('<span class="text-muted">Некорректная оценка</span>')
 
 @register.filter
 def date_range(start_date, end_date):
@@ -66,15 +66,22 @@ def jsonify(obj):
 def get_listing_status_badge(listing):
     """Return a Bootstrap badge class based on listing status"""
     if not listing.is_active:
-        return mark_safe('<span class="badge bg-secondary">Inactive</span>')
+        return mark_safe('<span class="badge bg-secondary">Неактивно</span>')
     elif not listing.is_approved:
-        return mark_safe('<span class="badge bg-warning text-dark">Pending Approval</span>')
+        return mark_safe('<span class="badge bg-warning text-dark">Ожидает одобрения</span>')
     else:
-        return mark_safe('<span class="badge bg-success">Active</span>')
+        return mark_safe('<span class="badge bg-success">Активно</span>')
 
 @register.filter
 def get_booking_status_badge(status):
     """Return a Bootstrap badge class based on booking status"""
+    status_translations = {
+        'pending': 'Ожидает',
+        'confirmed': 'Подтверждено',
+        'canceled': 'Отменено',
+        'completed': 'Завершено'
+    }
+    
     badge_classes = {
         'pending': 'bg-warning text-dark',
         'confirmed': 'bg-success',
@@ -83,7 +90,8 @@ def get_booking_status_badge(status):
     }
 
     badge_class = badge_classes.get(status, 'bg-secondary')
-    return mark_safe(f'<span class="badge {badge_class}">{status.title()}</span>')
+    status_text = status_translations.get(status, status.title())
+    return mark_safe(f'<span class="badge {badge_class}">{status_text}</span>')
 
 @register.filter
 def amenity_icon(amenity):
@@ -119,7 +127,7 @@ def amenity_icon(amenity):
 def display_amenities(amenities, max_display=6):
     """Display amenities with icons"""
     if not amenities:
-        return mark_safe('<p>No amenities listed</p>')
+        return mark_safe('<p>Удобства не указаны</p>')
 
     html = '<div class="row">'
 
@@ -141,7 +149,7 @@ def display_amenities(amenities, max_display=6):
             <button class="btn btn-sm btn-outline-primary" 
                     data-bs-toggle="modal" 
                     data-bs-target="#amenitiesModal">
-                See all {len(amenities)} amenities
+                Показать все {len(amenities)} удобств
             </button>
         </div>
         '''

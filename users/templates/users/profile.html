@@ -53,7 +53,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     {% if user.bio %}
                     <div class="mt-4">
                         <h5>About</h5>
@@ -64,7 +64,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Tabs Navigation -->
     <ul class="nav nav-tabs mb-4" id="profileTabs" role="tablist">
         <li class="nav-item" role="presentation">
@@ -94,7 +94,7 @@
             </button>
         </li>
     </ul>
-    
+
     <!-- Tab Content -->
     <div class="tab-content" id="profileTabsContent">
         <!-- Trips Tab -->
@@ -126,7 +126,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Listings Tab (for hosts) -->
         {% if user.is_host %}
         <div class="tab-pane fade" id="listings" role="tabpanel" aria-labelledby="listings-tab">
@@ -151,7 +151,7 @@
             </div>
         </div>
         {% endif %}
-        
+
         <!-- Reviews Tab -->
         <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
             <div class="row">
@@ -190,8 +190,8 @@
                                             <p class="mb-1">{{ review.comment }}</p>
                                             <small class="text-muted">{{ review.created_at|date:"F d, Y" }}</small>
                                         </div>
-                                        <a href="{% url 'listings:listing_detail' pk=review.listing.pk %}" class="btn btn-sm btn-outline-primary">
-                                            View Listing
+                                        <a href="{% url 'listings:listing_detail' review.listing.id %}" class="btn btn-sm btn-outline-primary">
+                                            Просмотреть объявление
                                         </a>
                                     </div>
                                 </div>
@@ -206,7 +206,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Settings Tab -->
         <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
             <div class="row">
@@ -258,7 +258,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="card shadow-sm mb-4">
                         <div class="card-body">
                             <h5 class="card-title">Уведомления</h5>
@@ -275,7 +275,7 @@
                             </form>
                         </div>
                     </div>
-                    
+
                     <div class="card shadow-sm">
                         <div class="card-body">
                             <h5 class="card-title text-danger">Опасная зона</h5>
@@ -327,7 +327,7 @@
     // Handle the deactivation confirmation checkbox
     const confirmCheckbox = document.getElementById('confirmDeactivation');
     const deactivateButton = document.getElementById('deactivateButton');
-    
+
     if (confirmCheckbox && deactivateButton) {
         confirmCheckbox.addEventListener('change', function() {
             deactivateButton.disabled = !this.checked;
@@ -335,3 +335,4 @@
     }
 </script>
 {% endblock %}
+```
