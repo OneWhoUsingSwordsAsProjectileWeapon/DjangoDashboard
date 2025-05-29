@@ -420,14 +420,38 @@ p {
   background-color: var(--dark-gray);
   color: white;
   padding: 3rem 0;
+  margin-top: auto;
+  width: 100%;
 }
 
 .footer a {
   color: var(--medium-gray);
+  transition: var(--transition);
 }
 
 .footer a:hover {
   color: white;
+  transform: translateY(-1px);
+}
+
+/* Ensure body and html stretch to full height */
+html, body {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Main content should grow to fill available space */
+main {
+  flex: 1 0 auto;
+}
+
+/* Footer should stick to bottom */
+.footer {
+  flex-shrink: 0;
 }
 
 /* Badge styles */
