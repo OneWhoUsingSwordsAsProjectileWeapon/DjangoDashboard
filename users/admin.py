@@ -5,22 +5,23 @@ from .models import User
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     """Custom User Admin"""
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_host', 'is_staff', 'verification_status')
-    list_filter = ('is_host', 'is_guest', 'is_phone_verified', 'is_id_verified', 'is_staff', 'is_active')
-    search_fields = ('username', 'email', 'first_name', 'last_name', 'phone_number')
-    
-    fieldsets = UserAdmin.fieldsets + (
-        ('Profile Information', {
-            'fields': ('phone_number', 'profile_picture', 'bio')
-        }),
-        ('Verification', {
-            'fields': ('is_phone_verified', 'is_id_verified', 'is_host', 'is_guest')
-        }),
-        ('Notification Settings', {
-            'fields': ('email_notifications', 'sms_notifications')
+    list_display = ('username', 'email', 'first_name', 'last_name', 'role', 'is_staff', 'date_joined')
+    list_filter = ('role', 'is_staff', 'is_superuser', 'is_active')
+    search_fields = ('username', 'email', 'first_name', 'last_name')
+    ordering = ('-date_joined',)
+    readonly_fields = ('date_joined', 'last_login')
+
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
+        ('Role Information', {'fields': ('role',)}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+    )
+
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'email', 'password1', 'password2', 'role'),
         }),
     )
-    
-    def verification_status(self, obj):
-        return obj.verification_status
-    verification_status.short_description = "Verification"
