@@ -16,7 +16,7 @@ urlpatterns = [
     # Listing images
     path('<int:pk>/images/', views.manage_listing_images, name='listing_images'),
     path('<int:pk>/images/add/', views.add_listing_image, name='add_listing_image'),
-    path('<int:pk>/images/remove/<int:index>/', views.remove_listing_image, name='remove_listing_image'),
+    path('<int:pk>/images/remove/<int:image_id>/', views.remove_listing_image, name='remove_listing_image'),
 
     # Booking views
     path('<int:pk>/book/', views.create_booking, name='create_booking'),

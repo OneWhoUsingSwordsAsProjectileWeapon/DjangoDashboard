@@ -1,0 +1,24 @@
+<form method="post" enctype="multipart/form-data" class="card-body">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            {{ form.image.label_tag }}
+                            {{ form.image }}
+                            {% if form.image.errors %}
+                                <div class="text-danger">{{ form.image.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.caption.label_tag }}
+                            {{ form.caption }}
+                            {% if form.caption.errors %}
+                                <div class="text-danger">{{ form.caption.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3 form-check">
+                            {{ form.is_main }}
+                            {{ form.is_main.label_tag }}
+                            {% if form.is_main.errors %}
+                                <div class="text-danger">{{ form.is_main.errors }}</div>
+                            {% endif %}
+                        </div>
+</form>

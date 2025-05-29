@@ -1,0 +1,28 @@
+{% if listing.listing_images.all %}
+            {% for listing_image in listing.listing_images.all %}
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <img src="{{ listing_image.image.url }}" class="card-img-top" alt="Listing Image" style="height: 200px; object-fit: cover;">
+                    <div class="card-body">
+                        {% if listing_image.caption %}
+                            <p class="card-text small">{{ listing_image.caption }}</p>
+                        {% endif %}
+                        {% if listing_image.is_main %}
+                            <span class="badge bg-primary mb-2">Главное изображение</span>
+                        {% endif %}
+                        <div class="text-center">
+                            <a href="{% url 'listings:remove_listing_image' pk=listing.pk image_id=listing_image.id %}" 
+                               class="btn btn-danger btn-sm"
+                               onclick="return confirm('Вы уверены, что хотите удалить это изображение?')">
+                                <i class="fas fa-trash"></i> Удалить
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+<div class="col-12 text-center">
+                <p class="text-muted">Изображения еще не загружены.</p>
+            </div>
+{% endif %}

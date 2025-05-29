@@ -1,6 +1,6 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
-from .models import Listing, Booking, Review
+from .models import Listing, Booking, Review, ListingImage
 #23s
 class ListingForm(forms.ModelForm):
     """Form for creating and editing listings"""
@@ -42,23 +42,18 @@ class ListingForm(forms.ModelForm):
                 return []
         return amenities or []
 
-    def clean_image_urls(self):
-        """Convert image_urls string to list if needed"""
-        image_urls = self.cleaned_data.get('image_urls')
-        if isinstance(image_urls, str):
-            try:
-                import json
-                return json.loads(image_urls)
-            except json.JSONDecodeError:
-                return []
-        return image_urls or []
+    
 
-class ListingImageForm(forms.Form):
-    """Form for managing listing images"""
-    image_url = forms.URLField(
-        label=_("Image URL"),
-        widget=forms.URLInput(attrs={'class': 'form-control'})
-    )
+class ListingImageForm(forms.ModelForm):
+    """Form for uploading listing images"""
+    class Meta:
+        model = ListingImage
+        fields = ['image', 'caption', 'is_main']
+        widgets = {
+            'image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'caption': forms.TextInput(attrs={'class': 'form-control'}),
+            'is_main': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
 
 class BookingForm(forms.ModelForm):
     """Form for creating bookings"""
