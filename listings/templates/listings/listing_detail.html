@@ -648,21 +648,41 @@
         const unavailableDates = {{ unavailable_dates_json|safe }};
 
         // Initialize Yandex Map for location display
-         {% if listing.latitude and listing.longitude %} 
-            initYandexMap('listing-map', {{ listing.latitude }}, {{ listing.longitude }}, false);
-        {% else %}
-            // Fallback: geocode address if no coordinates
-            ymaps.ready(function () {
+        ymaps.ready(function () {
+            {% if listing.latitude and listing.longitude %}
+                // Use existing coordinates
+                const mapCenter = [{{ listing.latitude }}, {{ listing.longitude }}];
+                const myMap = new ymaps.Map('listing-map', {
+                    center: mapCenter,
+                    zoom: 14,
+                    controls: ['zoomControl', 'fullscreenControl']
+                });
+                
+                const placemark = new ymaps.Placemark(mapCenter, {
+                    balloonContent: '{{ listing.title|escapejs }}'
+                });
+                myMap.geoObjects.add(placemark);
+            {% else %}
+                // Fallback: geocode address if no coordinates
                 const fullAddress = "{{ listing.address }}, {{ listing.city }}, {{ listing.state }}, {{ listing.country }}";
                 ymaps.geocode(fullAddress).then(function (res) {
                     const firstGeoObject = res.geoObjects.get(0);
                     if (firstGeoObject) {
                         const coords = firstGeoObject.geometry.getCoordinates();
-                        initYandexMap('listing-map', coords[0], coords[1], false);
+                        const myMap = new ymaps.Map('listing-map', {
+                            center: coords,
+                            zoom: 14,
+                            controls: ['zoomControl', 'fullscreenControl']
+                        });
+                        
+                        const placemark = new ymaps.Placemark(coords, {
+                            balloonContent: '{{ listing.title|escapejs }}'
+                        });
+                        myMap.geoObjects.add(placemark);
                     }
                 });
-            });
-        {% endif %}
+            {% endif %}
+        });
     });
 
     // JavaScript functions for image gallery modal

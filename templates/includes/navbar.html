@@ -94,8 +94,9 @@
                            onclick="loadNotifications()"
                            data-bs-auto-close="outside">
                             <i class="fas fa-bell"></i>
-                            <span class="position-absolute top-0 start-100 translate-middle" 
+                            <span class="position-absolute" 
                                   id="notification-badge-container"
+                                  style="top: -8px; right: -8px; z-index: 1000;"
                                   hx-get="{% url 'notifications:get_unread_count' %}"
                                   hx-trigger="load, every 30s"
                                   hx-swap="innerHTML">
@@ -103,7 +104,7 @@
                                 {% load notify_tags %}
                                 {% notification_count as count %}
                                 {% if count > 0 %}
-                                <span class="badge bg-danger" id="notification-badge">{count}</span>
+                                <span class="badge bg-danger" id="notification-badge" style="font-size: 0.7rem; min-width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">{count}</span>
                                 {% endif %}
                             </span>
                         </a>
