@@ -1,0 +1,80 @@
+Environment:
+
+
+Request Method: GET
+Request URL: https://262cd1d6-a6d0-47db-bec8-f71d44f05358-00-37hghj1317dlv.sisko.replit.dev/listings/2/images/
+
+Django Version: 5.2.1
+Python Version: 3.11.10
+Installed Applications:
+['django.contrib.admin',
+ 'django.contrib.auth',
+ 'django.contrib.contenttypes',
+ 'django.contrib.sessions',
+ 'django.contrib.messages',
+ 'django.contrib.staticfiles',
+ 'django.contrib.humanize',
+ 'rest_framework',
+ 'django_filters',
+ 'channels',
+ 'users.apps.UsersConfig',
+ 'listings.apps.ListingsConfig',
+ 'chat.apps.ChatConfig',
+ 'notifications.apps.NotificationsConfig',
+ 'moderation.apps.ModerationConfig',
+ 'django_extensions']
+Installed Middleware:
+['django.middleware.security.SecurityMiddleware',
+ 'django.contrib.sessions.middleware.SessionMiddleware',
+ 'django.middleware.common.CommonMiddleware',
+ 'django.middleware.csrf.CsrfViewMiddleware',
+ 'django.contrib.auth.middleware.AuthenticationMiddleware',
+ 'django.contrib.messages.middleware.MessageMiddleware',
+ 'django.middleware.clickjacking.XFrameOptionsMiddleware']
+
+Template loader postmortem
+Django tried loading these templates, in this order:
+
+Using engine django:
+    * django.template.loaders.filesystem.Loader: /home/runner/workspace/templates/listings/manage_images.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django/contrib/admin/templates/listings/manage_images.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django/contrib/auth/templates/listings/manage_images.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/rest_framework/templates/listings/manage_images.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django_filters/templates/listings/manage_images.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/users/templates/listings/manage_images.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/listings/templates/listings/manage_images.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/chat/templates/listings/manage_images.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/notifications/templates/listings/manage_images.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/moderation/templates/listings/manage_images.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django_extensions/templates/listings/manage_images.html (Source does not exist)
+
+
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django/core/handlers/exception.py", line 42, in inner
+    response = await get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django/core/handlers/base.py", line 253, in _get_response_async
+    response = await wrapped_callback(
+               
+  File "/nix/store/clx0mcir7qw8zk36zbr4jra789g3knf6-python3-3.11.10/lib/python3.11/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/listings/views.py", line 466, in manage_listing_images
+    return render(request, 'listings/manage_images.html', {
+           
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django/template/loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django/template/loader.py", line 19, in get_template
+    raise TemplateDoesNotExist(template_name, chain=chain)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Exception Type: TemplateDoesNotExist at /listings/2/images/
+Exception Value: listings/manage_images.html
