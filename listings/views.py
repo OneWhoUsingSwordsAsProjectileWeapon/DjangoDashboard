@@ -182,14 +182,14 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         time_filter = self.request.GET.get('time_filter', '30')  # days
         listing_filter = self.request.GET.get('listing_filter', 'all')
         status_filter = self.request.GET.get('status_filter', 'all')
-
+        
         # Custom date range
         custom_start = self.request.GET.get('custom_start')
         custom_end = self.request.GET.get('custom_end')
 
         # Calculate date range
         end_date = timezone.now().date()
-
+        
         if custom_start and custom_end:
             try:
                 start_date = datetime.strptime(custom_start, '%Y-%m-%d').date()
@@ -261,15 +261,15 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         # Calculate occupancy rate properly
         total_possible_nights = 0
         total_booked_nights = 0
-
+        
         active_listings = host_listings.filter(is_active=True, is_approved=True)
-
+        
         for listing in active_listings:
             # Calculate available days since listing creation or start_date, whichever is later
             listing_created = listing.created_at.date() if listing.created_at else start_date
             listing_start = max(listing_created, start_date)
             listing_end = min(timezone.now().date(), end_date)
-
+            
             # Only calculate if we have a valid period
             if listing_end > listing_start:
                 days_available = (listing_end - listing_start).days
@@ -297,7 +297,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
             stats['occupancy_rate'] = round(occupancy_percentage, 1)
         else:
             stats['occupancy_rate'] = 0
-
+            
         stats['total_booked_nights'] = total_booked_nights
         stats['total_possible_nights'] = total_possible_nights
 
@@ -493,13 +493,13 @@ def add_listing_image(request, pk):
         if form.is_valid():
             image = form.save(commit=False)
             image.listing = listing
-
+            
             # If this is the first image or marked as main, make it main
             if form.cleaned_data.get('is_main') or not listing.images.exists():
                 # Unset other main images
                 listing.images.update(is_main=False)
                 image.is_main = True
-
+                
             image.save()
             messages.success(request, 'Изображение добавлено успешно.')
             return redirect('listings:listing_images', pk=listing.pk)
@@ -854,8 +854,7 @@ def calculate_booking_price(request, pk):
         if not start_date or not end_date:
             return JsonResponse({
                 'error': 'Пожалуйста, укажите даты заезда и выезда'
-            }, status<replit_final_file>
-=400)
+            }, status=400)
 
         # Calculate price
         try:
@@ -943,7 +942,7 @@ def export_dashboard_excel(request):
         return redirect('listings:listing_list')
 
     user = request.user
-
+    
     # Get filter parameters (same as dashboard)
     time_filter = request.GET.get('time_filter', '30')
     listing_filter = request.GET.get('listing_filter', 'all')
@@ -953,7 +952,7 @@ def export_dashboard_excel(request):
 
     # Calculate date range
     end_date = timezone.now().date()
-
+    
     if custom_start and custom_end:
         try:
             start_date = datetime.strptime(custom_start, '%Y-%m-%d').date()
@@ -990,17 +989,17 @@ def export_dashboard_excel(request):
 
     # Create workbook
     wb = openpyxl.Workbook()
-
+    
     # Remove default sheet
     wb.remove(wb.active)
-
+    
     # Create summary sheet
     summary_ws = wb.create_sheet(title="Сводка")
-
+    
     # Header styling
     header_font = Font(bold=True, color="FFFFFF")
     header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
-
+    
     # Summary data
     summary_data = [
         ["Период отчета", f"{start_date} - {end_date}"],
@@ -1015,21 +1014,21 @@ def export_dashboard_excel(request):
         ["Общий доход", bookings.filter(status='completed').aggregate(total=Sum('total_price'))['total'] or 0],
         ["Средний чек", bookings.filter(status='completed').aggregate(avg=Avg('total_price'))['avg'] or 0],
     ]
-
+    
     for row_idx, (label, value) in enumerate(summary_data, 1):
         summary_ws.cell(row=row_idx, column=1, value=label)
         summary_ws.cell(row=row_idx, column=2, value=value)
         if row_idx == 3:  # Header row
             summary_ws.cell(row=row_idx, column=1).font = header_font
             summary_ws.cell(row=row_idx, column=1).fill = header_fill
-
+    
     # Adjust column widths
     summary_ws.column_dimensions['A'].width = 25
     summary_ws.column_dimensions['B'].width = 20
-
+    
     # Create bookings sheet
     bookings_ws = wb.create_sheet(title="Бронирования")
-
+    
     # Bookings headers
     bookings_headers = [
         "ID бронирования", "Ссылка на бронирование", "Объявление", "Гость", 
@@ -1037,14 +1036,14 @@ def export_dashboard_excel(request):
         "Количество гостей", "Статус", "Базовая стоимость", "Сбор за уборку", 
         "Сервисный сбор", "Общая стоимость", "Дата создания", "Особые пожелания"
     ]
-
+    
     # Write headers
     for col_idx, header in enumerate(bookings_headers, 1):
         cell = bookings_ws.cell(row=1, column=col_idx, value=header)
         cell.font = header_font
         cell.fill = header_fill
         cell.alignment = Alignment(horizontal="center")
-
+    
     # Write booking data
     for row_idx, booking in enumerate(bookings.order_by('-created_at'), 2):
         data = [
@@ -1065,10 +1064,10 @@ def export_dashboard_excel(request):
             booking.created_at.strftime('%Y-%m-%d %H:%M'),
             booking.special_requests or ""
         ]
-
+        
         for col_idx, value in enumerate(data, 1):
             bookings_ws.cell(row=row_idx, column=col_idx, value=value)
-
+    
     # Auto-adjust column widths
     for column in bookings_ws.columns:
         max_length = 0
@@ -1081,23 +1080,23 @@ def export_dashboard_excel(request):
                 pass
         adjusted_width = min(max_length + 2, 50)
         bookings_ws.column_dimensions[column_letter].width = adjusted_width
-
+    
     # Create listings performance sheet
     listings_ws = wb.create_sheet(title="Эффективность объявлений")
-
+    
     listings_headers = [
         "Название объявления", "Город", "Статус", "Цена за ночь",
         "Количество бронирований", "Завершенных бронирований", 
         "Общий доход", "Средний рейтинг", "Количество отзывов"
     ]
-
+    
     # Write headers
     for col_idx, header in enumerate(listings_headers, 1):
         cell = listings_ws.cell(row=1, column=col_idx, value=header)
         cell.font = header_font
         cell.fill = header_fill
         cell.alignment = Alignment(horizontal="center")
-
+    
     # Get listings with stats
     listings_with_stats = host_listings.annotate(
         total_bookings=Count('bookings', filter=Q(bookings__created_at__date__gte=start_date, bookings__created_at__date__lte=end_date)),
@@ -1106,7 +1105,7 @@ def export_dashboard_excel(request):
         avg_rating=Avg('reviews__rating'),
         review_count=Count('reviews')
     )
-
+    
     # Write listings data
     for row_idx, listing in enumerate(listings_with_stats, 2):
         data = [
@@ -1120,10 +1119,10 @@ def export_dashboard_excel(request):
             round(listing.avg_rating or 0, 2),
             listing.review_count or 0
         ]
-
+        
         for col_idx, value in enumerate(data, 1):
             listings_ws.cell(row=row_idx, column=col_idx, value=value)
-
+    
     # Auto-adjust column widths
     for column in listings_ws.columns:
         max_length = 0
@@ -1136,14 +1135,14 @@ def export_dashboard_excel(request):
                 pass
         adjusted_width = min(max_length + 2, 50)
         listings_ws.column_dimensions[column_letter].width = adjusted_width
-
+    
     # Prepare response
     response = HttpResponse(
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
-
+    
     filename = f"dashboard_report_{start_date}_{end_date}.xlsx"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
-
+    
     wb.save(response)
     return response

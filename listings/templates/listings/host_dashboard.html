@@ -1,3 +1,4 @@
+
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
@@ -100,7 +101,7 @@
                                         </select>
                                     </div>
                                 </div>
-
+                                
                                 <!-- Custom Date Range -->
                                 <div id="customDateRange" style="{% if current_filters.time_filter != 'custom' %}display: none;{% endif %}">
                                     <div class="row">
@@ -116,7 +117,7 @@
                                         </div>
                                     </div>
                                 </div>
-
+                                
                                 <div class="mb-3">
                                     <label class="form-label">Статус бронирования</label>
                                     <select name="status_filter" class="form-select">
@@ -505,7 +506,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Prepare chart data
                 let labels, data;
-
+                
                 if (monthlyRevenue && monthlyRevenue.length > 0) {
                     labels = monthlyRevenue.map(item => {
                         const date = new Date(item.month);
@@ -660,7 +661,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Custom date range toggle
         const timeFilterSelect = document.getElementById('timeFilterSelect');
         const customDateRange = document.getElementById('customDateRange');
-
+        
         if (timeFilterSelect && customDateRange) {
             timeFilterSelect.addEventListener('change', function() {
                 if (this.value === 'custom') {
