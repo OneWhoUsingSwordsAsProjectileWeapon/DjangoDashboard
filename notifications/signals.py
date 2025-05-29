@@ -91,8 +91,8 @@ if MODELS_AVAILABLE:
             Notification.objects.create(
                 user=instance.listing.host,
                 notification_type='review_received',
-                title="New Review",
-                message=f"New review for {instance.listing.title}",
+                title="Новый отзыв",
+                message=f"Новый отзыв для {instance.listing.title}",
                 listing=instance.listing,
                 review=instance,
             )

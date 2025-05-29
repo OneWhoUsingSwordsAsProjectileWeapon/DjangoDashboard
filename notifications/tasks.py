@@ -182,15 +182,15 @@ def send_new_message_notification(message):
         # But you could uncomment this for email notifications as well
         """
         # Email notification
-        context = conversation.title or "a conversation"
-        subject = f"New message from {sender.get_full_name() or sender.username}"
+        context = conversation.title or "беседе"
+        subject = f"Новое сообщение от {sender.get_full_name() or sender.username}"
         email_message = (
-            f"Hello {recipient.first_name or recipient.username},\n\n"
-            f"You have received a new message in {context}:\n\n"
+            f"Здравствуйте, {recipient.first_name or recipient.username}!\n\n"
+            f"Вы получили новое сообщение в {context}:\n\n"
             f"{message.content[:100]}{'...' if len(message.content) > 100 else ''}\n\n"
-            f"Please log in to your account to view and reply to this message.\n\n"
-            f"Best regards,\n"
-            f"The Rental App Team"
+            f"Пожалуйста, войдите в свой аккаунт, чтобы просмотреть и ответить на это сообщение.\n\n"
+            f"С уважением,\n"
+            f"Команда Агрегатора Аренды"
         )
         
         send_email_notification(recipient.email, subject, email_message)
@@ -199,9 +199,9 @@ def send_new_message_notification(message):
         # In-app notification
         context = ""
         if conversation.listing:
-            context = f" about {conversation.listing.title}"
+            context = f" об объявлении {conversation.listing.title}"
         elif conversation.booking:
-            context = f" regarding booking for {conversation.booking.listing.title}"
+            context = f" по бронированию {conversation.booking.listing.title}"
             
         create_notification(
             user=recipient,
