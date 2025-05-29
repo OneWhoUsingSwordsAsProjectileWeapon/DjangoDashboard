@@ -1,3 +1,4 @@
+
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
@@ -18,43 +19,93 @@
                     <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filtersModal">
                         <i class="fas fa-filter"></i> Фильтры
                     </button>
-                    <button class="btn btn-outline-info" onclick="exportData()">
-                        <i class="fas fa-download"></i> Экспорт
-                    </button>
+                    <a href="{% url 'listings:export_dashboard' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" 
+                       class="btn btn-outline-success">
+                        <i class="fas fa-file-excel"></i> Экспорт в Excel
+                    </a>
                 </div>
             </div>
 
+            <!-- Current Filters Display -->
+            {% if current_filters.time_filter != '30' or current_filters.listing_filter != 'all' or current_filters.status_filter != 'all' %}
+            <div class="alert alert-info">
+                <strong>Активные фильтры:</strong>
+                <span class="badge bg-primary ms-2">
+                    Период: 
+                    {% if current_filters.time_filter == 'custom' %}
+                        {{ start_date }} - {{ end_date }}
+                    {% else %}
+                        {% for value, label in time_filter_options %}
+                            {% if value == current_filters.time_filter %}{{ label }}{% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </span>
+                {% if current_filters.listing_filter != 'all' %}
+                    <span class="badge bg-secondary ms-1">
+                        Объявление: {% for listing in host_listings_for_filter %}{% if listing.id|stringformat:"s" == current_filters.listing_filter %}{{ listing.title }}{% endif %}{% endfor %}
+                    </span>
+                {% endif %}
+                {% if current_filters.status_filter != 'all' %}
+                    <span class="badge bg-warning ms-1">
+                        Статус: {% for value, label in status_filter_options %}{% if value == current_filters.status_filter %}{{ label }}{% endif %}{% endfor %}
+                    </span>
+                {% endif %}
+                <a href="{% url 'listings:host_dashboard' %}" class="btn btn-sm btn-outline-secondary ms-2">
+                    <i class="fas fa-times"></i> Сбросить фильтры
+                </a>
+            </div>
+            {% endif %}
+
             <!-- Filters Modal -->
             <div class="modal fade" id="filtersModal" tabindex="-1">
-                <div class="modal-dialog">
+                <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title">Фильтры панели</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
-                        <form method="get">
+                        <form method="get" id="filtersForm">
                             <div class="modal-body">
-                                <div class="mb-3">
-                                    <label class="form-label">Временной период</label>
-                                    <select name="time_filter" class="form-select">
-                                        {% for value, label in time_filter_options %}
-                                        <option value="{{ value }}" {% if current_filters.time_filter == value %}selected{% endif %}>
-                                            {{ label }}
-                                        </option>
-                                        {% endfor %}
-                                    </select>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Временной период</label>
+                                        <select name="time_filter" class="form-select" id="timeFilterSelect">
+                                            {% for value, label in time_filter_options %}
+                                            <option value="{{ value }}" {% if current_filters.time_filter == value %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Объявление</label>
+                                        <select name="listing_filter" class="form-select">
+                                            <option value="all">Все объявления</option>
+                                            {% for listing in host_listings_for_filter %}
+                                            <option value="{{ listing.id }}" {% if current_filters.listing_filter == listing.id|stringformat:"s" %}selected{% endif %}>
+                                                {{ listing.title|truncatechars:40 }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Объявление</label>
-                                    <select name="listing_filter" class="form-select">
-                                        <option value="all">Все объявления</option>
-                                        {% for listing in host_listings_for_filter %}
-                                        <option value="{{ listing.id }}" {% if current_filters.listing_filter == listing.id|stringformat:"s" %}selected{% endif %}>
-                                            {{ listing.title }}
-                                        </option>
-                                        {% endfor %}
-                                    </select>
+                                
+                                <!-- Custom Date Range -->
+                                <div id="customDateRange" style="{% if current_filters.time_filter != 'custom' %}display: none;{% endif %}">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Дата начала</label>
+                                            <input type="date" name="custom_start" class="form-control" 
+                                                   value="{{ current_filters.custom_start|default:'' }}">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Дата окончания</label>
+                                            <input type="date" name="custom_end" class="form-control" 
+                                                   value="{{ current_filters.custom_end|default:'' }}">
+                                        </div>
+                                    </div>
                                 </div>
+                                
                                 <div class="mb-3">
                                     <label class="form-label">Статус бронирования</label>
                                     <select name="status_filter" class="form-select">
@@ -100,8 +151,8 @@
                             <div class="d-flex justify-content-between">
                                 <div>
                                     <h6 class="card-title">Общий доход</h6>
-                                    <h3 class="mb-0">₽{{ stats.total_revenue|floatformat:0 }}</h3>
-                                    <small>Средний: ₽{{ stats.average_booking_value|floatformat:0 }}</small>
+                                    <h3 class="mb-0">₽{{ stats.total_revenue|floatformat:0|intcomma }}</h3>
+                                    <small>За период: ₽{{ stats.filtered_revenue|floatformat:0|intcomma }}</small>
                                 </div>
                                 <div class="align-self-center">
                                     <i class="fas fa-dollar-sign fa-2x"></i>
@@ -191,26 +242,28 @@
             </div>
 
             <!-- Charts Row -->
-            <div class="col-lg-8 mb-3">
-                <div class="card h-100">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Тренд доходов (последние 12 месяцев)</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="revenueChart"></canvas>
+            <div class="row mb-4">
+                <div class="col-lg-8 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Тренд доходов (последние 12 месяцев)</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container" style="position: relative; height: 400px;">
+                                <canvas id="revenueChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-lg-4 mb-3">
-                <div class="card h-100">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Распределение статусов бронирования</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="statusChart"></canvas>
+                <div class="col-lg-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Распределение статусов бронирования</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container" style="position: relative; height: 400px;">
+                                <canvas id="statusChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -314,8 +367,8 @@
                                                     0 дней
                                                 {% endif %}
                                             </td>
-                                            <td class="fw-bold text-success">₽{{ listing.total_revenue|floatformat:0|default:"0" }}</td>
-                                            <td>₽{{ listing.price_per_night }}</td>
+                                            <td class="fw-bold text-success">₽{{ listing.total_revenue|floatformat:0|default:"0"|intcomma }}</td>
+                                            <td>₽{{ listing.price_per_night|intcomma }}</td>
                                             <td>
                                                 <div class="btn-group" role="group">
                                                     <a href="{% url 'listings:listing_detail' pk=listing.pk %}" 
@@ -387,7 +440,7 @@
                                                         {% endif %}
                                                     </span>
                                                 </td>
-                                                <td class="fw-bold">₽{{ booking.total_price }}</td>
+                                                <td class="fw-bold">₽{{ booking.total_price|intcomma }}</td>
                                                 <td>
                                                     <div class="btn-group" role="group">
                                                         <a href="{% url 'listings:booking_detail' reference=booking.booking_reference %}" 
@@ -463,7 +516,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             beginAtZero: true,
                             ticks: {
                                 callback: function(value) {
-                                    return '₽' + value.toLocaleString();
+                                    return '₽' + value.toLocaleString('ru-RU');
                                 }
                             }
                         }
@@ -472,7 +525,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    return 'Доход: ₽' + context.parsed.y.toLocaleString();
+                                    return 'Доход: ₽' + context.parsed.y.toLocaleString('ru-RU');
                                 }
                             }
                         }
@@ -487,25 +540,32 @@ document.addEventListener('DOMContentLoaded', function() {
             const statusStats = {{ status_stats|safe }};
 
             if (statusStats.length > 0) {
+                const statusLabels = statusStats.map(item => {
+                    const statusMap = {
+                        'confirmed': 'Подтверждено',
+                        'pending': 'В ожидании',
+                        'completed': 'Завершено',
+                        'canceled': 'Отменено'
+                    };
+                    return statusMap[item.status] || item.status;
+                });
+
+                const statusColors = {
+                    'Подтверждено': '#28a745',
+                    'В ожидании': '#ffc107',
+                    'Завершено': '#17a2b8',
+                    'Отменено': '#dc3545'
+                };
+
                 new Chart(statusCtx, {
                     type: 'doughnut',
                     data: {
-                        labels: statusStats.map(item => {
-                            if (item.status === 'confirmed') return 'Подтверждено';
-                            if (item.status === 'pending') return 'В ожидании';
-                            if (item.status === 'completed') return 'Завершено';
-                            if (item.status === 'canceled') return 'Отменено';
-                            return item.status.charAt(0).toUpperCase() + item.status.slice(1);
-                        }),
+                        labels: statusLabels,
                         datasets: [{
                             data: statusStats.map(item => item.count),
-                            backgroundColor: [
-                                '#28a745', // confirmed - green
-                                '#ffc107', // pending - yellow
-                                '#17a2b8', // completed - blue
-                                '#dc3545'  // canceled - red
-                            ],
-                            borderWidth: 2
+                            backgroundColor: statusLabels.map(label => statusColors[label] || '#6c757d'),
+                            borderWidth: 2,
+                            borderColor: '#fff'
                         }]
                     },
                     options: {
@@ -518,17 +578,40 @@ document.addEventListener('DOMContentLoaded', function() {
                                     padding: 20,
                                     usePointStyle: true
                                 }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.raw / total) * 100).toFixed(1);
+                                        return context.label + ': ' + context.raw + ' (' + percentage + '%)';
+                                    }
+                                }
                             }
                         }
                     }
                 });
             } else {
                 // Show no data message
-                statusCtx.parentElement.innerHTML = '<p class="text-center text-muted">Нет данных о бронированиях</p>';
+                statusCtx.parentElement.innerHTML = '<p class="text-center text-muted mt-5">Нет данных о бронированиях</p>';
             }
         }
     } catch (error) {
         console.error('Error initializing charts:', error);
+    }
+
+    // Custom date range toggle
+    const timeFilterSelect = document.getElementById('timeFilterSelect');
+    const customDateRange = document.getElementById('customDateRange');
+    
+    if (timeFilterSelect && customDateRange) {
+        timeFilterSelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                customDateRange.style.display = 'block';
+            } else {
+                customDateRange.style.display = 'none';
+            }
+        });
     }
 });
 </script>
@@ -546,76 +629,13 @@ document.addEventListener('DOMContentLoaded', function() {
 .border-left-danger {
     border-left: 4px solid #dc3545;
 }
+
+.chart-container {
+    min-height: 400px;
+}
+
+.chart-container canvas {
+    max-height: 400px !important;
+}
 </style>
-{% endblock %}
-
-{% block extra_js %}
-<!-- Chart.js Library -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<!-- Calendar JavaScript -->
-<script src="{% static 'listings/js/calendar.js' %}"></script>
-
-<script>
-    // Dashboard initialization
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize performance chart if canvas exists
-        const ctx = document.getElementById('performanceChart');
-        if (ctx && typeof Chart !== 'undefined') {
-            initializePerformanceChart();
-        } else {
-            console.log('Chart.js library not loaded');
-        }
-
-        // Initialize calendar if function exists
-        if (typeof initCalendar !== 'undefined') {
-            const unavailableDates = {{ unavailable_dates_json|safe }};
-            initCalendar(unavailableDates);
-        }
-    });
-
-    function initializePerformanceChart() {
-        const ctx = document.getElementById('performanceChart');
-        if (!ctx) return;
-
-        // Sample data for the performance chart
-        const data = {
-            labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'],
-            datasets: [{
-                label: 'Бронирования',
-                data: [12, 19, 3, 5, 2, 3],
-                borderColor: 'rgb(75, 192, 192)',
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                tension: 0.1
-            }, {
-                label: 'Доход',
-                data: [1200, 1900, 300, 500, 200, 300],
-                borderColor: 'rgb(255, 99, 132)',
-                backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                tension: 0.1
-            }]
-        };
-
-        const config = {
-            type: 'line',
-            data: data,
-            options: {
-                responsive: true,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Эффективность объявлений'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        };
-
-        new Chart(ctx, config);
-    }
-</script>
 {% endblock %}

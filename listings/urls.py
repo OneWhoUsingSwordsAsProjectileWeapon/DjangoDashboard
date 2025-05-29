@@ -14,10 +14,14 @@ urlpatterns = [
     path('my-listings/', views.HostListingListView.as_view(), name='host_listings'),
 
     # Image management
-    path('<int:pk>/images/', views.manage_listing_images, name='listing_images'),
-    path('<int:pk>/images/add/', views.add_listing_image, name='add_image'),
-    path('<int:pk>/images/<int:image_id>/remove/', views.remove_image_file, name='remove_image'),
-    path('<int:pk>/images/<int:image_id>/set-main/', views.set_main_image, name='set_main_image'),
+    path('listing/<int:pk>/images/', views.manage_listing_images, name='listing_images'),
+    path('listing/<int:pk>/add-image/', views.add_listing_image, name='add_listing_image'),
+    path('listing/<int:pk>/remove-image/<int:index>/', views.remove_listing_image, name='remove_listing_image'),
+    path('listing/<int:pk>/remove-image-file/<int:image_id>/', views.remove_image_file, name='remove_image_file'),
+    path('listing/<int:pk>/set-main-image/<int:image_id>/', views.set_main_image, name='set_main_image'),
+
+    # Dashboard export
+    path('host-dashboard/export/', views.export_dashboard_excel, name='export_dashboard'),
 
     # Booking views
     path('<int:pk>/book/', views.create_booking, name='create_booking'),

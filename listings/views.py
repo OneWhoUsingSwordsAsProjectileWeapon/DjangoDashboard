@@ -5,13 +5,16 @@ from django.contrib import messages
 from django.db.models import Q, Avg, Count, Sum, F, Case, When, IntegerField, DecimalField
 from django.db.models.functions import TruncMonth, TruncWeek, TruncDay
 from django.db import models
-from django.http import JsonResponse, Http404
+from django.http import JsonResponse, Http404, HttpResponse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from datetime import datetime, timedelta, date
 from django.utils import timezone
 import json
 import calendar
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill
+from openpyxl.utils import get_column_letter
 
 from .models import Listing, Booking, Review, ListingImage
 from .forms import ListingForm, BookingForm, ReviewForm, ListingSearchForm, ListingImageForm
@@ -165,10 +168,22 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         time_filter = self.request.GET.get('time_filter', '30')  # days
         listing_filter = self.request.GET.get('listing_filter', 'all')
         status_filter = self.request.GET.get('status_filter', 'all')
+        
+        # Custom date range
+        custom_start = self.request.GET.get('custom_start')
+        custom_end = self.request.GET.get('custom_end')
 
         # Calculate date range
         end_date = timezone.now().date()
-        if time_filter == '7':
+        
+        if custom_start and custom_end:
+            try:
+                start_date = datetime.strptime(custom_start, '%Y-%m-%d').date()
+                end_date = datetime.strptime(custom_end, '%Y-%m-%d').date()
+                time_filter = 'custom'
+            except ValueError:
+                start_date = end_date - timedelta(days=30)
+        elif time_filter == '7':
             start_date = end_date - timedelta(days=7)
         elif time_filter == '30':
             start_date = end_date - timedelta(days=30)
@@ -345,20 +360,25 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                 'time_filter': time_filter,
                 'listing_filter': listing_filter,
                 'status_filter': status_filter,
+                'custom_start': custom_start,
+                'custom_end': custom_end,
             },
             'time_filter_options': [
-                ('7', 'Last 7 days'),
-                ('30', 'Last 30 days'),
-                ('90', 'Last 3 months'),
-                ('365', 'Last year'),
+                ('7', 'Последние 7 дней'),
+                ('30', 'Последние 30 дней'),
+                ('90', 'Последние 3 месяца'),
+                ('365', 'Последний год'),
+                ('custom', 'Выбрать период'),
             ],
             'status_filter_options': [
-                ('all', 'All statuses'),
-                ('pending', 'Pending'),
-                ('confirmed', 'Confirmed'),
-                ('completed', 'Completed'),
-                ('canceled', 'Canceled'),
-            ]
+                ('all', 'Все статусы'),
+                ('pending', 'В ожидании'),
+                ('confirmed', 'Подтверждено'),
+                ('completed', 'Завершено'),
+                ('canceled', 'Отменено'),
+            ],
+            'start_date': start_date,
+            'end_date': end_date,
         })
 
         return context
@@ -883,3 +903,216 @@ def set_main_image(request, pk, image_id):
 
     messages.success(request, 'Главное изображение обновлено.')
     return redirect('listings:listing_images', pk=listing.pk)
+
+@login_required
+def export_dashboard_excel(request):
+    """Export dashboard data to Excel"""
+    if not request.user.is_host:
+        messages.error(request, "Вы не зарегистрированы как хост.")
+        return redirect('listings:listing_list')
+
+    user = request.user
+    
+    # Get filter parameters (same as dashboard)
+    time_filter = request.GET.get('time_filter', '30')
+    listing_filter = request.GET.get('listing_filter', 'all')
+    status_filter = request.GET.get('status_filter', 'all')
+    custom_start = request.GET.get('custom_start')
+    custom_end = request.GET.get('custom_end')
+
+    # Calculate date range
+    end_date = timezone.now().date()
+    
+    if custom_start and custom_end:
+        try:
+            start_date = datetime.strptime(custom_start, '%Y-%m-%d').date()
+            end_date = datetime.strptime(custom_end, '%Y-%m-%d').date()
+        except ValueError:
+            start_date = end_date - timedelta(days=30)
+    elif time_filter == '7':
+        start_date = end_date - timedelta(days=7)
+    elif time_filter == '30':
+        start_date = end_date - timedelta(days=30)
+    elif time_filter == '90':
+        start_date = end_date - timedelta(days=90)
+    elif time_filter == '365':
+        start_date = end_date - timedelta(days=365)
+    else:
+        start_date = end_date - timedelta(days=30)
+
+    # Get host's listings
+    host_listings = Listing.objects.filter(host=user)
+    if listing_filter != 'all' and listing_filter.isdigit():
+        host_listings = host_listings.filter(id=listing_filter)
+
+    # Get bookings
+    bookings = Booking.objects.filter(
+        listing__host=user,
+        created_at__date__gte=start_date,
+        created_at__date__lte=end_date
+    ).select_related('listing', 'guest')
+
+    if listing_filter != 'all' and listing_filter.isdigit():
+        bookings = bookings.filter(listing_id=listing_filter)
+    if status_filter != 'all':
+        bookings = bookings.filter(status=status_filter)
+
+    # Create workbook
+    wb = openpyxl.Workbook()
+    
+    # Remove default sheet
+    wb.remove(wb.active)
+    
+    # Create summary sheet
+    summary_ws = wb.create_sheet(title="Сводка")
+    
+    # Header styling
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    
+    # Summary data
+    summary_data = [
+        ["Период отчета", f"{start_date} - {end_date}"],
+        ["", ""],
+        ["Общая статистика", ""],
+        ["Всего объявлений", host_listings.count()],
+        ["Активных объявлений", host_listings.filter(is_active=True).count()],
+        ["Всего бронирований", bookings.count()],
+        ["Подтвержденных бронирований", bookings.filter(status='confirmed').count()],
+        ["Завершенных бронирований", bookings.filter(status='completed').count()],
+        ["Отмененных бронирований", bookings.filter(status='canceled').count()],
+        ["Общий доход", bookings.filter(status='completed').aggregate(total=Sum('total_price'))['total'] or 0],
+        ["Средний чек", bookings.filter(status='completed').aggregate(avg=Avg('total_price'))['avg'] or 0],
+    ]
+    
+    for row_idx, (label, value) in enumerate(summary_data, 1):
+        summary_ws.cell(row=row_idx, column=1, value=label)
+        summary_ws.cell(row=row_idx, column=2, value=value)
+        if row_idx == 3:  # Header row
+            summary_ws.cell(row=row_idx, column=1).font = header_font
+            summary_ws.cell(row=row_idx, column=1).fill = header_fill
+    
+    # Adjust column widths
+    summary_ws.column_dimensions['A'].width = 25
+    summary_ws.column_dimensions['B'].width = 20
+    
+    # Create bookings sheet
+    bookings_ws = wb.create_sheet(title="Бронирования")
+    
+    # Bookings headers
+    bookings_headers = [
+        "ID бронирования", "Ссылка на бронирование", "Объявление", "Гость", 
+        "Email гостя", "Дата заезда", "Дата выезда", "Количество ночей", 
+        "Количество гостей", "Статус", "Базовая стоимость", "Сбор за уборку", 
+        "Сервисный сбор", "Общая стоимость", "Дата создания", "Особые пожелания"
+    ]
+    
+    # Write headers
+    for col_idx, header in enumerate(bookings_headers, 1):
+        cell = bookings_ws.cell(row=1, column=col_idx, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center")
+    
+    # Write booking data
+    for row_idx, booking in enumerate(bookings.order_by('-created_at'), 2):
+        data = [
+            str(booking.booking_reference),
+            booking.booking_reference,
+            booking.listing.title,
+            booking.guest.get_full_name() or booking.guest.username,
+            booking.guest.email,
+            booking.start_date,
+            booking.end_date,
+            booking.duration_nights,
+            booking.guests,
+            booking.get_status_display(),
+            float(booking.base_price),
+            float(booking.cleaning_fee),
+            float(booking.service_fee),
+            float(booking.total_price),
+            booking.created_at.strftime('%Y-%m-%d %H:%M'),
+            booking.special_requests or ""
+        ]
+        
+        for col_idx, value in enumerate(data, 1):
+            bookings_ws.cell(row=row_idx, column=col_idx, value=value)
+    
+    # Auto-adjust column widths
+    for column in bookings_ws.columns:
+        max_length = 0
+        column_letter = get_column_letter(column[0].column)
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        bookings_ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Create listings performance sheet
+    listings_ws = wb.create_sheet(title="Эффективность объявлений")
+    
+    listings_headers = [
+        "Название объявления", "Город", "Статус", "Цена за ночь",
+        "Количество бронирований", "Завершенных бронирований", 
+        "Общий доход", "Средний рейтинг", "Количество отзывов"
+    ]
+    
+    # Write headers
+    for col_idx, header in enumerate(listings_headers, 1):
+        cell = listings_ws.cell(row=1, column=col_idx, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center")
+    
+    # Get listings with stats
+    listings_with_stats = host_listings.annotate(
+        total_bookings=Count('bookings', filter=Q(bookings__created_at__date__gte=start_date, bookings__created_at__date__lte=end_date)),
+        completed_bookings=Count('bookings', filter=Q(bookings__status='completed', bookings__created_at__date__gte=start_date, bookings__created_at__date__lte=end_date)),
+        total_revenue=Sum('bookings__total_price', filter=Q(bookings__status='completed', bookings__created_at__date__gte=start_date, bookings__created_at__date__lte=end_date)),
+        avg_rating=Avg('reviews__rating'),
+        review_count=Count('reviews')
+    )
+    
+    # Write listings data
+    for row_idx, listing in enumerate(listings_with_stats, 2):
+        data = [
+            listing.title,
+            listing.city,
+            "Активно" if listing.is_active else "Неактивно",
+            float(listing.price_per_night),
+            listing.total_bookings or 0,
+            listing.completed_bookings or 0,
+            float(listing.total_revenue or 0),
+            round(listing.avg_rating or 0, 2),
+            listing.review_count or 0
+        ]
+        
+        for col_idx, value in enumerate(data, 1):
+            listings_ws.cell(row=row_idx, column=col_idx, value=value)
+    
+    # Auto-adjust column widths
+    for column in listings_ws.columns:
+        max_length = 0
+        column_letter = get_column_letter(column[0].column)
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        listings_ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Prepare response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    
+    filename = f"dashboard_report_{start_date}_{end_date}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    wb.save(response)
+    return response
