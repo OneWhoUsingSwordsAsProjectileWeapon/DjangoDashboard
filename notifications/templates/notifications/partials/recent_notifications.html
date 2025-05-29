@@ -80,7 +80,7 @@
 </style>
 
 <div class="dropdown-menu-header">
-    <h6 class="dropdown-header">Recent Notifications</h6>
+    <h6 class="dropdown-header">Последние уведомления</h6>
 </div>
 {% if notifications %}
     {% for notification in notifications %}
@@ -107,7 +107,7 @@
             <div class="flex-grow-1">
                 <div class="notification-title small fw-bold">{{ notification.title }}</div>
                 <div class="notification-message small text-muted">{{ notification.message|truncatechars:60 }}</div>
-                <div class="notification-time small text-muted">{{ notification.created_at|timesince }} ago</div>
+                <div class="notification-time small text-muted">{{ notification.created_at|timesince }} назад</div>
             </div>
             {% if not notification.is_read %}
                 <div class="notification-dot">
@@ -119,14 +119,14 @@
     {% endfor %}
     <div class="dropdown-divider"></div>
     <div class="dropdown-item text-center">
-        <a href="{% url 'notifications:notification_list' %}" class="btn btn-sm btn-outline-primary">View All Notifications</a>
+        <a href="{% url 'notifications:notification_list' %}" class="btn btn-sm btn-outline-primary">Посмотреть все</a>
     </div>
     <div class="dropdown-item text-center">
-        <button class="btn btn-sm btn-outline-secondary" onclick="markAllNotificationsRead()">Mark All Read</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="markAllNotificationsRead()">Отметить все</button>
     </div>
 {% else %}
     <div class="empty-notifications">
         <i class="fas fa-bell-slash fa-2x"></i>
-        <p class="mb-0">No notifications</p>
+        <p class="mb-0">Нет уведомлений</p>
     </div>
 {% endif %}

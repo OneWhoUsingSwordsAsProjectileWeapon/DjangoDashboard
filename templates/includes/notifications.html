@@ -54,9 +54,9 @@
         
         const randomType = notificationTypes[Math.floor(Math.random() * notificationTypes.length)];
         const notificationData = {
-            title: 'New Notification',
-            message: 'You have a new notification. Click to view details.',
-            time: 'Just now',
+            title: 'Новое уведомление',
+            message: 'У вас новое уведомление. Нажмите для просмотра.',
+            time: 'Только что',
             icon: randomType.icon,
             link: '{% url "notifications:notification_list" %}'
         };
