@@ -74,9 +74,20 @@ class Listing(models.Model):
     
     @property
     def main_image_url(self):
-        """Return the first image URL or a placeholder"""
+        """Return the main image URL or a placeholder"""
+        main_image = self.images.filter(is_main=True).first()
+        if main_image:
+            return main_image.image.url
+        
+        # Fallback to first image if no main image set
+        first_image = self.images.first()
+        if first_image:
+            return first_image.image.url
+            
+        # Fallback to old image_urls for backward compatibility
         if self.image_urls and len(self.image_urls) > 0:
             return self.image_urls[0]
+            
         return "https://via.placeholder.com/800x600.png?text=No+Image+Available"
     
     @property

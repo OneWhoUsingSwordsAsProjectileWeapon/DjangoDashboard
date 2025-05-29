@@ -439,16 +439,19 @@ def add_listing_image(request, pk):
     listing = get_object_or_404(Listing, pk=pk, host=request.user)
 
     if request.method == 'POST':
-        form = ListingImageForm(request.POST)
+        form = ListingImageForm(request.POST, request.FILES)
         if form.is_valid():
-            image_url = form.cleaned_data['image_url']
-            # Add the image URL to the listing's image_urls array
-            image_urls = listing.image_urls
-            image_urls.append(image_url)
-            listing.image_urls = image_urls
-            listing.save(update_fields=['image_urls'])
-
-            messages.success(request, 'Image added successfully.')
+            image = form.save(commit=False)
+            image.listing = listing
+            
+            # If this is the first image or marked as main, make it main
+            if form.cleaned_data.get('is_main') or not listing.images.exists():
+                # Unset other main images
+                listing.images.update(is_main=False)
+                image.is_main = True
+                
+            image.save()
+            messages.success(request, 'Изображение добавлено успешно.')
             return redirect('listings:listing_images', pk=listing.pk)
     else:
         form = ListingImageForm()
