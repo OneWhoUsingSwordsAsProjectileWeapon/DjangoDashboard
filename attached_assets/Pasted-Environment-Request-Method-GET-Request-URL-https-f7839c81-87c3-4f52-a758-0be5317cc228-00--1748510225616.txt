@@ -1,0 +1,80 @@
+Environment:
+
+
+Request Method: GET
+Request URL: https://f7839c81-87c3-4f52-a758-0be5317cc228-00-fgbr3bjspre6.sisko.replit.dev/users/profile/edit/
+
+Django Version: 5.2.1
+Python Version: 3.11.10
+Installed Applications:
+['django.contrib.admin',
+ 'django.contrib.auth',
+ 'django.contrib.contenttypes',
+ 'django.contrib.sessions',
+ 'django.contrib.messages',
+ 'django.contrib.staticfiles',
+ 'django.contrib.humanize',
+ 'rest_framework',
+ 'django_filters',
+ 'channels',
+ 'users.apps.UsersConfig',
+ 'listings.apps.ListingsConfig',
+ 'chat.apps.ChatConfig',
+ 'notifications.apps.NotificationsConfig',
+ 'moderation.apps.ModerationConfig',
+ 'django_extensions']
+Installed Middleware:
+['django.middleware.security.SecurityMiddleware',
+ 'django.contrib.sessions.middleware.SessionMiddleware',
+ 'django.middleware.common.CommonMiddleware',
+ 'django.middleware.csrf.CsrfViewMiddleware',
+ 'django.contrib.auth.middleware.AuthenticationMiddleware',
+ 'django.contrib.messages.middleware.MessageMiddleware',
+ 'django.middleware.clickjacking.XFrameOptionsMiddleware']
+
+Template loader postmortem
+Django tried loading these templates, in this order:
+
+Using engine django:
+    * django.template.loaders.filesystem.Loader: /home/runner/workspace/templates/users/edit_profile.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django/contrib/admin/templates/users/edit_profile.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django/contrib/auth/templates/users/edit_profile.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/rest_framework/templates/users/edit_profile.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django_filters/templates/users/edit_profile.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/users/templates/users/edit_profile.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/listings/templates/users/edit_profile.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/chat/templates/users/edit_profile.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/notifications/templates/users/edit_profile.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/moderation/templates/users/edit_profile.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django_extensions/templates/users/edit_profile.html (Source does not exist)
+
+
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django/core/handlers/exception.py", line 42, in inner
+    response = await get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django/core/handlers/base.py", line 253, in _get_response_async
+    response = await wrapped_callback(
+               
+  File "/nix/store/clx0mcir7qw8zk36zbr4jra789g3knf6-python3-3.11.10/lib/python3.11/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/users/views.py", line 86, in edit_profile_view
+    return render(request, 'users/edit_profile.html', {'form': form})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django/template/loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/django/template/loader.py", line 19, in get_template
+    raise TemplateDoesNotExist(template_name, chain=chain)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Exception Type: TemplateDoesNotExist at /users/profile/edit/
+Exception Value: users/edit_profile.html
