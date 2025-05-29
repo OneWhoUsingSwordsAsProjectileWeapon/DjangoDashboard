@@ -92,25 +92,79 @@
                         <a class="nav-link dropdown-toggle position-relative" href="#" id="notificationDropdown" 
                            role="button" data-bs-toggle="dropdown" aria-expanded="false"
                            onclick="loadNotifications()"
-                           data-bs-auto-close="outside">
+                           data-bs-auto-close="outside"
+                           style="position: relative; z-index: 1060;">
                             <i class="fas fa-bell"></i>
                             <span class="position-absolute top-0 start-100 translate-middle" 
                                   id="notification-badge-container"
                                   hx-get="{% url 'notifications:get_unread_count' %}"
                                   hx-trigger="load, every 30s"
-                                  hx-swap="innerHTML">
+                                  hx-swap="innerHTML"
+                                  style="position: absolute; top: -8px; right: -8px; background: linear-gradient(135deg, #f39c12, #e67e22); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; border: 2px solid white; animation: pulse 2s infinite; z-index: 1070;">
                                 <!-- Initial load -->
                                 {% load notify_tags %}
                                 {% notification_count as count %}
                                 {% if count > 0 %}
-                                <span class="badge bg-danger" id="notification-badge">{count}</span>
+                                <span class="badge bg-danger" id="notification-badge" style="background: transparent !important; color: white; font-size: 0.7rem; padding: 0; border: none;">{count}</span>
                                 {% endif %}
                             </span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end notification-dropdown" 
-                            id="notification-dropdown-content" style="width: 350px; max-height: 400px; overflow-y: auto;">
-                            <li><div class="dropdown-item text-center">Загрузка уведомлений...</div></li>
+                            id="notification-dropdown-content" 
+                            style="width: 350px; max-height: 400px; overflow-y: auto; border: none; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); border-radius: 1rem; z-index: 1070 !important; position: absolute; top: 100%; right: 0; background: white; margin-top: 0.5rem;">
+                            <li><div class="dropdown-item text-center" style="padding: 1rem; color: #6c757d;">Загрузка уведомлений...</div></li>
                         </ul>
+                        
+                        <style>
+                            @keyframes pulse {
+                                0% { opacity: 1; }
+                                50% { opacity: 0.5; }
+                                100% { opacity: 1; }
+                            }
+                            
+                            .notification-dropdown .dropdown-item {
+                                padding: 1rem;
+                                border-bottom: 1px solid #e9ecef;
+                                transition: all 0.15s ease;
+                                cursor: pointer;
+                            }
+                            
+                            .notification-dropdown .dropdown-item:hover {
+                                background: #f8f9fa;
+                                transform: translateX(5px);
+                            }
+                            
+                            .notification-dropdown .dropdown-item.unread {
+                                background: rgba(52, 152, 219, 0.05);
+                                border-left: 4px solid #3498db;
+                            }
+                            
+                            .notification-title {
+                                font-weight: 600;
+                                color: #343a40;
+                                margin-bottom: 0.25rem;
+                            }
+                            
+                            .notification-text {
+                                font-size: 0.875rem;
+                                color: #6c757d;
+                                margin-bottom: 0.5rem;
+                            }
+                            
+                            .notification-time {
+                                font-size: 0.75rem;
+                                color: #6c757d;
+                            }
+                            
+                            .navbar .dropdown-menu {
+                                z-index: 1070 !important;
+                                position: absolute !important;
+                            }
+                            
+                            .navbar .dropdown {
+                                z-index: 1060 !important;
+                            }
+                        </style>
                     </li>
 
                     <!-- User dropdown -->
@@ -180,3 +234,44 @@
         </div>
     </div>
 </nav>
+
+<script>
+    function loadNotifications() {
+        // Загрузка уведомлений через HTMX или AJAX
+        const notificationContainer = document.getElementById('notification-dropdown-content');
+        
+        fetch('{% url "notifications:notification_list" %}')
+            .then(response => response.text())
+            .then(html => {
+                // Извлекаем только содержимое уведомлений
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const notifications = doc.querySelectorAll('.notification-item');
+                
+                let notificationHTML = '';
+                if (notifications.length === 0) {
+                    notificationHTML = '<li><div class="dropdown-item text-center" style="padding: 1rem; color: #6c757d;">Нет уведомлений</div></li>';
+                } else {
+                    notifications.forEach(notification => {
+                        notificationHTML += '<li>' + notification.outerHTML + '</li>';
+                    });
+                }
+                
+                notificationContainer.innerHTML = notificationHTML;
+            })
+            .catch(error => {
+                console.error('Error loading notifications:', error);
+                notificationContainer.innerHTML = '<li><div class="dropdown-item text-center" style="padding: 1rem; color: #dc3545;">Ошибка загрузки уведомлений</div></li>';
+            });
+    }
+
+    // Загрузка уведомлений при открытии dropdown
+    document.addEventListener('DOMContentLoaded', function() {
+        const notificationDropdown = document.getElementById('notificationDropdown');
+        if (notificationDropdown) {
+            notificationDropdown.addEventListener('click', function() {
+                setTimeout(loadNotifications, 100);
+            });
+        }
+    });
+</script>
