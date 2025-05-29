@@ -32,7 +32,8 @@ class Listing(models.Model):
     accommodates = models.PositiveSmallIntegerField(_("Accommodates"))
     property_type = models.CharField(_("Property type"), max_length=50)
     
-    # Images handled by ListingImage model
+    # Images
+    image_urls = models.JSONField(_("Image URLs"), default=list, null=True, blank=True)
     
     # Features/amenities
     amenities = models.JSONField(_("Amenities"), default=list)
@@ -41,34 +42,6 @@ class Listing(models.Model):
     house_rules = models.TextField(_("House rules"), blank=True)
     check_in_time = models.TimeField(_("Check-in time"), null=True, blank=True)
     check_out_time = models.TimeField(_("Check-out time"), null=True, blank=True)
-
-
-class ListingImage(models.Model):
-    """
-    Model for storing multiple images for a listing
-    """
-    listing = models.ForeignKey(
-        Listing,
-        on_delete=models.CASCADE,
-        related_name='listing_images'
-    )
-    image = models.ImageField(_("Image"), upload_to='listings/images/')
-    caption = models.CharField(_("Caption"), max_length=255, blank=True)
-    is_main = models.BooleanField(_("Is main image"), default=False)
-    order = models.PositiveIntegerField(_("Order"), default=0)
-    
-    # Timestamps
-    created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
-    
-    class Meta:
-        verbose_name = _("Listing Image")
-        verbose_name_plural = _("Listing Images")
-        ordering = ['order', 'created_at']
-        
-    def __str__(self):
-        return f"Image for {self.listing.title}"
-
-
     minimum_nights = models.PositiveSmallIntegerField(_("Minimum nights"), default=1)
     maximum_nights = models.PositiveSmallIntegerField(_("Maximum nights"), default=30)
     
@@ -102,17 +75,9 @@ class ListingImage(models.Model):
     @property
     def main_image_url(self):
         """Return the first image URL or a placeholder"""
-        main_image = self.listing_images.filter(is_main=True).first()
-        if not main_image:
-            main_image = self.listing_images.first()
-        if main_image:
-            return main_image.image.url
+        if self.image_urls and len(self.image_urls) > 0:
+            return self.image_urls[0]
         return "https://via.placeholder.com/800x600.png?text=No+Image+Available"
-    
-    @property
-    def all_images(self):
-        """Return all images for this listing"""
-        return self.listing_images.all()
     
     @property
     def average_rating(self):

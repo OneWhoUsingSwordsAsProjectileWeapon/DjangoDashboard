@@ -13,7 +13,7 @@ from django.utils import timezone
 import json
 import calendar
 
-from .models import Listing, Booking, Review, ListingImage
+from .models import Listing, Booking, Review
 from .forms import ListingForm, BookingForm, ReviewForm, ListingSearchForm, ListingImageForm
 from notifications.tasks import send_email_notification
 
@@ -439,24 +439,16 @@ def add_listing_image(request, pk):
     listing = get_object_or_404(Listing, pk=pk, host=request.user)
 
     if request.method == 'POST':
-        form = ListingImageForm(request.POST, request.FILES)
+        form = ListingImageForm(request.POST)
         if form.is_valid():
-            listing_image = form.save(commit=False)
-            listing_image.listing = listing
-            
-            # If this is marked as main image, unset other main images
-            if listing_image.is_main:
-                ListingImage.objects.filter(listing=listing, is_main=True).update(is_main=False)
-            
-            # Set order for new image
-            max_order = ListingImage.objects.filter(listing=listing).aggregate(
-                max_order=models.Max('order')
-            )['max_order'] or 0
-            listing_image.order = max_order + 1
-            
-            listing_image.save()
+            image_url = form.cleaned_data['image_url']
+            # Add the image URL to the listing's image_urls array
+            image_urls = listing.image_urls
+            image_urls.append(image_url)
+            listing.image_urls = image_urls
+            listing.save(update_fields=['image_urls'])
 
-            messages.success(request, 'Изображение успешно добавлено.')
+            messages.success(request, 'Image added successfully.')
             return redirect('listings:listing_images', pk=listing.pk)
     else:
         form = ListingImageForm()
@@ -476,16 +468,22 @@ def manage_listing_images(request, pk):
     })
 
 @login_required
-def remove_listing_image(request, pk, image_id):
+def remove_listing_image(request, pk, index):
     """View for removing an image from a listing"""
     listing = get_object_or_404(Listing, pk=pk, host=request.user)
-    
+
     try:
-        listing_image = get_object_or_404(ListingImage, id=image_id, listing=listing)
-        listing_image.delete()
-        messages.success(request, 'Изображение успешно удалено.')
-    except Exception as e:
-        messages.error(request, 'Ошибка при удалении изображения.')
+        image_urls = listing.image_urls
+        if 0 <= index < len(image_urls):
+            # Remove the image at the specified index
+            del image_urls[index]
+            listing.image_urls = image_urls
+            listing.save(update_fields=['image_urls'])
+            messages.success(request, 'Image removed successfully.')
+        else:
+            messages.error(request, 'Invalid image index.')
+    except (TypeError, IndexError):
+        messages.error(request, 'Error removing image.')
 
     return redirect('listings:listing_images', pk=listing.pk)
 
