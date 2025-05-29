@@ -20,7 +20,7 @@
                 </div>
                 <div class="card-body">
                     <p class="text-muted">{{ listing.city }}, {{ listing.country }}</p>
-                    <a href="{% url 'listings:add_image' pk=listing.pk %}" class="btn btn-primary">
+                    <a href="{% url 'listings:add_listing_image' pk=listing.pk %}" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Добавить изображение
                     </a>
                 </div>
@@ -75,7 +75,7 @@
                     <i class="fas fa-images fa-3x text-muted mb-3"></i>
                     <h4>Изображения не добавлены</h4>
                     <p class="text-muted">Добавьте изображения для привлечения гостей</p>
-                    <a href="{% url 'listings:add_image' pk=listing.pk %}" class="btn btn-primary">
+                    <a href="{% url 'listings:add_listing_image' pk=listing.pk %}" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Добавить первое изображение
                     </a>
                 </div>
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const imageUrl = button.getAttribute('data-image-url');
 
         // Обновляем действие формы
-        deleteForm.action = "{% url 'listings:remove_image' pk=listing.pk image_id=0 %}".replace('0', imageId);
+        deleteForm.action = "{% url 'listings:remove_image_file' pk=listing.pk image_id=0 %}".replace('0', imageId);
 
         // Показываем превью изображения
         modalImagePreview.src = imageUrl;
