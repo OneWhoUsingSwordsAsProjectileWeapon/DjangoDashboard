@@ -35,6 +35,49 @@
 }
 
 body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Horizontal scroll containers */
+.popular-destinations-container,
+.similar-listings-container {
+    position: relative;
+}
+
+.popular-destinations-track,
+.similar-listings-track {
+    transition: transform 0.3s ease;
+}
+
+.destination-item,
+.similar-listing-item {
+    flex-shrink: 0;
+}
+
+.destinations-btn,
+.similar-btn {
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.destinations-btn:hover,
+.similar-btn:hover {
+    opacity: 1;
+}
+
+/* Card hover effects */
+.destination-item .card,
+.similar-listing-item .card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.destination-item .card:hover,
+.similar-listing-item .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+body {
   font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   color: var(--text-color);
   line-height: 1.6;
@@ -533,30 +576,30 @@ main {
   body {
     font-size: 14px;
   }
-  
+
   .container, .container-fluid {
     padding-left: 0.75rem;
     padding-right: 0.75rem;
   }
-  
+
   .card-body {
     padding: 1rem;
   }
-  
+
   .listing-card .card-body {
     padding: 1rem;
   }
-  
+
   .btn {
     font-size: 0.875rem;
     padding: 0.5rem 1rem;
   }
-  
+
   .btn-lg {
     font-size: 1rem;
     padding: 0.625rem 1.5rem;
   }
-  
+
   h1 { font-size: 1.75rem; }
   h2 { font-size: 1.5rem; }
   h3 { font-size: 1.25rem; }
@@ -566,17 +609,17 @@ main {
   .card-img-top {
     height: 200px;
   }
-  
+
   .listing-card .card-img-top {
     height: 180px;
   }
-  
+
   .calendar-day {
     width: 35px;
     height: 35px;
     font-size: 0.875rem;
   }
-  
+
   .navbar-collapse {
     background: white;
     margin-top: 1rem;
@@ -584,12 +627,12 @@ main {
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
   }
-  
+
   .navbar-nav .nav-link {
     padding: 0.75rem 0;
     border-bottom: 1px solid var(--medium-gray);
   }
-  
+
   .navbar-nav .nav-link:last-child {
     border-bottom: none;
   }
@@ -599,7 +642,7 @@ main {
   .card-img-top {
     height: 200px;
   }
-  
+
   .listing-card .listing-price {
     font-size: 1.125rem;
   }
@@ -609,7 +652,7 @@ main {
   .card-img-top {
     height: 240px;
   }
-  
+
   .container {
     max-width: 1140px;
   }
@@ -619,7 +662,7 @@ main {
   .card-img-top {
     height: 260px;
   }
-  
+
   .container {
     max-width: 1200px;
   }

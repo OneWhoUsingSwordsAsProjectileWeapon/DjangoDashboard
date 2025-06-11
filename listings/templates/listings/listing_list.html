@@ -206,51 +206,91 @@
         {% endif %}
     </section>
 
-    <!-- Featured Destinations -->
+    <!-- Popular Destinations -->
+    {% if popular_destinations %}
     <section class="mb-5">
         <h3 class="mb-4">Популярные направления</h3>
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-            <div class="col">
-                <div class="card h-100 border-0 shadow-sm">
-                    <img src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Chita">
-                    <div class="card-body">
-                        <h5 class="card-title">Чита</h5>
-                        <p class="card-text text-muted">Административный центр Забайкальского края</p>
-                        <a href="?location=Чита" class="btn btn-sm btn-outline-primary">Посмотреть недвижимость</a>
+        <div class="position-relative">
+            <div class="popular-destinations-container overflow-hidden" id="popularDestinations">
+                <div class="d-flex gap-3 pb-3 popular-destinations-track" style="width: max-content; transition: transform 0.3s ease;">
+                    {% for destination in popular_destinations %}
+                    <div class="destination-item" style="min-width: 280px; max-width: 280px;">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="position-relative">
+                                <img src="{{ destination.image_url }}" class="card-img-top" alt="{{ destination.city }}" style="height: 200px; object-fit: cover;">
+                                <div class="position-absolute top-0 end-0 m-2">
+                                    <span class="badge bg-primary">{{ destination.booking_count }} бронирований</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title mb-1">{{ destination.city }}</h6>
+                                <p class="card-text text-muted small mb-2">{{ destination.state }}, {{ destination.country }}</p>
+                                <p class="card-text small">
+                                    <small class="text-muted">
+                                        {% if destination.sample_listing.average_rating %}
+                                            ⭐ {{ destination.sample_listing.average_rating|floatformat:1 }}
+                                        {% endif %}
+                                        от ₽{{ destination.sample_listing.price_per_night|floatformat:0 }}/ночь
+                                    </small>
+                                </p>
+                                <a href="{% url 'listings:listing_list' %}?location={{ destination.city }}" class="btn btn-outline-primary btn-sm w-100">
+                                    Посмотреть объявления
+                                </a>
+                            </div>
+                        </div>
                     </div>
+                    {% endfor %}
                 </div>
             </div>
-            <div class="col">
-                <div class="card h-100 border-0 shadow-sm">
-                    <img src="https://images.unsplash.com/photo-1551698618-1dfe5d97d256?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Sochi">
-                    <div class="card-body">
-                        <h5 class="card-title">Сочи</h5>
-                        <p class="card-text text-muted">Курортный город на Черном море</p>
-                        <a href="?location=Сочи" class="btn btn-sm btn-outline-primary">Посмотреть недвижимость</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card h-100 border-0 shadow-sm">
-                    <img src="https://images.unsplash.com/photo-1549144511-f099e773c147?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Kazan">
-                    <div class="card-body">
-                        <h5 class="card-title">Казань</h5>
-                        <p class="card-text text-muted">Столица Татарстана с уникальной архитектурой</p>
-                        <a href="?location=Казань" class="btn btn-sm btn-outline-primary">Посмотреть недвижимость</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card h-100 border-0 shadow-sm">
-                    <img src="https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Ekaterinburg">
-                    <div class="card-body">
-                        <h5 class="card-title">Екатеринбург</h5>
-                        <p class="card-text text-muted">Столица Урала с богатой историей</p>
-                        <a href="?location=Екатеринбург" class="btn btn-sm btn-outline-primary">Посмотреть недвижимость</a>
-                    </div>
-                </div>
-            </div>
+
+            <!-- Navigation buttons -->
+            {% if popular_destinations|length > 4 %}
+            <button class="btn btn-outline-secondary position-absolute top-50 start-0 translate-middle-y destinations-btn destinations-btn-prev" 
+                    style="z-index: 10; margin-left: -20px; border-radius: 50%; width: 40px; height: 40px;"
+                    onclick="scrollDestinations('prev')">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="btn btn-outline-secondary position-absolute top-50 end-0 translate-middle-y destinations-btn destinations-btn-next" 
+                    style="z-index: 10; margin-right: -20px; border-radius: 50%; width: 40px; height: 40px;"
+                    onclick="scrollDestinations('next')">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+            {% endif %}
         </div>
     </section>
+
+    <script>
+    function scrollDestinations(direction) {
+        const container = document.querySelector('.popular-destinations-track');
+        const scrollAmount = 300; // Adjust based on card width + gap
+
+        if (direction === 'next') {
+            container.style.transform = `translateX(-${scrollAmount}px)`;
+        } else {
+            container.style.transform = 'translateX(0px)';
+        }
+
+        // Toggle button visibility
+        const prevBtn = document.querySelector('.destinations-btn-prev');
+        const nextBtn = document.querySelector('.destinations-btn-next');
+
+        if (direction === 'next') {
+            prevBtn.style.display = 'block';
+            nextBtn.style.display = 'none';
+        } else {
+            prevBtn.style.display = 'none';
+            nextBtn.style.display = 'block';
+        }
+    }
+
+    // Initially hide prev button
+    document.addEventListener('DOMContentLoaded', function() {
+        const prevBtn = document.querySelector('.destinations-btn-prev');
+        if (prevBtn) {
+            prevBtn.style.display = 'none';
+        }
+    });
+    </script>
+    {% endif %}
 </div>
 {% endblock %}
