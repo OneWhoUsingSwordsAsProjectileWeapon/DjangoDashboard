@@ -27,12 +27,12 @@ if LISTING_MODELS_AVAILABLE:
         if created:
             # Logic for new booking
             print(f"New booking created: {instance.booking_reference}")
-            
+
             # You could implement notification logic, availability updates, etc. here
         else:
             # Logic for booking updates
             print(f"Booking updated: {instance.booking_reference}")
-            
+
     @receiver(post_save, sender=Review)
     def review_created_handler(sender, instance, created, **kwargs):
         """
@@ -41,5 +41,38 @@ if LISTING_MODELS_AVAILABLE:
         if created:
             # Logic for new review
             print(f"New review for listing {instance.listing.id} created")
-            
+
             # You could implement notification logic, rating updates, etc. here
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from .models import Listing
+from notifications.models import Notification
+
+@receiver(post_save, sender=Listing)
+def notify_host_listing_created(sender, instance, created, **kwargs):
+    """Send notification to host when listing is created and create moderation record"""
+    if created:
+        # Create notification
+        Notification.objects.create(
+            user=instance.host,
+            notification_type='system',
+            title='Объявление создано',
+            message=f'Ваше объявление "{instance.title}" успешно создано и отправлено на модерацию.'
+        )
+
+        # Create moderation record
+        from moderation.models import ListingApproval
+        ListingApproval.objects.get_or_create(
+            listing=instance,
+            defaults={
+                'status': 'pending',
+                'has_valid_title': False,
+                'has_valid_description': False,
+                'has_valid_images': False,
+                'has_valid_address': False,
+                'has_appropriate_pricing': False,
+                'follows_content_policy': False,
+                'has_verification_video': False
+            }
+        )
