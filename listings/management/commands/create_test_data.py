@@ -87,8 +87,8 @@ class Command(BaseCommand):
             ['Wi-Fi', 'Полная кухня', 'Стиральная машина', 'Сушилка', 'Парковка'],
         ]
         
-        # Create more listings per host to reach ~20 total
-        total_listings_needed = 20
+        # Create more listings per host to reach ~40 total
+        total_listings_needed = 40
         listings_per_host = total_listings_needed // len(hosts) if hosts else 0
         extra_listings = total_listings_needed % len(hosts) if hosts else 0
         
@@ -132,14 +132,77 @@ class Command(BaseCommand):
                 listings.append(listing)
                 self.stdout.write(f'Created listing: {listing.title}')
         
+        # Create ListingApproval records with different statuses
+        from moderation.models import ListingApproval
+        
+        approval_statuses = ['pending', 'approved', 'rejected', 'requires_changes']
+        approval_weights = [0.2, 0.5, 0.2, 0.1]  # 50% approved, 20% pending, 20% rejected, 10% requires changes
+        
+        for listing in listings:
+            # Skip if approval record already exists
+            if hasattr(listing, 'approval_record'):
+                continue
+                
+            status = random.choices(approval_statuses, weights=approval_weights)[0]
+            
+            approval = ListingApproval.objects.create(
+                listing=listing,
+                status=status,
+                has_valid_title=random.choice([True, True, False]),  # 66% valid
+                has_valid_description=random.choice([True, True, False]),
+                has_valid_images=random.choice([True, False]),  # 50% valid
+                has_valid_address=random.choice([True, True, True, False]),  # 75% valid
+                has_appropriate_pricing=random.choice([True, True, False]),
+                follows_content_policy=random.choice([True, True, True, False]),  # 75% valid
+                has_verification_video=random.choice([True, False, False])  # 33% have video
+            )
+            
+            # Add moderator notes based on status
+            if status == 'approved':
+                approval.moderator_notes = random.choice([
+                    'Отличное объявление, все требования соблюдены.',
+                    'Хорошее качество фотографий и описание.',
+                    'Соответствует всем стандартам платформы.'
+                ])
+                # Update listing status for approved listings
+                listing.is_approved = True
+                listing.save(update_fields=['is_approved'])
+                
+            elif status == 'rejected':
+                approval.rejection_reason = random.choice([
+                    'Низкое качество фотографий.',
+                    'Неполное описание объекта.',
+                    'Нарушение правил платформы.',
+                    'Неточная информация об адресе.'
+                ])
+                listing.is_approved = False
+                listing.save(update_fields=['is_approved'])
+                
+            elif status == 'requires_changes':
+                approval.required_changes = random.choice([
+                    'Необходимо добавить больше фотографий.',
+                    'Уточните описание удобств.',
+                    'Проверьте правильность адреса.',
+                    'Добавьте информацию о правилах дома.'
+                ])
+                listing.is_approved = False
+                listing.save(update_fields=['is_approved'])
+                
+            elif status == 'pending':
+                listing.is_approved = False
+                listing.save(update_fields=['is_approved'])
+            
+            approval.save()
+            self.stdout.write(f'Created approval record for {listing.title}: {status}')
+        
         # Create bookings with non-conflicting dates
         statuses = ['pending', 'confirmed', 'completed', 'canceled']
         status_weights = [0.15, 0.25, 0.5, 0.1]  # More completed bookings for better stats
         
         today = date.today()
         
-        # Create more bookings for better statistics (50-80 bookings)
-        num_bookings = random.randint(50, 80)
+        # Create more bookings for better statistics (100-160 bookings)
+        num_bookings = random.randint(100, 160)
         successful_bookings = 0
         
         for _ in range(num_bookings * 2):  # Try more times to ensure we get enough bookings
@@ -222,6 +285,7 @@ class Command(BaseCommand):
                 f'Guests: {len(guests)}\n'
                 f'Listings: {len(listings)}\n'
                 f'Bookings: {Booking.objects.count()}\n'
-                f'Reviews: {Review.objects.count()}'
+                f'Reviews: {Review.objects.count()}\n'
+                f'Listing Approvals: {ListingApproval.objects.count()}'
             )
         )
