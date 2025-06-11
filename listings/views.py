@@ -30,8 +30,9 @@ class ListingListView(ListView):
     def get_queryset(self):
         queryset = Listing.objects.filter(
             is_active=True, 
-            is_approved=True,
-            approval_record__status='approved'
+            is_approved=True
+        ).filter(
+            Q(approval_record__status='approved') | Q(approval_record__isnull=True)
         )
 
         # Apply search and filters if form is submitted
@@ -461,25 +462,35 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         stats['total_possible_nights'] = total_possible_nights
 
         # Revenue by month (last 12 months)
-        monthly_revenue_qs = all_bookings.filter(
-            status='completed',
-            created_at__gte=timezone.now() - timedelta(days=365)
-        ).annotate(
-            month=TruncMonth('created_at')
-        ).values('month').annotate(
-            revenue=Sum('total_price'),
-            bookings=Count('id')
-        ).order_by('month')
-
-        # Convert to list with proper formatting
+        from dateutil.relativedelta import relativedelta
+        import calendar
+        
+        # Generate last 12 months data
         monthly_revenue = []
-        for item in monthly_revenue_qs:
-            if item['month']:
-                monthly_revenue.append({
-                    'month': item['month'].strftime('%Y-%m-01'),
-                    'revenue': float(item['revenue'] or 0),
-                    'bookings': item['bookings']
-                })
+        current_date = timezone.now().date()
+        
+        for i in range(12):
+            # Go back i months from current date
+            target_date = current_date.replace(day=1) - relativedelta(months=i)
+            
+            # Get bookings for this month
+            month_start = target_date
+            month_end = target_date + relativedelta(months=1)
+            
+            month_revenue = all_bookings.filter(
+                status='completed',
+                created_at__date__gte=month_start,
+                created_at__date__lt=month_end
+            ).aggregate(
+                total_revenue=Sum('total_price'),
+                total_bookings=Count('id')
+            )
+            
+            monthly_revenue.insert(0, {
+                'month': target_date.strftime('%Y-%m-01'),
+                'revenue': float(month_revenue['total_revenue'] or 0),
+                'bookings': month_revenue['total_bookings'] or 0
+            })
 
         # Bookings by status
         status_stats_qs = all_bookings.values('status').annotate(

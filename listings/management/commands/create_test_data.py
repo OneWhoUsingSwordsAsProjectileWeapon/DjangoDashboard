@@ -166,7 +166,8 @@ class Command(BaseCommand):
                 ])
                 # Update listing status for approved listings
                 listing.is_approved = True
-                listing.save(update_fields=['is_approved'])
+                listing.is_active = True
+                listing.save(update_fields=['is_approved', 'is_active'])
                 
             elif status == 'rejected':
                 approval.rejection_reason = random.choice([

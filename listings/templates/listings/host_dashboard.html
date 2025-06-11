@@ -697,8 +697,8 @@ document.addEventListener('DOMContentLoaded', function() {
             value: parseFloat(item.revenue) || 0
         }));
 
-        const maxValue = Math.max(...data.map(d => d.value));
-        const minValue = Math.min(...data.map(d => d.value));
+        const maxValue = Math.max(...data.map(d => d.value), 1000); // Ensure minimum scale
+        const minValue = 0; // Always start from 0 for revenue
         const padding = 40;
         const chartWidth = container.clientWidth - (padding * 2);
         const chartHeight = container.clientHeight - (padding * 2);
@@ -734,8 +734,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Create points and path
         const points = data.map((d, i) => {
-            const x = padding + (i * (chartWidth / (data.length - 1)));
-            const y = padding + (chartHeight - ((d.value - minValue) / (maxValue - minValue)) * chartHeight);
+            const x = data.length > 1 ? padding + (i * (chartWidth / (data.length - 1))) : padding + chartWidth / 2;
+            const normalizedValue = maxValue > 0 ? (d.value / maxValue) : 0;
+            const y = padding + (chartHeight - (normalizedValue * chartHeight));
             return { x, y, value: d.value, label: d.label };
         });
 
