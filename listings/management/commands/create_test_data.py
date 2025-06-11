@@ -19,7 +19,7 @@ class Command(BaseCommand):
         guests = []
         
         # Create hosts
-        for i in range(3):
+        for i in range(6):
             email = f'host{i+1}@example.com'
             if not User.objects.filter(email=email).exists():
                 host = User.objects.create_user(
@@ -35,7 +35,7 @@ class Command(BaseCommand):
                 self.stdout.write(f'Created host: {host.username}')
         
         # Create guests
-        for i in range(5):
+        for i in range(10):
             email = f'guest{i+1}@example.com'
             if not User.objects.filter(email=email).exists():
                 guest = User.objects.create_user(
@@ -87,8 +87,8 @@ class Command(BaseCommand):
             ['Wi-Fi', 'Полная кухня', 'Стиральная машина', 'Сушилка', 'Парковка'],
         ]
         
-        # Create more listings per host to reach ~20 total
-        total_listings_needed = 20
+        # Create more listings per host to reach ~40 total
+        total_listings_needed = 40
         listings_per_host = total_listings_needed // len(hosts) if hosts else 0
         extra_listings = total_listings_needed % len(hosts) if hosts else 0
         
@@ -138,8 +138,8 @@ class Command(BaseCommand):
         
         today = date.today()
         
-        # Create more bookings for better statistics (50-80 bookings)
-        num_bookings = random.randint(50, 80)
+        # Create more bookings for better statistics (100-160 bookings)
+        num_bookings = random.randint(100, 160)
         successful_bookings = 0
         
         for _ in range(num_bookings * 2):  # Try more times to ensure we get enough bookings
