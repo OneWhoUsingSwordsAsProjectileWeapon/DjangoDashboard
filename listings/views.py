@@ -783,12 +783,23 @@ def create_review(request, listing_id):
 
     # Check if user is the host
     if request.user == listing.host:
-        messages.error(request, "You cannot review your own listing.")
+        messages.error(request, "Вы не можете оставить отзыв на свое собственное объявление.")
         return redirect('listings:listing_detail', pk=listing.pk)
 
     # Check if review already exists
     if Review.objects.filter(reviewer=request.user, listing=listing).exists():
-        messages.error(request, "You have already reviewed this listing.")
+        messages.error(request, "Вы уже оставили отзыв на это объявление.")
+        return redirect('listings:listing_detail', pk=listing.pk)
+
+    # Check if user has completed booking for this listing
+    completed_booking = Booking.objects.filter(
+        guest=request.user,
+        listing=listing,
+        status='completed'
+    ).first()
+
+    if not completed_booking:
+        messages.error(request, "Вы можете оставить отзыв только после завершенного пребывания в этом месте.")
         return redirect('listings:listing_detail', pk=listing.pk)
 
     if request.method == 'POST':
@@ -797,12 +808,6 @@ def create_review(request, listing_id):
             review = form.save(commit=False)
             review.listing = listing
             review.reviewer = request.user
-            # Try to find a completed booking for this user and listing
-            completed_booking = Booking.objects.filter(
-                guest=request.user,
-                listing=listing,
-                status='completed'
-            ).first()
             review.booking = completed_booking
             review.save()
 
@@ -811,13 +816,13 @@ def create_review(request, listing_id):
             create_notification(
                 user=listing.host,
                 notification_type='review_received',
-                title=f"New review for {listing.title}",
-                message=f"{request.user.get_full_name() or request.user.username} left a {review.rating}-star review for your listing.",
+                title=f"Новый отзыв для {listing.title}",
+                message=f"{request.user.get_full_name() or request.user.username} оставил {review.rating}-звездочный отзыв для вашего объявления.",
                 listing=listing,
                 review=review
             )
 
-            messages.success(request, "Your review has been submitted!")
+            messages.success(request, "Ваш отзыв был успешно отправлен!")
             return redirect('listings:listing_detail', pk=listing.pk)
     else:
         form = ReviewForm()
@@ -825,6 +830,87 @@ def create_review(request, listing_id):
     return render(request, 'listings/review_form.html', {
         'form': form,
         'listing': listing
+    })
+
+@login_required
+def edit_review(request, review_id):
+    """View for editing a review"""
+    review = get_object_or_404(Review, id=review_id)
+
+    # Check if user can edit this review
+    if request.user != review.reviewer:
+        messages.error(request, "Вы можете редактировать только свои собственные отзывы.")
+        return redirect('listings:listing_detail', pk=review.listing.pk)
+
+    if request.method == 'POST':
+        form = ReviewForm(request.POST, instance=review)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.is_edited = True
+            review.save()
+            messages.success(request, "Ваш отзыв был успешно обновлен!")
+            return redirect('listings:listing_detail', pk=review.listing.pk)
+    else:
+        form = ReviewForm(instance=review)
+
+    return render(request, 'listings/review_form.html', {
+        'form': form,
+        'listing': review.listing,
+        'review': review,
+        'is_edit': True
+    })
+
+@login_required
+def delete_review(request, review_id):
+    """View for deleting a review"""
+    review = get_object_or_404(Review, id=review_id)
+
+    # Check if user can delete this review
+    if request.user != review.reviewer:
+        messages.error(request, "Вы можете удалять только свои собственные отзывы.")
+        return redirect('listings:listing_detail', pk=review.listing.pk)
+
+    if request.method == 'POST':
+        listing_id = review.listing.pk
+        review.delete()
+        messages.success(request, "Ваш отзыв был успешно удален.")
+        return redirect('listings:listing_detail', pk=listing_id)
+
+    return render(request, 'listings/review_confirm_delete.html', {
+        'review': review
+    })
+
+@login_required
+def admin_delete_review(request, review_id):
+    """Admin view for deleting any review"""
+    # Check if user is admin or moderator
+    if not (request.user.is_staff or request.user.is_superuser or 
+            request.user.role in ['admin', 'moderator']):
+        messages.error(request, "У вас нет прав для выполнения этого действия.")
+        return redirect('listings:listing_list')
+
+    review = get_object_or_404(Review, id=review_id)
+
+    if request.method == 'POST':
+        listing_id = review.listing.pk
+        reviewer_name = review.reviewer.get_full_name() or review.reviewer.username
+        
+        # Log the admin action
+        from moderation.models import ModerationLog
+        ModerationLog.objects.create(
+            moderator=request.user,
+            action='delete_review',
+            content_type='review',
+            object_id=review.id,
+            details=f"Удален отзыв пользователя {reviewer_name} для объявления {review.listing.title}"
+        )
+        
+        review.delete()
+        messages.success(request, f"Отзыв пользователя {reviewer_name} был удален администратором.")
+        return redirect('listings:listing_detail', pk=listing_id)
+
+    return render(request, 'listings/admin_review_confirm_delete.html', {
+        'review': review
     })
 
 def get_listing_calendar_data(request, pk):

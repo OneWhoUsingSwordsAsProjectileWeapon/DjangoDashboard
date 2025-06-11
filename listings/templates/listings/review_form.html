@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    {% block title %}{% if is_edit %}Редактировать отзыв{% else %}Оставить отзыв{% endif %}{% endblock %}
+                </div>
+                <div class="card-body">
+                    <h4 class="card-title">
+                        {% if is_edit %}
+                            Редактировать отзыв для {{ listing.title }}
+                        {% else %}
+                            Оставить отзыв для {{ listing.title }}
+                        {% endif %}
+                    </h4>
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <button type="submit" class="btn btn-primary">
+                            {% if is_edit %}
+                                <i class="fas fa-save"></i> Обновить отзыв
+                            {% else %}
+                                <i class="fas fa-paper-plane"></i> Отправить отзыв
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

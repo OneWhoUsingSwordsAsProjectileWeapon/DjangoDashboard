@@ -274,6 +274,7 @@ class Review(models.Model):
     
     # Moderation
     is_approved = models.BooleanField(_("Is approved"), default=True)
+    is_edited = models.BooleanField(_("Is edited"), default=False)
     
     # Timestamps
     created_at = models.DateTimeField(_("Created at"), auto_now_add=True)

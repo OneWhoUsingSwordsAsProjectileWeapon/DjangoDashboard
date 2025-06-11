@@ -356,21 +356,52 @@
                         {% for review in reviews %}
                             <div class="border-bottom pb-3 mb-3">
                                 <div class="d-flex mb-2">
-                                    {% if review.reviewer.profile_picture %}
-                                        <img src="{{ review.reviewer.profile_picture }}" class="rounded-circle me-2" width="40" height="40" alt="{{ review.reviewer.username }}">
-                                    {% else %}
-                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
-                                            <i class="fas fa-user-circle text-secondary"></i>
+                                {% if review.reviewer.profile_picture %}
+                                    <img src="{{ review.reviewer.profile_picture.url }}" alt="{{ review.reviewer.get_full_name|default:review.reviewer.username }}" class="rounded-circle me-3" width="50" height="50">
+                                {% else %}
+                                    <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-user text-white"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-0">{{ review.reviewer.get_full_name|default:review.reviewer.username }}</h6>
+                                            <div class="text-warning mb-1">
+                                                {% for i in '12345' %}
+                                                    {% if forloop.counter <= review.rating %}
+                                                    <i class="fas fa-star"></i>
+                                                    {% else %}
+                                                    <i class="far fa-star"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                            <small class="text-muted">
+                                                {{ review.created_at|date:"d.m.Y" }}
+                                                {% if review.is_edited %}
+                                                    <span class="badge bg-info ms-1">Редактирован</span>
+                                                {% endif %}
+                                            </small>
                                         </div>
-                                    {% endif %}
-                                    <div>
-                                        <h6 class="mb-0">{{ review.reviewer.first_name|default:review.reviewer.username }}</h6>
-                                        <small class="text-muted">{{ review.created_at|date:"F Y" }}</small>
+                                        {% if user.is_authenticated %}
+                                            <div class="btn-group-sm">
+                                                {% if user == review.reviewer %}
+                                                    <a href="{% url 'listings:edit_review' review.id %}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <a href="{% url 'listings:delete_review' review.id %}" class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-trash"></i>
+                                                    </a>
+                                                {% elif user.is_staff or user.is_superuser or user.role == 'admin' or user.role == 'moderator' %}
+                                                    <a href="{% url 'listings:admin_delete_review' review.id %}" class="btn btn-sm btn-outline-danger" title="Удалить как администратор">
+                                                        <i class="fas fa-shield-alt"></i> <i class="fas fa-trash"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
                                     </div>
                                 </div>
-                                <div class="mb-1">
-                                    {{ review.rating|star_rating }}
-                                </div>
+                            </div>
                                 <p class="mb-0">{{ review.comment }}</p>
                             </div>
                         {% endfor %}
@@ -617,7 +648,7 @@
             <div class="modal-body">
                 <div class="row">
                     {% for amenity in listing.amenities %}
-                    <div class="col-md-6 mb-2">
+                    <div class="col-md-6 mb-2">```python
                         <div class="d-flex align-items-center">
                             <span class="me-2">{{ amenity|amenity_icon }}</span>
                             <span>{{ amenity }}</span>
@@ -657,7 +688,7 @@
                     zoom: 14,
                     controls: ['zoomControl', 'fullscreenControl']
                 });
-                
+
                 const placemark = new ymaps.Placemark(mapCenter, {
                     balloonContent: '{{ listing.title|escapejs }}'
                 });
@@ -674,7 +705,7 @@
                             zoom: 14,
                             controls: ['zoomControl', 'fullscreenControl']
                         });
-                        
+
                         const placemark = new ymaps.Placemark(coords, {
                             balloonContent: '{{ listing.title|escapejs }}'
                         });

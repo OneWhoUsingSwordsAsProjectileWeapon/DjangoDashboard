@@ -1,0 +1,59 @@
+
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}Удалить отзыв (Администратор){% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-shield-alt"></i> 
+                        Административное удаление отзыва
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <h5>Вы действуете как администратор/модератор!</h5>
+                        <p>Вы собираетесь удалить отзыв другого пользователя. Это действие нельзя будет отменить и будет записано в журнал модерации.</p>
+                    </div>
+
+                    <div class="border p-3 mb-3">
+                        <h6>Отзыв пользователя: <strong>{{ review.reviewer.get_full_name|default:review.reviewer.username }}</strong></h6>
+                        <h6>Для объявления: {{ review.listing.title }}</h6>
+                        <div class="text-warning mb-2">
+                            {% for i in '12345' %}
+                                {% if forloop.counter <= review.rating %}
+                                <i class="fas fa-star"></i>
+                                {% else %}
+                                <i class="far fa-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <p>{{ review.comment }}</p>
+                        <small class="text-muted">Создан: {{ review.created_at|date:"d.m.Y H:i" }}</small>
+                        {% if review.is_edited %}
+                            <br><small class="text-muted">Редактирован: {{ review.updated_at|date:"d.m.Y H:i" }}</small>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Удалить отзыв как администратор
+                            </button>
+                        </form>
+                        <a href="{% url 'listings:listing_detail' review.listing.pk %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Отмена
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
