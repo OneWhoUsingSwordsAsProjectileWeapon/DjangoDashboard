@@ -4,6 +4,42 @@
 
 {% block title %}Найдите свою идеальную аренду - Агрегатор Аренды{% endblock %}
 
+{% block extra_css %}
+<style>
+    .destinations-container {
+        position: relative;
+        cursor: grab;
+    }
+
+    .destinations-container:active {
+        cursor: grabbing;
+    }
+
+    .destinations-track {
+        transform: translateX(0);
+    }
+
+    .destination-item {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .destination-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .destination-card {
+        transition: border-color 0.2s ease;
+    }
+
+    .destination-item:hover .destination-card {
+        border-color: #007bff;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <!-- Search Section -->
@@ -206,51 +242,174 @@
         {% endif %}
     </section>
 
-    <!-- Featured Destinations -->
+    <!-- Popular Destinations -->
     <section class="mb-5">
         <h3 class="mb-4">Популярные направления</h3>
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-            <div class="col">
-                <div class="card h-100 border-0 shadow-sm">
-                    <img src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Chita">
-                    <div class="card-body">
-                        <h5 class="card-title">Чита</h5>
-                        <p class="card-text text-muted">Административный центр Забайкальского края</p>
-                        <a href="?location=Чита" class="btn btn-sm btn-outline-primary">Посмотреть недвижимость</a>
-                    </div>
+        <div class="position-relative">
+            <div class="destinations-container overflow-hidden" id="destinationsContainer">
+                <div class="d-flex gap-3 pb-3 destinations-track" style="width: max-content; transition: transform 0.3s ease;">
+                    {% if popular_destinations %}
+                        {% for destination in popular_destinations %}
+                        <div class="destination-item" style="min-width: 280px; max-width: 280px;">
+                            <div class="card h-100 border-0 shadow-sm destination-card">
+                                <img src="{{ destination.image }}" class="card-img-top" alt="{{ destination.city }}" style="height: 180px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ destination.city }}</h5>
+                                    <p class="card-text text-muted">{{ destination.state }}</p>
+                                    {% if destination.booking_count > 0 %}
+                                        <p class="text-success small mb-2">
+                                            <i class="fas fa-fire"></i> {{ destination.booking_count }} бронирован{{ destination.booking_count|pluralize:"ие,ия,ий" }} за месяц
+                                        </p>
+                                    {% endif %}
+                                    <a href="?location={{ destination.city }}" class="btn btn-sm btn-outline-primary w-100">
+                                        Посмотреть недвижимость
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <!-- Fallback destinations -->
+                        <div class="destination-item" style="min-width: 280px; max-width: 280px;">
+                            <div class="card h-100 border-0 shadow-sm destination-card">
+                                <img src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Чита" style="height: 180px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h5 class="card-title">Чита</h5>
+                                    <p class="card-text text-muted">Административный центр Забайкальского края</p>
+                                    <a href="?location=Чита" class="btn btn-sm btn-outline-primary w-100">Посмотреть недвижимость</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="destination-item" style="min-width: 280px; max-width: 280px;">
+                            <div class="card h-100 border-0 shadow-sm destination-card">
+                                <img src="https://images.unsplash.com/photo-1551698618-1dfe5d97d256?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Сочи" style="height: 180px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h5 class="card-title">Сочи</h5>
+                                    <p class="card-text text-muted">Курортный город на Черном море</p>
+                                    <a href="?location=Сочи" class="btn btn-sm btn-outline-primary w-100">Посмотреть недвижимость</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="destination-item" style="min-width: 280px; max-width: 280px;">
+                            <div class="card h-100 border-0 shadow-sm destination-card">
+                                <img src="https://images.unsplash.com/photo-1549144511-f099e773c147?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Казань" style="height: 180px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h5 class="card-title">Казань</h5>
+                                    <p class="card-text text-muted">Столица Татарстана с уникальной архитектурой</p>
+                                    <a href="?location=Казань" class="btn btn-sm btn-outline-primary w-100">Посмотреть недвижимость</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="destination-item" style="min-width: 280px; max-width: 280px;">
+                            <div class="card h-100 border-0 shadow-sm destination-card">
+                                <img src="https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Екатеринбург" style="height: 180px; object-fit: cover;">
+                                <div class="card-body">
+                                    <h5 class="card-title">Екатеринбург</h5>
+                                    <p class="card-text text-muted">Столица Урала с богатой историей</p>
+                                    <a href="?location=Екатеринбург" class="btn btn-sm btn-outline-primary w-100">Посмотреть недвижимость</a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
-            <div class="col">
-                <div class="card h-100 border-0 shadow-sm">
-                    <img src="https://images.unsplash.com/photo-1551698618-1dfe5d97d256?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Sochi">
-                    <div class="card-body">
-                        <h5 class="card-title">Сочи</h5>
-                        <p class="card-text text-muted">Курортный город на Черном море</p>
-                        <a href="?location=Сочи" class="btn btn-sm btn-outline-primary">Посмотреть недвижимость</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card h-100 border-0 shadow-sm">
-                    <img src="https://images.unsplash.com/photo-1549144511-f099e773c147?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Kazan">
-                    <div class="card-body">
-                        <h5 class="card-title">Казань</h5>
-                        <p class="card-text text-muted">Столица Татарстана с уникальной архитектурой</p>
-                        <a href="?location=Казань" class="btn btn-sm btn-outline-primary">Посмотреть недвижимость</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card h-100 border-0 shadow-sm">
-                    <img src="https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Ekaterinburg">
-                    <div class="card-body">
-                        <h5 class="card-title">Екатеринбург</h5>
-                        <p class="card-text text-muted">Столица Урала с богатой историей</p>
-                        <a href="?location=Екатеринбург" class="btn btn-sm btn-outline-primary">Посмотреть недвижимость</a>
-                    </div>
-                </div>
-            </div>
+            <!-- Navigation arrows -->
+            <button class="btn btn-light position-absolute top-50 start-0 translate-middle-y ms-2 shadow-sm" 
+                    id="scrollDestinationsLeft" 
+                    style="z-index: 10; border-radius: 50%; width: 40px; height: 40px; display: none;"
+                    onclick="scrollDestinations(-280)">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="btn btn-light position-absolute top-50 end-0 translate-middle-y me-2 shadow-sm" 
+                    id="scrollDestinationsRight" 
+                    style="z-index: 10; border-radius: 50%; width: 40px; height: 40px;"
+                    onclick="scrollDestinations(280)">
+                <i class="fas fa-chevron-right"></i>
+            </button>
         </div>
     </section>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Destinations scroll behavior
+    const destinationsContainer = document.getElementById('destinationsContainer');
+    if (destinationsContainer) {
+        const track = destinationsContainer.querySelector('.destinations-track');
+        let currentScroll = 0;
+        const scrollStep = 280; // Width of one card plus gap
+        
+        // Calculate max scroll based on content width and container width
+        function getMaxScroll() {
+            const trackWidth = track.scrollWidth;
+            const containerWidth = destinationsContainer.clientWidth;
+            return Math.max(0, trackWidth - containerWidth);
+        }
+
+        // Show/hide navigation arrows based on scroll position
+        function updateScrollButtons() {
+            const maxScroll = getMaxScroll();
+            const leftBtn = document.getElementById('scrollDestinationsLeft');
+            const rightBtn = document.getElementById('scrollDestinationsRight');
+            
+            if (leftBtn && rightBtn) {
+                leftBtn.style.display = currentScroll > 0 ? 'block' : 'none';
+                rightBtn.style.display = currentScroll < maxScroll ? 'block' : 'none';
+            }
+        }
+
+        // Function to update scroll position
+        function updateScrollPosition(newScroll) {
+            const maxScroll = getMaxScroll();
+            currentScroll = Math.max(0, Math.min(newScroll, maxScroll));
+            track.style.transform = `translateX(-${currentScroll}px)`;
+            updateScrollButtons();
+        }
+
+        // Mouse wheel scrolling - only when hovering and without Ctrl
+        destinationsContainer.addEventListener('wheel', function(e) {
+            if (!e.ctrlKey) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? scrollStep : -scrollStep;
+                updateScrollPosition(currentScroll + delta);
+            }
+        });
+
+        // Initial check for scroll buttons
+        updateScrollButtons();
+
+        // Update on window resize
+        window.addEventListener('resize', function() {
+            updateScrollButtons();
+        });
+
+        // Global scroll function for button clicks
+        window.scrollDestinations = function(distance) {
+            updateScrollPosition(currentScroll + distance);
+        };
+
+        // Add intersection observer for animation
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe all destination items
+        document.querySelectorAll('.destination-item').forEach(item => {
+            item.style.opacity = '0';
+            item.style.transform = 'translateY(20px)';
+            item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            observer.observe(item);
+        });
+    }
+});
+</script>
 {% endblock %}

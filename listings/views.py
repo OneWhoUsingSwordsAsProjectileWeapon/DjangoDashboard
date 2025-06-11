@@ -110,7 +110,91 @@ class ListingListView(ListView):
         context = super().get_context_data(**kwargs)
         # Add search form to context
         context['form'] = ListingSearchForm(self.request.GET)
+        
+        # Add popular destinations based on bookings in last month
+        context['popular_destinations'] = self.get_popular_destinations()
         return context
+    
+    def get_popular_destinations(self):
+        """Get popular destinations based on booking count in last month"""
+        from datetime import timedelta
+        from django.utils import timezone
+        from django.db.models import Count, Q
+        
+        # Get bookings from last month
+        last_month = timezone.now() - timedelta(days=30)
+        
+        # Get cities with most bookings in last month
+        popular_cities = Booking.objects.filter(
+            created_at__gte=last_month,
+            status__in=['confirmed', 'completed']
+        ).values(
+            'listing__city', 'listing__state', 'listing__country'
+        ).annotate(
+            booking_count=Count('id'),
+            city_name=F('listing__city'),
+            state_name=F('listing__state'),
+            country_name=F('listing__country')
+        ).filter(
+            booking_count__gt=0
+        ).order_by('-booking_count')[:8]
+        
+        # Add sample image for each destination
+        destinations_with_images = []
+        default_images = [
+            "https://images.unsplash.com/photo-1571896349842-33c89424de2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", 
+            "https://images.unsplash.com/photo-1549144511-f099e773c147?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1520637836862-4d197d17c90a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1519302959554-a75be0afc82a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1542640244-b5d31b9c4d06?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+        ]
+        
+        for idx, city_data in enumerate(popular_cities):
+            destinations_with_images.append({
+                'city': city_data['city_name'],
+                'state': city_data['state_name'], 
+                'country': city_data['country_name'],
+                'booking_count': city_data['booking_count'],
+                'image': default_images[idx % len(default_images)]
+            })
+        
+        # If no bookings, return default popular destinations
+        if not destinations_with_images:
+            destinations_with_images = [
+                {
+                    'city': 'Чита',
+                    'state': 'Забайкальский край',
+                    'country': 'Россия',
+                    'booking_count': 0,
+                    'image': default_images[0]
+                },
+                {
+                    'city': 'Сочи', 
+                    'state': 'Краснодарский край',
+                    'country': 'Россия',
+                    'booking_count': 0,
+                    'image': default_images[1]
+                },
+                {
+                    'city': 'Казань',
+                    'state': 'Татарстан',
+                    'country': 'Россия', 
+                    'booking_count': 0,
+                    'image': default_images[2]
+                },
+                {
+                    'city': 'Екатеринбург',
+                    'state': 'Свердловская область',
+                    'country': 'Россия',
+                    'booking_count': 0,
+                    'image': default_images[3]
+                }
+            ]
+        
+        return destinations_with_images
 
 class ListingDetailView(DetailView):
     """View for displaying listing details"""
@@ -167,32 +251,66 @@ class ListingDetailView(DetailView):
         return context
 
     def get_similar_listings(self, listing):
-        """Get similar listings based on location, property type, and price range"""
-        from django.db.models import Q
+        """Get similar listings based on location, accommodates, and price range"""
+        from django.db.models import Q, Case, When, IntegerField
         from decimal import Decimal
 
-        # Calculate price range (±30% from current listing price)
-        price_min = listing.price_per_night * Decimal('0.7')
-        price_max = listing.price_per_night * Decimal('1.3')
+        # Calculate price range (±40% from current listing price) 
+        price_min = listing.price_per_night * Decimal('0.6')
+        price_max = listing.price_per_night * Decimal('1.4')
 
-        # Get similar listings with multiple criteria
+        # Get similar listings with scoring system
         similar = Listing.objects.filter(
             is_active=True,
             is_approved=True
         ).exclude(
             id=listing.id  # Exclude current listing
-        ).filter(
-            Q(city__icontains=listing.city) |  # Same city
-            Q(state__icontains=listing.state) |  # Same state
-            Q(property_type=listing.property_type) |  # Same property type
-            Q(price_per_night__range=(price_min, price_max))  # Similar price range
         ).annotate(
+            # Score based on similarity criteria
+            similarity_score=Case(
+                # Same city gets highest priority (score 100)
+                When(city__iexact=listing.city, then=100),
+                # Same state gets medium priority (score 50)
+                When(state__iexact=listing.state, then=50),
+                # Same country gets low priority (score 25)
+                When(country__iexact=listing.country, then=25),
+                default=0,
+                output_field=IntegerField()
+            ) + Case(
+                # Same accommodates capacity (score 30)
+                When(accommodates=listing.accommodates, then=30),
+                # Similar capacity ±2 guests (score 15)
+                When(
+                    accommodates__gte=listing.accommodates - 2,
+                    accommodates__lte=listing.accommodates + 2,
+                    then=15
+                ),
+                default=0,
+                output_field=IntegerField()
+            ) + Case(
+                # Similar price range (score 20)
+                When(
+                    price_per_night__gte=price_min,
+                    price_per_night__lte=price_max,
+                    then=20
+                ),
+                default=0,
+                output_field=IntegerField()
+            ),
             avg_rating=Avg('reviews__rating'),
             review_count=Count('reviews')
+        ).filter(
+            # At least some similarity (same city, state, or country + similar accommodates/price)
+            Q(city__iexact=listing.city) |
+            Q(state__iexact=listing.state) |
+            (Q(country__iexact=listing.country) & (
+                Q(accommodates__gte=listing.accommodates - 2, accommodates__lte=listing.accommodates + 2) |
+                Q(price_per_night__gte=price_min, price_per_night__lte=price_max)
+            ))
         ).order_by(
-            '-avg_rating',  # Best rated first
-            '-review_count',  # Most reviewed
-            'price_per_night'  # Cheapest first
+            '-similarity_score',  # Best match first
+            '-avg_rating',        # Then by rating
+            'price_per_night'     # Then by price
         )[:8]  # Limit to 8 similar listings
 
         return similar
