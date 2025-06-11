@@ -45,12 +45,14 @@ def get_unread_count(request):
     """API to get unread notification count"""
     count = request.user.notifications.filter(is_read=False).count()
     
-    # Return JSON for AJAX requests, HTML for HTMX
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        return JsonResponse({'count': count})
-    
-    # Return HTML template for HTMX
+    # Always return HTML template for HTMX in navbar
     return render(request, 'notifications/partials/notification_badge.html', {'count': count})
+
+@login_required
+def get_unread_count_json(request):
+    """JSON API to get unread notification count"""
+    count = request.user.notifications.filter(is_read=False).count()
+    return JsonResponse({'count': count})
 
 @login_required
 def recent_notifications(request):

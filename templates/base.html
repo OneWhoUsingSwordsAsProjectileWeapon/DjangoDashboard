@@ -787,7 +787,7 @@
 
         // Function to update notification badge
         function updateNotificationBadge() {
-            fetch('/notifications/get-unread-count/', {
+            fetch('/notifications/api/unread-count/', {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
