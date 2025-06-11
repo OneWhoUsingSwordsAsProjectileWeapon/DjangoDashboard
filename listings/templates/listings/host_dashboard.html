@@ -692,10 +692,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Prepare data
-        const data = monthlyRevenue.map(item => ({
-            label: new Date(item.month + 'T00:00:00').toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }),
-            value: parseFloat(item.revenue) || 0
-        }));
+        const data = monthlyRevenue.map(item => {
+            const date = new Date(item.month + 'T00:00:00');
+            return {
+                label: date.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }),
+                value: parseFloat(item.revenue) || 0
+            };
+        });
 
         const maxValue = Math.max(...data.map(d => d.value), 1000); // Ensure minimum scale
         const minValue = 0; // Always start from 0 for revenue
@@ -734,15 +737,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Create points and path
         const points = data.map((d, i) => {
-            const x = data.length > 1 ? padding + (i * (chartWidth / (data.length - 1))) : padding + chartWidth / 2;
+            let x;
+            if (data.length <= 1) {
+                x = padding + chartWidth / 2;
+            } else {
+                x = padding + (i * (chartWidth / (data.length - 1)));
+            }
+            
             const normalizedValue = maxValue > 0 ? (d.value / maxValue) : 0;
             const y = padding + (chartHeight - (normalizedValue * chartHeight));
             return { x, y, value: d.value, label: d.label };
         });
 
-        // Create grid lines
-        for (let i = 0; i <= 5; i++) {
-            const y = padding + (i * (chartHeight / 5));
+        // Create grid lines and Y-axis labels
+        const gridCount = 5;
+        for (let i = 0; i <= gridCount; i++) {
+            const y = padding + (i * (chartHeight / gridCount));
+            
+            // Grid line
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line.setAttribute('x1', padding);
             line.setAttribute('y1', y);
@@ -752,32 +764,52 @@ document.addEventListener('DOMContentLoaded', function() {
             svg.appendChild(line);
 
             // Y-axis labels
-            if (maxValue > 0) {
-                const value = maxValue - (i * (maxValue / 5));
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', padding - 10);
-                text.setAttribute('y', y + 4);
-                text.setAttribute('text-anchor', 'end');
-                text.setAttribute('class', 'chart-label');
+            const value = maxValue - (i * (maxValue / gridCount));
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', padding - 10);
+            text.setAttribute('y', y + 4);
+            text.setAttribute('text-anchor', 'end');
+            text.setAttribute('class', 'chart-label');
+            
+            // Better number formatting
+            if (value >= 1000000) {
+                text.textContent = '₽' + (value / 1000000).toFixed(1) + 'М';
+            } else if (value >= 1000) {
+                text.textContent = '₽' + (value / 1000).toFixed(0) + 'К';
+            } else {
                 text.textContent = '₽' + Math.round(value).toLocaleString('ru-RU');
-                svg.appendChild(text);
             }
+            
+            svg.appendChild(text);
         }
 
-        // Create area path
-        if (points.length > 1) {
-            const areaPath = `M ${padding} ${padding + chartHeight} L ${points.map(p => `${p.x} ${p.y}`).join(' L ')} L ${padding + chartWidth} ${padding + chartHeight} Z`;
-            const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            area.setAttribute('d', areaPath);
-            area.setAttribute('class', 'chart-area');
-            svg.appendChild(area);
+        // Create area and line paths
+        if (points.length >= 1) {
+            if (points.length > 1) {
+                // Area path for multiple points
+                const pointsStr = points.map(p => `${p.x} ${p.y}`).join(' L ');
+                const areaPath = `M ${padding} ${padding + chartHeight} L ${pointsStr} L ${padding + chartWidth} ${padding + chartHeight} Z`;
+                const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                area.setAttribute('d', areaPath);
+                area.setAttribute('class', 'chart-area');
+                svg.appendChild(area);
 
-            // Create line path
-            const linePath = `M ${points.map(p => `${p.x} ${p.y}`).join(' L ')}`;
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            line.setAttribute('d', linePath);
-            line.setAttribute('class', 'chart-line');
-            svg.appendChild(line);
+                // Line path for multiple points
+                const linePath = `M ${pointsStr}`;
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                line.setAttribute('d', linePath);
+                line.setAttribute('class', 'chart-line');
+                svg.appendChild(line);
+            } else {
+                // Single point - draw a horizontal line
+                const point = points[0];
+                const linePath = `M ${padding} ${point.y} L ${padding + chartWidth} ${point.y}`;
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                line.setAttribute('d', linePath);
+                line.setAttribute('class', 'chart-line');
+                line.setAttribute('stroke-dasharray', '5,5');
+                svg.appendChild(line);
+            }
         }
 
         // Create points and labels
@@ -793,11 +825,28 @@ document.addEventListener('DOMContentLoaded', function() {
             circle.addEventListener('mouseenter', function(e) {
                 const tooltip = document.createElement('div');
                 tooltip.className = 'chart-tooltip';
-                tooltip.innerHTML = `${point.label}<br>₽${point.value.toLocaleString('ru-RU')}`;
-                tooltip.style.left = (e.pageX + 10) + 'px';
-                tooltip.style.top = (e.pageY - 40) + 'px';
+                
+                // Better number formatting for tooltip
+                let valueText;
+                if (point.value >= 1000000) {
+                    valueText = (point.value / 1000000).toFixed(1) + 'М';
+                } else if (point.value >= 1000) {
+                    valueText = (point.value / 1000).toFixed(0) + 'К';
+                } else {
+                    valueText = point.value.toLocaleString('ru-RU');
+                }
+                
+                tooltip.innerHTML = `${point.label}<br>₽${valueText}`;
+                
+                // Better tooltip positioning
+                const rect = container.getBoundingClientRect();
+                tooltip.style.position = 'absolute';
+                tooltip.style.left = (e.clientX - rect.left + 10) + 'px';
+                tooltip.style.top = (e.clientY - rect.top - 40) + 'px';
                 tooltip.style.display = 'block';
-                document.body.appendChild(tooltip);
+                tooltip.style.zIndex = '1001';
+                container.style.position = 'relative';
+                container.appendChild(tooltip);
                 
                 circle._tooltip = tooltip;
             });
