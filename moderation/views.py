@@ -637,13 +637,13 @@ def complaint_detail(request, pk):
         if form.is_valid():
             # Store original status for notifications
             original_status = complaint.status
-            
+
             # Update complaint
             complaint.status = form.cleaned_data['status']
             complaint.moderator_response = form.cleaned_data['response']
             complaint.internal_notes = form.cleaned_data['internal_notes']
             complaint.assigned_moderator = request.user
-            
+
             # Update priority if provided
             if form.cleaned_data.get('priority'):
                 complaint.priority = form.cleaned_data['priority']
@@ -657,7 +657,7 @@ def complaint_detail(request, pk):
                     ban_reason = form.cleaned_data.get('action_reason', 'Жалоба пользователя')
                     ban_days = form.cleaned_data.get('ban_duration_days') if action_type == 'temporary_ban' else None
                     is_permanent = action_type == 'permanent_ban'
-                    
+
                     # Calculate ban duration
                     banned_until = None
                     if not is_permanent and ban_days:
@@ -691,7 +691,7 @@ def complaint_detail(request, pk):
             if original_status != complaint.status:
                 from notifications.models import Notification
                 status_display = complaint.get_status_display()
-                
+
                 Notification.objects.create(
                     user=complaint.complainant,
                     notification_type='system',

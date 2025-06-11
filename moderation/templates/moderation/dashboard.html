@@ -410,10 +410,14 @@
                                         <span class="badge bg-warning">Ожидает</span>
                                         {% elif complaint.status == 'in_progress' %}
                                         <span class="badge bg-info">В работе</span>
+                                        {% elif complaint.status == 'investigating' %}
+                                        <span class="badge bg-info">Расследуется</span>
                                         {% elif complaint.status == 'resolved' %}
                                         <span class="badge bg-success">Решено</span>
                                         {% elif complaint.status == 'escalated' %}
                                         <span class="badge bg-danger">Эскалировано</span>
+                                        {% elif complaint.status == 'dismissed' %}
+                                        <span class="badge bg-secondary">Отклонено</span>
                                         {% else %}
                                         <span class="badge bg-secondary">{{ complaint.get_status_display }}</span>
                                         {% endif %}
