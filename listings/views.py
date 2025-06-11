@@ -436,15 +436,14 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                 # Get bookings for this listing in the time period
                 listing_bookings = listing.bookings.filter(
                     status__in=['completed', 'confirmed']
-                ).filter(
-                    start_date__lte=listing_end,
-                    end_date__gte=listing_start
                 )
 
                 for booking in listing_bookings:
-                    # Calculate actual nights booked within our time period
+                    # Calculate overlap between booking and our period
                     booking_start = max(booking.start_date, listing_start)
                     booking_end = min(booking.end_date, listing_end)
+                    
+                    # Only count if there's actual overlap
                     if booking_end > booking_start:
                         nights = (booking_end - booking_start).days
                         total_booked_nights += nights

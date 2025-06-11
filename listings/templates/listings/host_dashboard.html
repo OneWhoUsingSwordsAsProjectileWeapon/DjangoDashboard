@@ -6,17 +6,143 @@
 {% block title %}Панель владельца недвижимости - Агрегатор Аренды{% endblock %}
 
 {% block extra_head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 .chart-container {
     position: relative;
     height: 400px;
     width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.chart-container canvas {
-    max-height: 400px !important;
-    max-width: 100% !important;
+.line-chart {
+    width: 100%;
+    height: 350px;
+    position: relative;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);
+    padding: 20px;
+    overflow: hidden;
+}
+
+.line-chart svg {
+    width: 100%;
+    height: 100%;
+}
+
+.pie-chart {
+    width: 300px;
+    height: 300px;
+    position: relative;
+    margin: 0 auto;
+}
+
+.pie-chart svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.8);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.chart-tooltip {
+    position: absolute;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.no-data-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #6c757d;
+    font-size: 16px;
+}
+
+.no-data-message i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.chart-point {
+    fill: #28a745;
+    stroke: #ffffff;
+    stroke-width: 2;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.chart-point:hover {
+    fill: #20c997;
+    stroke-width: 3;
+    r: 6;
+}
+
+.chart-line {
+    fill: none;
+    stroke: #28a745;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.chart-area {
+    fill: url(#gradient);
+    opacity: 0.3;
+}
+
+.chart-grid {
+    stroke: #e0e0e0;
+    stroke-width: 1;
+    stroke-dasharray: 2,2;
+}
+
+.chart-axis {
+    stroke: #6c757d;
+    stroke-width: 1;
+}
+
+.chart-label {
+    fill: #6c757d;
+    font-size: 12px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 </style>
 {% endblock %}
@@ -261,8 +387,13 @@
                             <h5 class="card-title mb-0">Тренд доходов (последние 12 месяцев)</h5>
                         </div>
                         <div class="card-body">
-                            <div class="chart-container" style="position: relative; height: 400px;">
-                                <canvas id="revenueChart"></canvas>
+                            <div class="chart-container">
+                                <div class="line-chart" id="revenueChart">
+                                    <div class="no-data-message">
+                                        <i class="fas fa-chart-line"></i>
+                                        <span>Загрузка данных...</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -273,8 +404,14 @@
                             <h5 class="card-title mb-0">Распределение статусов бронирования</h5>
                         </div>
                         <div class="card-body">
-                            <div class="chart-container" style="position: relative; height: 400px;">
-                                <canvas id="statusChart"></canvas>
+                            <div class="chart-container">
+                                <div class="pie-chart" id="statusChart">
+                                    <div class="no-data-message">
+                                        <i class="fas fa-chart-pie"></i>
+                                        <span>Загрузка данных...</span>
+                                    </div>
+                                </div>
+                                <div class="chart-legend" id="statusLegend"></div>
                             </div>
                         </div>
                     </div>
@@ -482,196 +619,318 @@
 </div>
 
 <script>
-// Chart.js configurations with improved error handling
+// Native JavaScript chart implementation
 document.addEventListener('DOMContentLoaded', function() {
-    // Wait a bit for Chart.js to load completely
-    setTimeout(function() {
-        // Check if Chart.js is loaded
-        if (typeof Chart === 'undefined') {
-            console.log('Chart.js library not loaded');
-            // Hide chart containers and show message
-            const chartContainers = document.querySelectorAll('.chart-container');
-            chartContainers.forEach(container => {
-                container.innerHTML = '<div class="alert alert-warning">Графики временно недоступны</div>';
-            });
+    console.log('Dashboard charts initializing...');
+    
+    // Custom date range toggle
+    const timeFilterSelect = document.getElementById('timeFilterSelect');
+    const customDateRange = document.getElementById('customDateRange');
+    
+    if (timeFilterSelect && customDateRange) {
+        timeFilterSelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                customDateRange.style.display = 'block';
+            } else {
+                customDateRange.style.display = 'none';
+            }
+        });
+    }
+
+    // Revenue Line Chart
+    function createRevenueChart() {
+        const container = document.getElementById('revenueChart');
+        if (!container) return;
+
+        const monthlyRevenue = {{ monthly_revenue|safe }};
+        console.log('Revenue data:', monthlyRevenue);
+
+        if (!monthlyRevenue || monthlyRevenue.length === 0) {
+            container.innerHTML = `
+                <div class="no-data-message">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Нет данных о доходах</span>
+                </div>
+            `;
             return;
         }
 
-        try {
-            // Revenue Chart
-            const revenueCtx = document.getElementById('revenueChart');
-            if (revenueCtx) {
-                const monthlyRevenue = {{ monthly_revenue|safe }};
-                console.log('Monthly revenue data:', monthlyRevenue);
+        // Prepare data
+        const data = monthlyRevenue.map(item => ({
+            label: new Date(item.month).toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }),
+            value: parseFloat(item.revenue) || 0
+        }));
 
-                // Prepare chart data
-                let labels, data;
-                
-                if (monthlyRevenue && monthlyRevenue.length > 0) {
-                    labels = monthlyRevenue.map(item => {
-                        const date = new Date(item.month);
-                        return date.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' });
-                    });
-                    data = monthlyRevenue.map(item => parseFloat(item.revenue) || 0);
-                } else {
-                    labels = ['Нет данных'];
-                    data = [0];
-                }
+        const maxValue = Math.max(...data.map(d => d.value));
+        const minValue = Math.min(...data.map(d => d.value));
+        const padding = 40;
+        const chartWidth = container.clientWidth - (padding * 2);
+        const chartHeight = container.clientHeight - (padding * 2);
 
-                new Chart(revenueCtx, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Доход (₽)',
-                            data: data,
-                            borderColor: '#28a745',
-                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 5,
-                            pointHoverRadius: 7
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: {
-                            intersect: false,
-                        },
-                        scales: {
-                            x: {
-                                display: true,
-                                grid: {
-                                    display: false
-                                }
-                            },
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: 'rgba(0,0,0,0.1)'
-                                },
-                                ticks: {
-                                    callback: function(value) {
-                                        return '₽' + new Intl.NumberFormat('ru-RU').format(value);
-                                    }
-                                }
-                            }
-                        },
-                        plugins: {
-                            tooltip: {
-                                backgroundColor: 'rgba(0,0,0,0.8)',
-                                titleColor: 'white',
-                                bodyColor: 'white',
-                                callbacks: {
-                                    label: function(context) {
-                                        return 'Доход: ₽' + new Intl.NumberFormat('ru-RU').format(context.parsed.y);
-                                    }
-                                }
-                            },
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            }
-                        }
-                    }
-                });
-                console.log('Revenue chart created successfully');
-            }
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+        svg.setAttribute('viewBox', `0 0 ${container.clientWidth} ${container.clientHeight}`);
 
-            // Status Chart
-            const statusCtx = document.getElementById('statusChart');
-            if (statusCtx) {
-                const statusStats = {{ status_stats|safe }};
-                console.log('Status stats data:', statusStats);
-
-                if (statusStats && statusStats.length > 0) {
-                    const statusLabels = statusStats.map(item => {
-                        const statusMap = {
-                            'confirmed': 'Подтверждено',
-                            'pending': 'В ожидании',
-                            'completed': 'Завершено',
-                            'canceled': 'Отменено'
-                        };
-                        return statusMap[item.status] || item.status;
-                    });
-
-                    const statusColors = {
-                        'Подтверждено': '#28a745',
-                        'В ожидании': '#ffc107',
-                        'Завершено': '#17a2b8',
-                        'Отменено': '#dc3545'
-                    };
-
-                    new Chart(statusCtx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: statusLabels,
-                            datasets: [{
-                                data: statusStats.map(item => item.count),
-                                backgroundColor: statusLabels.map(label => statusColors[label] || '#6c757d'),
-                                borderWidth: 3,
-                                borderColor: '#fff',
-                                hoverBorderWidth: 5
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    position: 'bottom',
-                                    labels: {
-                                        padding: 20,
-                                        usePointStyle: true,
-                                        pointStyle: 'circle'
-                                    }
-                                },
-                                tooltip: {
-                                    backgroundColor: 'rgba(0,0,0,0.8)',
-                                    titleColor: 'white',
-                                    bodyColor: 'white',
-                                    callbacks: {
-                                        label: function(context) {
-                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                            const percentage = ((context.raw / total) * 100).toFixed(1);
-                                            return context.label + ': ' + context.raw + ' (' + percentage + '%)';
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                    console.log('Status chart created successfully');
-                } else {
-                    // Show no data message
-                    statusCtx.parentElement.innerHTML = '<div class="d-flex align-items-center justify-content-center h-100"><p class="text-center text-muted">Нет данных о бронированиях</p></div>';
-                }
-            }
-        } catch (error) {
-            console.error('Error initializing charts:', error);
-            // Show error message in chart containers
-            const chartContainers = document.querySelectorAll('.chart-container');
-            chartContainers.forEach(container => {
-                container.innerHTML = '<div class="alert alert-danger">Ошибка загрузки графиков</div>';
-            });
-        }
-
-        // Custom date range toggle
-        const timeFilterSelect = document.getElementById('timeFilterSelect');
-        const customDateRange = document.getElementById('customDateRange');
+        // Create gradient
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+        gradient.setAttribute('id', 'gradient');
+        gradient.setAttribute('x1', '0%');
+        gradient.setAttribute('y1', '0%');
+        gradient.setAttribute('x2', '0%');
+        gradient.setAttribute('y2', '100%');
         
-        if (timeFilterSelect && customDateRange) {
-            timeFilterSelect.addEventListener('change', function() {
-                if (this.value === 'custom') {
-                    customDateRange.style.display = 'block';
-                } else {
-                    customDateRange.style.display = 'none';
+        const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+        stop1.setAttribute('offset', '0%');
+        stop1.setAttribute('stop-color', '#28a745');
+        stop1.setAttribute('stop-opacity', '0.3');
+        
+        const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+        stop2.setAttribute('offset', '100%');
+        stop2.setAttribute('stop-color', '#28a745');
+        stop2.setAttribute('stop-opacity', '0.1');
+        
+        gradient.appendChild(stop1);
+        gradient.appendChild(stop2);
+        defs.appendChild(gradient);
+        svg.appendChild(defs);
+
+        // Create points and path
+        const points = data.map((d, i) => {
+            const x = padding + (i * (chartWidth / (data.length - 1)));
+            const y = padding + (chartHeight - ((d.value - minValue) / (maxValue - minValue)) * chartHeight);
+            return { x, y, value: d.value, label: d.label };
+        });
+
+        // Create grid lines
+        for (let i = 0; i <= 5; i++) {
+            const y = padding + (i * (chartHeight / 5));
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', padding);
+            line.setAttribute('y1', y);
+            line.setAttribute('x2', padding + chartWidth);
+            line.setAttribute('y2', y);
+            line.setAttribute('class', 'chart-grid');
+            svg.appendChild(line);
+
+            // Y-axis labels
+            if (maxValue > 0) {
+                const value = maxValue - (i * (maxValue / 5));
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', padding - 10);
+                text.setAttribute('y', y + 4);
+                text.setAttribute('text-anchor', 'end');
+                text.setAttribute('class', 'chart-label');
+                text.textContent = '₽' + Math.round(value).toLocaleString('ru-RU');
+                svg.appendChild(text);
+            }
+        }
+
+        // Create area path
+        if (points.length > 1) {
+            const areaPath = `M ${padding} ${padding + chartHeight} L ${points.map(p => `${p.x} ${p.y}`).join(' L ')} L ${padding + chartWidth} ${padding + chartHeight} Z`;
+            const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            area.setAttribute('d', areaPath);
+            area.setAttribute('class', 'chart-area');
+            svg.appendChild(area);
+
+            // Create line path
+            const linePath = `M ${points.map(p => `${p.x} ${p.y}`).join(' L ')}`;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            line.setAttribute('d', linePath);
+            line.setAttribute('class', 'chart-line');
+            svg.appendChild(line);
+        }
+
+        // Create points and labels
+        points.forEach((point, i) => {
+            // Point circle
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', point.x);
+            circle.setAttribute('cy', point.y);
+            circle.setAttribute('r', 4);
+            circle.setAttribute('class', 'chart-point');
+            
+            // Add tooltip
+            circle.addEventListener('mouseenter', function(e) {
+                const tooltip = document.createElement('div');
+                tooltip.className = 'chart-tooltip';
+                tooltip.innerHTML = `${point.label}<br>₽${point.value.toLocaleString('ru-RU')}`;
+                tooltip.style.left = (e.pageX + 10) + 'px';
+                tooltip.style.top = (e.pageY - 40) + 'px';
+                tooltip.style.display = 'block';
+                document.body.appendChild(tooltip);
+                
+                circle._tooltip = tooltip;
+            });
+            
+            circle.addEventListener('mouseleave', function() {
+                if (circle._tooltip) {
+                    circle._tooltip.remove();
                 }
             });
+            
+            svg.appendChild(circle);
+
+            // X-axis labels
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', point.x);
+            text.setAttribute('y', padding + chartHeight + 20);
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('class', 'chart-label');
+            text.textContent = point.label;
+            svg.appendChild(text);
+        });
+
+        container.innerHTML = '';
+        container.appendChild(svg);
+    }
+
+    // Status Pie Chart
+    function createStatusChart() {
+        const container = document.getElementById('statusChart');
+        const legendContainer = document.getElementById('statusLegend');
+        if (!container) return;
+
+        const statusStats = {{ status_stats|safe }};
+        console.log('Status data:', statusStats);
+
+        if (!statusStats || statusStats.length === 0) {
+            container.innerHTML = `
+                <div class="no-data-message">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Нет данных о бронированиях</span>
+                </div>
+            `;
+            legendContainer.innerHTML = '';
+            return;
         }
-    }, 500); // Wait 500ms for Chart.js to load
+
+        const statusMap = {
+            'confirmed': 'Подтверждено',
+            'pending': 'В ожидании',
+            'completed': 'Завершено',
+            'canceled': 'Отменено'
+        };
+
+        const statusColors = {
+            'confirmed': '#28a745',
+            'pending': '#ffc107',
+            'completed': '#17a2b8',
+            'canceled': '#dc3545'
+        };
+
+        const data = statusStats.map(item => ({
+            label: statusMap[item.status] || item.status,
+            value: item.count,
+            color: statusColors[item.status] || '#6c757d'
+        }));
+
+        const total = data.reduce((sum, d) => sum + d.value, 0);
+        const radius = 120;
+        const centerX = 150;
+        const centerY = 150;
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '300');
+        svg.setAttribute('height', '300');
+        svg.setAttribute('viewBox', '0 0 300 300');
+
+        let currentAngle = 0;
+
+        data.forEach((segment, i) => {
+            const angle = (segment.value / total) * 360;
+            const startAngle = currentAngle;
+            const endAngle = currentAngle + angle;
+
+            const startAngleRad = (startAngle * Math.PI) / 180;
+            const endAngleRad = (endAngle * Math.PI) / 180;
+
+            const x1 = centerX + radius * Math.cos(startAngleRad);
+            const y1 = centerY + radius * Math.sin(startAngleRad);
+            const x2 = centerX + radius * Math.cos(endAngleRad);
+            const y2 = centerY + radius * Math.sin(endAngleRad);
+
+            const largeArcFlag = angle > 180 ? 1 : 0;
+
+            const pathData = [
+                'M', centerX, centerY,
+                'L', x1, y1,
+                'A', radius, radius, 0, largeArcFlag, 1, x2, y2,
+                'Z'
+            ].join(' ');
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', pathData);
+            path.setAttribute('fill', segment.color);
+            path.setAttribute('stroke', '#ffffff');
+            path.setAttribute('stroke-width', '2');
+            path.style.cursor = 'pointer';
+            path.style.transition = 'all 0.3s ease';
+
+            // Add hover effects
+            path.addEventListener('mouseenter', function() {
+                path.style.filter = 'brightness(1.1)';
+                
+                const tooltip = document.createElement('div');
+                tooltip.className = 'chart-tooltip';
+                tooltip.innerHTML = `${segment.label}<br>${segment.value} (${((segment.value / total) * 100).toFixed(1)}%)`;
+                tooltip.style.left = '50%';
+                tooltip.style.top = '50%';
+                tooltip.style.transform = 'translate(-50%, -50%)';
+                tooltip.style.display = 'block';
+                container.appendChild(tooltip);
+                
+                path._tooltip = tooltip;
+            });
+
+            path.addEventListener('mouseleave', function() {
+                path.style.filter = 'none';
+                if (path._tooltip) {
+                    path._tooltip.remove();
+                }
+            });
+
+            svg.appendChild(path);
+            currentAngle += angle;
+        });
+
+        container.innerHTML = '';
+        container.appendChild(svg);
+
+        // Create legend
+        legendContainer.innerHTML = '';
+        data.forEach(segment => {
+            const legendItem = document.createElement('div');
+            legendItem.className = 'legend-item';
+            
+            const color = document.createElement('div');
+            color.className = 'legend-color';
+            color.style.backgroundColor = segment.color;
+            
+            const label = document.createElement('span');
+            label.textContent = `${segment.label} (${segment.value})`;
+            
+            legendItem.appendChild(color);
+            legendItem.appendChild(label);
+            legendContainer.appendChild(legendItem);
+        });
+    }
+
+    // Initialize charts
+    setTimeout(() => {
+        createRevenueChart();
+        createStatusChart();
+    }, 100);
+
+    // Redraw charts on window resize
+    window.addEventListener('resize', function() {
+        setTimeout(() => {
+            createRevenueChart();
+            createStatusChart();
+        }, 100);
+    });
 });
 </script>
 
