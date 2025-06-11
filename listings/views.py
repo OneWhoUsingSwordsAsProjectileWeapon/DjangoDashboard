@@ -28,7 +28,11 @@ class ListingListView(ListView):
     paginate_by = 12
 
     def get_queryset(self):
-        queryset = Listing.objects.filter(is_active=True, is_approved=True)
+        queryset = Listing.objects.filter(
+            is_active=True, 
+            is_approved=True,
+            approval_record__status='approved'
+        )
 
         # Apply search and filters if form is submitted
         form = ListingSearchForm(self.request.GET)
@@ -262,7 +266,8 @@ class ListingDetailView(DetailView):
         # Get similar listings with scoring system
         similar = Listing.objects.filter(
             is_active=True,
-            is_approved=True
+            is_approved=True,
+            approval_record__status='approved'
         ).exclude(
             id=listing.id  # Exclude current listing
         ).annotate(
@@ -694,7 +699,14 @@ def remove_listing_image(request, pk, index):
 @login_required
 def create_booking(request, pk):
     """View for creating a booking"""
-    listing = get_object_or_404(Listing, pk=pk, is_active=True, is_approved=True)
+    listing = get_object_or_404(
+        Listing.objects.filter(
+            pk=pk, 
+            is_active=True, 
+            is_approved=True,
+            approval_record__status='approved'
+        )
+    )
 
     # Check if user is trying to book their own listing
     if request.user == listing.host:
