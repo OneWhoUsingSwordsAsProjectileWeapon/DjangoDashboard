@@ -1,4 +1,3 @@
-
 {% extends 'base.html' %}
 {% load static %}
 
@@ -12,7 +11,7 @@
             <i class="fas fa-arrow-left me-1"></i> К списку объявлений
         </a>
     </div>
-    
+
     <div class="row">
         <div class="col-md-8">
             <!-- Listing Details -->
@@ -28,6 +27,34 @@
                             {% endif %}
                         </div>
                         <div class="col-md-6">
+                        <img src="{{ listing.main_image_url }}" alt="{{ listing.title }}" class="img-fluid rounded">
+
+                        {% if listing.verification_video %}
+                            <div class="mt-3">
+                                <h6><i class="fas fa-video"></i> Видео для верификации</h6>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <video controls class="w-100" style="max-height: 300px;">
+                                            <source src="{{ listing.verification_video.url }}" type="video/mp4">
+                                            Ваш браузер не поддерживает воспроизведение видео.
+                                        </video>
+                                        <small class="text-muted d-block mt-2">
+                                            <i class="fas fa-info-circle"></i>
+                                            Видео предоставлено хостом для подтверждения соответствия недвижимости
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="mt-3">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Видео для верификации не предоставлено
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                        <div class="col-md-6">
                             <h3>{{ listing.title }}</h3>
                             <p class="text-muted">{{ listing.address }}, {{ listing.city }}, {{ listing.country }}</p>
                             <p><strong>Цена за ночь:</strong> ${{ listing.price_per_night }}</p>
@@ -38,10 +65,10 @@
                             <p><strong>Дата создания:</strong> {{ listing.created_at|date:"d.m.Y H:i" }}</p>
                         </div>
                     </div>
-                    
+
                     <h5 class="mt-3">Описание</h5>
                     <p>{{ listing.description }}</p>
-                    
+
                     {% if listing.amenities %}
                     <h5>Удобства</h5>
                     <ul>
@@ -50,7 +77,7 @@
                         {% endfor %}
                     </ul>
                     {% endif %}
-                    
+
                     {% if listing.house_rules %}
                     <h5>Правила дома</h5>
                     <p>{{ listing.house_rules }}</p>
@@ -58,7 +85,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="col-md-4">
             <!-- Approval Form -->
             <div class="card shadow-sm">
@@ -68,7 +95,7 @@
                 <div class="card-body">
                     <form method="post">
                         {% csrf_token %}
-                        
+
                         <!-- Current Status -->
                         <div class="mb-3">
                             <label class="form-label">Текущий статус</label>
@@ -84,7 +111,7 @@
                                 {% endif %}
                             </div>
                         </div>
-                        
+
                         <!-- Approval Checklist -->
                         <div class="mb-3">
                             <label class="form-label">Критерии оценки</label>
@@ -114,30 +141,37 @@
                                 <label class="form-check-label">Адекватная цена</label>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="follows_content_policy" 
-                                       {% if approval.follows_content_policy %}checked{% endif %}>
-                                <label class="form-check-label">Соответствует политике контента</label>
+                                <input class="form-check-input" type="checkbox" id="follows_content_policy" name="follows_content_policy" {% if approval.follows_content_policy %}checked{% endif %}>
+                                <label class="form-check-label" for="follows_content_policy">
+                                    Соответствует политике контента
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="has_verification_video" name="has_verification_video" {% if approval.has_verification_video %}checked{% endif %}>
+                                <label class="form-check-label" for="has_verification_video">
+                                    Видео подтверждает соответствие параметрам
+                                </label>
                             </div>
                         </div>
-                        
+
                         <!-- Moderator Notes -->
                         <div class="mb-3">
                             <label for="moderator_notes" class="form-label">Заметки модератора</label>
                             <textarea name="moderator_notes" id="moderator_notes" class="form-control" rows="3">{{ approval.moderator_notes }}</textarea>
                         </div>
-                        
+
                         <!-- Rejection Reason (for reject action) -->
                         <div class="mb-3" id="rejection-reason" style="display: none;">
                             <label for="rejection_reason" class="form-label">Причина отклонения</label>
                             <textarea name="rejection_reason" id="rejection_reason" class="form-control" rows="3">{{ approval.rejection_reason }}</textarea>
                         </div>
-                        
+
                         <!-- Required Changes (for require changes action) -->
                         <div class="mb-3" id="required-changes" style="display: none;">
                             <label for="required_changes" class="form-label">Необходимые изменения</label>
                             <textarea name="required_changes" id="required_changes" class="form-control" rows="3">{{ approval.required_changes }}</textarea>
                         </div>
-                        
+
                         <!-- Actions -->
                         <div class="d-grid gap-2">
                             <button type="submit" name="action" value="approve" class="btn btn-success">
@@ -151,7 +185,7 @@
                             </button>
                         </div>
                     </form>
-                    
+
                     <!-- Previous Actions -->
                     {% if approval.moderator %}
                     <div class="mt-4 pt-3 border-top">

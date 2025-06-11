@@ -26,7 +26,7 @@
         flex-wrap: wrap;
         gap: 8px;
     }
-    
+
     .amenity-chip {
         padding: 6px 12px;
         background-color: #f8f9fa;
@@ -36,11 +36,11 @@
         font-size: 14px;
         transition: all 0.2s;
     }
-    
+
     .amenity-chip:hover {
         background-color: #e9ecef;
     }
-    
+
     .amenity-chip.selected {
         background-color: #0d6efd;
         color: white;
@@ -284,6 +284,30 @@
                                 {% endif %}
                             </div>
                         </div>
+
+                    <!-- Verification Video Section -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h5 class="mb-3">Видео для верификации</h5>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                Загрузите видео, демонстрирующее соответствие вашей недвижимости указанным параметрам. 
+                                Это видео будет просматриваться только модераторами при рассмотрении объявления.
+                                <br><strong>Максимальный размер:</strong> 250 МБ
+                                <br><strong>Поддерживаемые форматы:</strong> MP4, AVI, MOV, WMV, FLV, WebM, MKV
+                            </div>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <label for="{{ form.verification_video.id_for_label }}" class="form-label">{{ form.verification_video.label }}</label>
+                            {{ form.verification_video }}
+                            {% if form.verification_video.errors %}
+                                <div class="text-danger">{{ form.verification_video.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                Выберите видеофайл для подтверждения соответствия недвижимости описанию
+                            </div>
+                        </div>
+                    </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                             <a href="{% if form.instance.id %}{% url 'listings:listing_detail' pk=form.instance.id %}{% else %}{% url 'listings:host_listings' %}{% endif %}" class="btn btn-outline-secondary me-md-2">Отмена</a>

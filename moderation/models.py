@@ -203,6 +203,7 @@ class ListingApproval(models.Model):
     has_valid_address = models.BooleanField(_("Has Valid Address"), default=False)
     has_appropriate_pricing = models.BooleanField(_("Has Appropriate Pricing"), default=False)
     follows_content_policy = models.BooleanField(_("Follows Content Policy"), default=False)
+    has_verification_video = models.BooleanField(_("Has Verification Video"), default=False)
 
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
@@ -225,7 +226,8 @@ class ListingApproval(models.Model):
             self.has_valid_images,
             self.has_valid_address,
             self.has_appropriate_pricing,
-            self.follows_content_policy
+            self.follows_content_policy,
+            self.has_verification_video
         ]
         return sum(criteria) / len(criteria) * 100
 

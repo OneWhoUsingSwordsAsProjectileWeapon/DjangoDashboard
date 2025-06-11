@@ -12,7 +12,7 @@ class ListingForm(forms.ModelForm):
             'price_per_night', 'cleaning_fee', 'service_fee',
             'bedrooms', 'bathrooms', 'accommodates', 'property_type',
             'amenities', 'house_rules', 'check_in_time', 'check_out_time',
-            'minimum_nights', 'maximum_nights'
+            'minimum_nights', 'maximum_nights', 'verification_video'
         ]
         widgets = {
             'description': forms.Textarea(attrs={'rows': 5, 'class': 'form-control'}),
@@ -22,6 +22,11 @@ class ListingForm(forms.ModelForm):
             'amenities': forms.HiddenInput(),
             'latitude': forms.HiddenInput(),
             'longitude': forms.HiddenInput(),
+            'verification_video': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'video/*',
+                'data-max-size': '262144000'  # 250MB in bytes
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -52,6 +57,29 @@ class ListingForm(forms.ModelForm):
             except json.JSONDecodeError:
                 return []
         return image_urls or []
+
+    def clean_verification_video(self):
+        """Validate verification video file"""
+        video = self.cleaned_data.get('verification_video')
+        if video:
+            # Check file size (250MB max)
+            max_size = 250 * 1024 * 1024  # 250MB in bytes
+            if video.size > max_size:
+                raise forms.ValidationError(
+                    _("Video file size cannot exceed 250MB. Current size: %(size).1fMB"),
+                    params={'size': video.size / (1024 * 1024)}
+                )
+            
+            # Check file extension
+            allowed_extensions = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv']
+            file_extension = video.name.lower().split('.')[-1]
+            if f'.{file_extension}' not in allowed_extensions:
+                raise forms.ValidationError(
+                    _("Invalid video format. Allowed formats: %(formats)s"),
+                    params={'formats': ', '.join(allowed_extensions)}
+                )
+        
+        return video
 
 class ListingImageForm(forms.ModelForm):
     """Form for managing listing images"""

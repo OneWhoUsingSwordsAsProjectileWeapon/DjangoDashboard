@@ -28,6 +28,7 @@ def save_listing_approval(sender, instance, **kwargs):
         approval.has_valid_images = bool(instance.image_urls and len(instance.image_urls) > 0)
         approval.has_valid_address = bool(instance.address and instance.city and instance.country)
         approval.has_appropriate_pricing = bool(instance.price_per_night and instance.price_per_night > 0)
+        approval.has_verification_video = bool(instance.verification_video)
         approval.save()
     except ListingApproval.DoesNotExist:
         pass

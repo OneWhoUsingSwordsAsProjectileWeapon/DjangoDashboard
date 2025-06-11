@@ -35,6 +35,15 @@ class Listing(models.Model):
     # Images
     image_urls = models.JSONField(_("Image URLs"), default=list, null=True, blank=True)
     
+    # Verification video for moderation
+    verification_video = models.FileField(
+        _("Verification Video"),
+        upload_to='verification_videos/',
+        null=True,
+        blank=True,
+        help_text=_("Video proof of property compliance (max 250MB, for moderation only)")
+    )
+    
     # Features/amenities
     amenities = models.JSONField(_("Amenities"), default=list)
     

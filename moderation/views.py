@@ -357,6 +357,7 @@ def listing_approval_detail(request, pk):
             approval.has_valid_address = request.POST.get('has_valid_address') == 'on'
             approval.has_appropriate_pricing = request.POST.get('has_appropriate_pricing') == 'on'
             approval.follows_content_policy = request.POST.get('follows_content_policy') == 'on'
+            approval.has_verification_video = request.POST.get('has_verification_video') == 'on'
 
             if action == 'approve':
                 approval.status = 'approved'
