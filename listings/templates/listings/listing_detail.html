@@ -644,27 +644,6 @@
             </div>
         </div>
     </section>
-
-    <script>
-    let similarScrollPosition = 0;
-
-    function scrollSimilarListings(distance) {
-        const container = document.querySelector('.similar-listings-track');
-        const maxScroll = container.scrollWidth - container.offsetWidth;
-
-        similarScrollPosition += distance;
-
-        if (similarScrollPosition > 0) {
-            similarScrollPosition = 0;
-        }
-
-        if (similarScrollPosition < -maxScroll) {
-            similarScrollPosition = -maxScroll;
-        }
-
-        container.style.transform = `translateX(${similarScrollPosition}px)`;
-    }
-    </script>
 </div>
 
 <!-- All Reviews Modal -->
@@ -945,7 +924,7 @@
             const track = similarListingsContainer.querySelector('.similar-listings-track');
             let currentScroll = 0;
             const scrollStep = 280; // Width of one card plus gap
-
+            
             // Calculate max scroll based on content width and container width
             function getMaxScroll() {
                 const trackWidth = track.scrollWidth;
@@ -958,7 +937,7 @@
                 const maxScroll = getMaxScroll();
                 const leftBtn = document.getElementById('scrollLeft');
                 const rightBtn = document.getElementById('scrollRight');
-
+                
                 if (leftBtn && rightBtn) {
                     leftBtn.style.display = currentScroll > 0 ? 'block' : 'none';
                     rightBtn.style.display = currentScroll < maxScroll ? 'block' : 'none';

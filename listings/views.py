@@ -164,10 +164,6 @@ class ListingDetailView(DetailView):
         similar_listings = self.get_similar_listings(listing)
         context['similar_listings'] = similar_listings
 
-        # Get popular destinations
-        popular_destinations = self.get_popular_destinations()
-        context['popular_destinations'] = popular_destinations
-
         return context
 
     def get_similar_listings(self, listing):
@@ -188,7 +184,6 @@ class ListingDetailView(DetailView):
         ).filter(
             Q(city__icontains=listing.city) |  # Same city
             Q(state__icontains=listing.state) |  # Same state
-            Q(accommodates=listing.accommodates) | # Same accommodates
             Q(property_type=listing.property_type) |  # Same property type
             Q(price_per_night__range=(price_min, price_max))  # Similar price range
         ).annotate(
@@ -201,57 +196,6 @@ class ListingDetailView(DetailView):
         )[:8]  # Limit to 8 similar listings
 
         return similar
-
-    def get_popular_destinations(self):
-        """Get popular destinations based on bookings in the last month"""
-        from django.utils import timezone
-        from datetime import timedelta
-
-        # Get bookings from last month
-        one_month_ago = timezone.now() - timedelta(days=30)
-
-        # Get cities with most bookings
-        popular_cities = Booking.objects.filter(
-            created_at__gte=one_month_ago,
-            status__in=['confirmed', 'completed']
-        ).values(
-            'listing__city',
-            'listing__state',
-            'listing__country'
-        ).annotate(
-            booking_count=Count('id'),
-            city_name=F('listing__city'),
-            state_name=F('listing__state'),
-            country_name=F('listing__country')
-        ).filter(
-            booking_count__gt=0
-        ).order_by('-booking_count')[:8]
-
-        # Get sample listings for each popular city
-        destinations = []
-        for city_data in popular_cities:
-            city = city_data['city_name']
-            # Get a representative listing for this city
-            sample_listing = Listing.objects.filter(
-                city__iexact=city,
-                is_active=True,
-                is_approved=True
-            ).annotate(
-                avg_rating=Avg('reviews__rating'),
-                review_count=Count('reviews')
-            ).order_by('-avg_rating', '-review_count').first()
-
-            if sample_listing:
-                destinations.append({
-                    'city': city,
-                    'state': city_data['state_name'],
-                    'country': city_data['country_name'],
-                    'booking_count': city_data['booking_count'],
-                    'sample_listing': sample_listing,
-                    'image_url': sample_listing.main_image_url
-                })
-
-        return destinations
 
 class HostDashboardView(LoginRequiredMixin, TemplateView):
     """Comprehensive host dashboard view"""
