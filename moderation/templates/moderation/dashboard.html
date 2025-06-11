@@ -7,7 +7,59 @@
 <div class="container py-4">
     <h1 class="mb-4">Панель модерации</h1>
     
+    <!-- User Complaints Section -->
     <div class="row mb-4">
+        <div class="col-12">
+            <h3>Жалобы пользователей</h3>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Всего жалоб</h5>
+                    <p class="display-4">{{ total_complaints }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm h-100 bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Ожидают рассмотрения</h5>
+                    <p class="display-4">{{ pending_complaints }}</p>
+                    {% if pending_complaints > 0 %}
+                    <a href="{% url 'moderation:complaint_list' %}?status=pending" class="btn btn-sm btn-light">Просмотреть</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm h-100 bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">В процессе</h5>
+                    <p class="display-4">{{ in_progress_complaints }}</p>
+                    {% if in_progress_complaints > 0 %}
+                    <a href="{% url 'moderation:complaint_list' %}?status=in_progress" class="btn btn-sm btn-light">Просмотреть</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm h-100 bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Срочные</h5>
+                    <p class="display-4">{{ urgent_complaints }}</p>
+                    {% if urgent_complaints > 0 %}
+                    <a href="{% url 'moderation:complaint_list' %}?priority=urgent" class="btn btn-sm btn-light">Просмотреть</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Reports Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3>Системные жалобы</h3>
+        </div>
         <div class="col-md-3">
             <div class="card text-center shadow-sm h-100">
                 <div class="card-body">
@@ -103,10 +155,73 @@
     </div>
     
     <div class="row">
-        <div class="col-md-8">
+        <div class="col-md-6">
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Последние жалобы</h5>
+                    <h5 class="mb-0">Последние жалобы пользователей</h5>
+                    <a href="{% url 'moderation:complaint_list' %}" class="btn btn-sm btn-outline-primary">Все жалобы</a>
+                </div>
+                <div class="card-body">
+                    {% if recent_complaints %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Тип</th>
+                                    <th>Приоритет</th>
+                                    <th>Статус</th>
+                                    <th>Дата</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for complaint in recent_complaints %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'moderation:complaint_detail' complaint.id %}" class="text-decoration-none">
+                                            #{{ complaint.id }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ complaint.get_complaint_type_display }}</span>
+                                    </td>
+                                    <td>
+                                        {% if complaint.priority == 'urgent' %}
+                                        <span class="badge bg-danger">{{ complaint.get_priority_display }}</span>
+                                        {% elif complaint.priority == 'high' %}
+                                        <span class="badge bg-warning">{{ complaint.get_priority_display }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ complaint.get_priority_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if complaint.status == 'pending' %}
+                                        <span class="badge bg-warning">{{ complaint.get_status_display }}</span>
+                                        {% elif complaint.status == 'in_progress' %}
+                                        <span class="badge bg-info">{{ complaint.get_status_display }}</span>
+                                        {% elif complaint.status == 'resolved' %}
+                                        <span class="badge bg-success">{{ complaint.get_status_display }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ complaint.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ complaint.created_at|date:"d.m.Y H:i" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Нет жалоб пользователей для отображения.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Системные жалобы</h5>
                     <a href="{% url 'moderation:report_list' %}" class="btn btn-sm btn-outline-primary">Все жалобы</a>
                 </div>
                 <div class="card-body">
@@ -164,7 +279,9 @@
             </div>
         </div>
         
-        <div class="col-md-4">
+        <div class="col-md-12">
+        <div class="row">
+        <div class="col-md-8">
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-white">
                     <h5 class="mb-0">Аккаунты с ограничениями</h5>
@@ -212,6 +329,12 @@
                 <div class="card-body">
                     <p>Активных запрещенных слов: <strong>{{ keywords_count }}</strong></p>
                     <div class="d-grid gap-2">
+                        <a href="{% url 'moderation:complaint_list' %}" class="btn btn-primary">
+                            <i class="fas fa-exclamation-triangle me-1"></i> Жалобы пользователей
+                        </a>
+                        <a href="{% url 'moderation:report_list' %}" class="btn btn-outline-warning">
+                            <i class="fas fa-flag me-1"></i> Системные отчеты
+                        </a>
                         <a href="{% url 'moderation:listing_approval_list' %}" class="btn btn-outline-primary">
                             <i class="fas fa-check me-1"></i> Модерация объявлений
                         </a>
@@ -227,6 +350,8 @@
                     </div>
                 </div>
             </div>
+        </div>
+        </div>
         </div>
     </div>
 </div>

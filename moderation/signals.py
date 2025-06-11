@@ -1,59 +1,35 @@
-
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
+from .models import UserComplaint, ModerationLog
 from .models import UserComplaint
+```# I will replace the original signal handlers with the new ones for logging complaint creation and status changes.
+@receiver(post_save, sender=UserComplaint)
+def log_complaint_creation(sender, instance, created, **kwargs):
+    """Log when a new complaint is created"""
+    if created:
+        ModerationLog.objects.create(
+            moderator=None,  # System action
+            action_type='complaint_handled',
+            target_user=instance.complainant,
+            description=f"Новая жалоба подана пользователем {instance.complainant.username}: {instance.subject}",
+            notes=f"Тип: {instance.get_complaint_type_display()}, Приоритет: {instance.get_priority_display()}"
+        )
 
 @receiver(post_save, sender=UserComplaint)
-def handle_complaint_status_change(sender, instance, created, **kwargs):
-    """Handle complaint creation and status changes"""
-    try:
-        from notifications.models import Notification
-        
-        if created:
-            # Notify moderators about new complaint
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            moderators = User.objects.filter(is_staff=True)
-            
-            for moderator in moderators:
-                Notification.objects.create(
-                    user=moderator,
-                    notification_type='system',
-                    title=f"Новая жалоба #{instance.id}",
-                    message=f"Пользователь {instance.complainant.username} подал жалобу: {instance.subject}",
-                )
-        else:
-            # Check if status changed by comparing with original
-            if hasattr(instance, '_original_status') and instance._original_status != instance.status:
-                # Notify complainant about status change
-                status_display = instance.get_status_display()
-                Notification.objects.create(
-                    user=instance.complainant,
-                    notification_type='system',
-                    title=f"Обновление жалобы #{instance.id}",
-                    message=f"Статус вашей жалобы изменен на: {status_display}",
-                )
-                
-                # If there's a response, also notify about it
-                if instance.moderator_response:
-                    Notification.objects.create(
-                        user=instance.complainant,
-                        notification_type='system',
-                        title=f"Ответ на жалобу #{instance.id}",
-                        message=f"Модератор ответил на вашу жалобу. Проверьте раздел 'Мои жалобы'.",
-                    )
-    except ImportError:
-        # notifications app not available
-        pass
-
-@receiver(pre_save, sender=UserComplaint)
-def store_original_complaint_status(sender, instance, **kwargs):
-    """Store original complaint status before save"""
-    if instance.pk:
+def log_complaint_status_change(sender, instance, created, **kwargs):
+    """Log when complaint status changes"""
+    if not created and instance.assigned_moderator:
+        # Get the previous status from database
         try:
-            instance._original_status = UserComplaint.objects.get(pk=instance.pk).status
+            old_instance = UserComplaint.objects.get(pk=instance.pk)
+            if old_instance.status != instance.status:
+                ModerationLog.objects.create(
+                    moderator=instance.assigned_moderator,
+                    action_type='complaint_handled',
+                    target_user=instance.complainant,
+                    description=f"Статус жалобы #{instance.id} изменен с '{old_instance.get_status_display()}' на '{instance.get_status_display()}'",
+                    notes=f"Ответ модератора: {instance.moderator_response[:100] if instance.moderator_response else 'Без ответа'}"
+                )
         except UserComplaint.DoesNotExist:
-            instance._original_status = None
-    else:
-        instance._original_status = None
+            pass
