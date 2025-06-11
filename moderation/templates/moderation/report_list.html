@@ -1,25 +1,32 @@
+
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Список жалоб - Модерация - Rental Aggregator{% endblock %}
+{% block title %}Отчеты пользователей - Rental Aggregator{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Список жалоб</h1>
+        <h1 class="h3 text-dark">
+            <i class="fas fa-flag text-primary me-2"></i>
+            Отчеты пользователей
+        </h1>
         <a href="{% url 'moderation:dashboard' %}" class="btn btn-outline-primary">
             <i class="fas fa-arrow-left me-1"></i> К панели модерации
         </a>
     </div>
     
-    <!-- Filters -->
+    <!-- Фильтры -->
     <div class="card shadow-sm mb-4">
-        <div class="card-header bg-white">
-            <h5 class="mb-0">Фильтры</h5>
+        <div class="card-header bg-white border-0">
+            <h5 class="mb-0 text-dark">
+                <i class="fas fa-filter me-2 text-muted"></i>
+                Фильтры
+            </h5>
         </div>
         <div class="card-body">
             <form method="get" class="row g-3">
-                <div class="col-md-5">
+                <div class="col-md-4">
                     <label for="status" class="form-label">Статус</label>
                     <select name="status" id="status" class="form-select">
                         <option value="">Все статусы</option>
@@ -30,7 +37,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-5">
+                <div class="col-md-4">
                     <label for="content_type" class="form-label">Тип контента</label>
                     <select name="content_type" id="content_type" class="form-select">
                         <option value="">Все типы</option>
@@ -41,38 +48,61 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">Применить</button>
+                <div class="col-md-4">
+                    <label for="category" class="form-label">Категория</label>
+                    <select name="category" id="category" class="form-select">
+                        <option value="">Все категории</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}" {% if current_category == category.id|stringformat:"s" %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i> Применить фильтры
+                    </button>
+                    <a href="{% url 'moderation:report_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i> Сбросить
+                    </a>
                 </div>
             </form>
         </div>
     </div>
     
-    <!-- Reports list -->
+    <!-- Список отчетов -->
     <div class="card shadow-sm">
-        <div class="card-header bg-white">
-            <h5 class="mb-0">Результаты</h5>
+        <div class="card-header bg-white border-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-dark">
+                    Найдено отчетов: <span class="text-primary">{{ reports|length }}</span>
+                </h5>
+            </div>
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
             {% if reports %}
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
                         <tr>
-                            <th>ID</th>
-                            <th>Тип контента</th>
-                            <th>Заявитель</th>
-                            <th>Статус</th>
-                            <th>Категория</th>
-                            <th>Дата</th>
-                            <th>Действия</th>
+                            <th class="border-0 ps-3">ID</th>
+                            <th class="border-0">Тип контента</th>
+                            <th class="border-0">Категория</th>
+                            <th class="border-0">Статус</th>
+                            <th class="border-0">Автор</th>
+                            <th class="border-0">Создан</th>
+                            <th class="border-0">Модератор</th>
+                            <th class="border-0 pe-3">Действия</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for report in reports %}
                         <tr>
-                            <td>{{ report.id }}</td>
-                            <td>
+                            <td class="ps-3 align-middle">
+                                <strong>#{{ report.id }}</strong>
+                            </td>
+                            <td class="align-middle">
                                 {% if report.content_type == 'listing' %}
                                 <span class="badge bg-primary">Объявление</span>
                                 {% elif report.content_type == 'review' %}
@@ -81,10 +111,14 @@
                                 <span class="badge bg-warning">Пользователь</span>
                                 {% elif report.content_type == 'message' %}
                                 <span class="badge bg-secondary">Сообщение</span>
+                                {% else %}
+                                <span class="badge bg-light text-dark">{{ report.content_type }}</span>
                                 {% endif %}
                             </td>
-                            <td>{{ report.reporter.username }}</td>
-                            <td>
+                            <td class="align-middle">
+                                <span class="badge bg-light text-dark">{{ report.category.name }}</span>
+                            </td>
+                            <td class="align-middle">
                                 {% if report.status == 'pending' %}
                                 <span class="badge bg-warning">Ожидает</span>
                                 {% elif report.status == 'in_progress' %}
@@ -93,13 +127,42 @@
                                 <span class="badge bg-success">Разрешено</span>
                                 {% elif report.status == 'rejected' %}
                                 <span class="badge bg-danger">Отклонено</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ report.get_status_display }}</span>
                                 {% endif %}
                             </td>
-                            <td>{{ report.category.name|default:"—" }}</td>
-                            <td>{{ report.created_at|date:"d.m.Y H:i" }}</td>
-                            <td>
-                                <a href="{% url 'moderation:report_detail' pk=report.id %}" class="btn btn-sm btn-outline-primary">
-                                    Детали
+                            <td class="align-middle">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                        {{ report.reporter.username|slice:":1"|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-medium">{{ report.reporter.username }}</div>
+                                        <small class="text-muted">{{ report.reporter.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="align-middle text-muted">
+                                <div>{{ report.created_at|date:"d.m.Y" }}</div>
+                                <small>{{ report.created_at|time:"H:i" }}</small>
+                            </td>
+                            <td class="align-middle">
+                                {% if report.moderator %}
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                        {{ report.moderator.username|slice:":1"|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-medium">{{ report.moderator.username }}</div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">Не назначен</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-3 align-middle">
+                                <a href="{% url 'moderation:report_detail' pk=report.id %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye me-1"></i> Просмотр
                                 </a>
                             </td>
                         </tr>
@@ -107,12 +170,66 @@
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Пагинация -->
+            {% if is_paginated %}
+            <div class="d-flex justify-content-center py-3">
+                <nav aria-label="Навигация по страницам">
+                    <ul class="pagination">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{{ filter_params }}">&laquo; Первая</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ filter_params }}">Предыдущая</a>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{{ filter_params }}">Следующая</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{{ filter_params }}">Последняя &raquo;</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            
             {% else %}
-            <div class="text-center py-4">
-                <p class="text-muted">Нет жалоб, соответствующих заданным критериям.</p>
+            <div class="p-5 text-center">
+                <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                <h5 class="text-muted">Отчеты не найдены</h5>
+                <p class="text-muted">Попробуйте изменить фильтры или проверьте позже</p>
             </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.025em;
+}
+
+.badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+</style>
 {% endblock %}

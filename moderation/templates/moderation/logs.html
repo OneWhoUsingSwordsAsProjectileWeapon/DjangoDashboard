@@ -5,18 +5,24 @@
 {% block title %}Журнал модерации - Rental Aggregator{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Журнал модерации</h1>
+        <h1 class="h3 text-dark">
+            <i class="fas fa-history text-info me-2"></i>
+            Журнал модерации
+        </h1>
         <a href="{% url 'moderation:dashboard' %}" class="btn btn-outline-primary">
             <i class="fas fa-arrow-left me-1"></i> К панели модерации
         </a>
     </div>
     
-    <!-- Filters -->
+    <!-- Фильтры -->
     <div class="card shadow-sm mb-4">
-        <div class="card-header bg-white">
-            <h5 class="mb-0">Фильтры</h5>
+        <div class="card-header bg-white border-0">
+            <h5 class="mb-0 text-dark">
+                <i class="fas fa-filter me-2 text-muted"></i>
+                Фильтры
+            </h5>
         </div>
         <div class="card-body">
             <form method="get" class="row g-3">
@@ -37,69 +43,195 @@
                            value="{{ current_moderator }}" placeholder="ID модератора">
                 </div>
                 <div class="col-12">
-                    <button type="submit" class="btn btn-primary">Применить фильтры</button>
-                    <a href="{% url 'moderation:logs' %}" class="btn btn-outline-secondary">Сбросить</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i> Применить фильтры
+                    </button>
+                    <a href="{% url 'moderation:logs' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i> Сбросить
+                    </a>
                 </div>
             </form>
         </div>
     </div>
     
-    <!-- Logs -->
+    <!-- Журнал -->
     <div class="card shadow-sm">
-        <div class="card-header bg-white">
-            <h5 class="mb-0">Записи журнала</h5>
+        <div class="card-header bg-white border-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-dark">
+                    Найдено записей: <span class="text-primary">{{ logs|length }}</span>
+                </h5>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-info btn-sm" onclick="exportLogs()">
+                        <i class="fas fa-download me-1"></i> Экспорт
+                    </button>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
             {% if logs %}
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
                         <tr>
-                            <th>Дата</th>
-                            <th>Модератор</th>
-                            <th>Действие</th>
-                            <th>Цель</th>
-                            <th>Описание</th>
-                            <th>Заметки</th>
+                            <th class="border-0 ps-3">ID</th>
+                            <th class="border-0">Модератор</th>
+                            <th class="border-0">Действие</th>
+                            <th class="border-0">Объект</th>
+                            <th class="border-0">Описание</th>
+                            <th class="border-0">Дата и время</th>
+                            <th class="border-0 pe-3">IP адрес</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for log in logs %}
                         <tr>
-                            <td>{{ log.created_at|date:"d.m.Y H:i" }}</td>
-                            <td>{{ log.moderator.username }}</td>
-                            <td>
-                                <span class="badge 
-                                    {% if log.action_type == 'listing_approved' %}bg-success
-                                    {% elif log.action_type == 'listing_rejected' %}bg-danger
-                                    {% elif log.action_type == 'user_banned' %}bg-warning
-                                    {% elif log.action_type == 'report_resolved' %}bg-info
-                                    {% else %}bg-secondary{% endif %}">
-                                    {{ log.get_action_type_display }}
+                            <td class="ps-3 align-middle">
+                                <strong>#{{ log.id }}</strong>
+                            </td>
+                            <td class="align-middle">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                        {{ log.moderator.username|slice:":1"|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-medium">{{ log.moderator.username }}</div>
+                                        <small class="text-muted">{{ log.moderator.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="align-middle">
+                                {% if log.action_type == 'create' %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-plus me-1"></i> Создание
                                 </span>
+                                {% elif log.action_type == 'update' %}
+                                <span class="badge bg-info">
+                                    <i class="fas fa-edit me-1"></i> Изменение
+                                </span>
+                                {% elif log.action_type == 'delete' %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-trash me-1"></i> Удаление
+                                </span>
+                                {% elif log.action_type == 'approve' %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check me-1"></i> Одобрение
+                                </span>
+                                {% elif log.action_type == 'reject' %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-times me-1"></i> Отклонение
+                                </span>
+                                {% elif log.action_type == 'ban' %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-ban me-1"></i> Блокировка
+                                </span>
+                                {% elif log.action_type == 'unban' %}
+                                <span class="badge bg-info">
+                                    <i class="fas fa-unlock me-1"></i> Разблокировка
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ log.get_action_type_display }}</span>
+                                {% endif %}
                             </td>
-                            <td>
-                                {% if log.target_user %}
-                                <strong>Пользователь:</strong> {{ log.target_user.username }}
-                                {% endif %}
-                                {% if log.target_listing %}
-                                <strong>Объявление:</strong> {{ log.target_listing.title|truncatechars:30 }}
-                                {% endif %}
-                                {% if log.report %}
-                                <strong>Жалоба:</strong> #{{ log.report.id }}
+                            <td class="align-middle">
+                                {% if log.content_object %}
+                                <div>
+                                    <span class="badge bg-light text-dark">{{ log.content_type.model|title }}</span>
+                                    <div class="small text-muted mt-1">ID: {{ log.object_id }}</div>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">Объект удален</span>
                                 {% endif %}
                             </td>
-                            <td>{{ log.description|truncatechars:50 }}</td>
-                            <td>{{ log.notes|truncatechars:30 }}</td>
+                            <td class="align-middle">
+                                <div class="text-truncate" style="max-width: 200px;" title="{{ log.description }}">
+                                    {{ log.description|default:"Без описания" }}
+                                </div>
+                            </td>
+                            <td class="align-middle text-muted">
+                                <div>{{ log.created_at|date:"d.m.Y" }}</div>
+                                <small>{{ log.created_at|time:"H:i:s" }}</small>
+                            </td>
+                            <td class="pe-3 align-middle">
+                                <code class="small">{{ log.ip_address|default:"Неизвестно" }}</code>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Пагинация -->
+            {% if is_paginated %}
+            <div class="d-flex justify-content-center py-3">
+                <nav aria-label="Навигация по страницам">
+                    <ul class="pagination">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{{ filter_params }}">&laquo; Первая</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ filter_params }}">Предыдущая</a>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+                        </li>
+                        
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{{ filter_params }}">Следующая</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{{ filter_params }}">Последняя &raquo;</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            
             {% else %}
-            <p class="text-muted">Нет записей для отображения.</p>
+            <div class="p-5 text-center">
+                <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                <h5 class="text-muted">Записи журнала не найдены</h5>
+                <p class="text-muted">Попробуйте изменить фильтры или проверьте позже</p>
+            </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.025em;
+}
+
+.badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.text-truncate {
+    max-width: 200px;
+}
+</style>
+
+<script>
+function exportLogs() {
+    const params = new URLSearchParams(window.location.search);
+    params.set('export', 'csv');
+    window.location.href = '{% url "moderation:logs" %}?' + params.toString();
+}
+</script>
 {% endblock %}

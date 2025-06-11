@@ -2,188 +2,309 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Manage Complaints{% endblock %}
+{% block title %}Жалобы пользователей - Rental Aggregator{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
+<div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-exclamation-triangle"></i> User Complaints</h2>
+        <h1 class="h3 text-dark">
+            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+            Жалобы пользователей
+        </h1>
         <a href="{% url 'moderation:dashboard' %}" class="btn btn-outline-primary">
-            <i class="fas fa-tachometer-alt"></i> Dashboard
+            <i class="fas fa-arrow-left me-1"></i> К панели модерации
         </a>
     </div>
     
-    <!-- Filters -->
-    <div class="card mb-4">
+    <!-- Фильтры -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white border-0">
+            <h5 class="mb-0 text-dark">
+                <i class="fas fa-filter me-2 text-muted"></i>
+                Фильтры
+            </h5>
+        </div>
         <div class="card-body">
             <form method="get" class="row g-3">
-                <div class="col-md-2">
-                    <label class="form-label">Status</label>
-                    <select name="status" class="form-control">
-                        <option value="">All Statuses</option>
-                        {% for status_code, status_name in status_choices %}
-                            <option value="{{ status_code }}" {% if current_status == status_code %}selected{% endif %}>
-                                {{ status_name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <div class="col-md-2">
-                    <label class="form-label">Type</label>
-                    <select name="complaint_type" class="form-control">
-                        <option value="">All Types</option>
-                        {% for type_code, type_name in complaint_type_choices %}
-                            <option value="{{ type_code }}" {% if current_complaint_type == type_code %}selected{% endif %}>
-                                {{ type_name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <div class="col-md-2">
-                    <label class="form-label">Priority</label>
-                    <select name="priority" class="form-control">
-                        <option value="">All Priorities</option>
-                        {% for priority_code, priority_name in priority_choices %}
-                            <option value="{{ priority_code }}" {% if current_priority == priority_code %}selected{% endif %}>
-                                {{ priority_name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
                 <div class="col-md-3">
-                    <label class="form-label">Assigned Moderator</label>
-                    <select name="assigned_moderator" class="form-control">
-                        <option value="">All Moderators</option>
-                        {% for moderator in moderators %}
-                            <option value="{{ moderator.id }}" {% if current_assigned_moderator == moderator.id|stringformat:"s" %}selected{% endif %}>
-                                {{ moderator.username }}
-                            </option>
+                    <label for="status" class="form-label">Статус</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">Все статусы</option>
+                        {% for status_code, status_name in status_choices %}
+                        <option value="{{ status_code }}" {% if current_status == status_code %}selected{% endif %}>
+                            {{ status_name }}
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
-                
-                <div class="col-md-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">
-                        <i class="fas fa-filter"></i> Filter
+                <div class="col-md-3">
+                    <label for="complaint_type" class="form-label">Тип жалобы</label>
+                    <select name="complaint_type" id="complaint_type" class="form-select">
+                        <option value="">Все типы</option>
+                        {% for type_code, type_name in complaint_type_choices %}
+                        <option value="{{ type_code }}" {% if current_complaint_type == type_code %}selected{% endif %}>
+                            {{ type_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="priority" class="form-label">Приоритет</label>
+                    <select name="priority" id="priority" class="form-select">
+                        <option value="">Все приоритеты</option>
+                        {% for priority_code, priority_name in priority_choices %}
+                        <option value="{{ priority_code }}" {% if current_priority == priority_code %}selected{% endif %}>
+                            {{ priority_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="assigned_moderator" class="form-label">Назначенный модератор</label>
+                    <input type="text" name="assigned_moderator" id="assigned_moderator" class="form-control" 
+                           value="{{ current_assigned_moderator }}" placeholder="ID модератора">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i> Применить фильтры
                     </button>
                     <a href="{% url 'moderation:complaint_list' %}" class="btn btn-outline-secondary">
-                        <i class="fas fa-times"></i> Clear
+                        <i class="fas fa-times me-1"></i> Сбросить
                     </a>
                 </div>
             </form>
         </div>
     </div>
     
-    <!-- Complaints List -->
-    {% if complaints %}
-        <div class="card">
-            <div class="card-body">
-                {% for complaint in complaints %}
-                    <div class="border-bottom pb-3 mb-3">
-                        <div class="row">
-                            <div class="col-md-1">
-                                <span class="badge bg-secondary">#{{ complaint.id }}</span>
-                                {% if complaint.is_urgent %}
-                                    <br><span class="badge bg-danger mt-1">URGENT</span>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="col-md-5">
-                                <h6 class="mb-1">{{ complaint.subject }}</h6>
-                                <p class="text-muted small mb-2">{{ complaint.description|truncatewords:15 }}</p>
-                                <small class="text-muted">
-                                    <i class="fas fa-user"></i> {{ complaint.complainant.username }}
-                                    <span class="ms-2">
-                                        <i class="fas fa-calendar"></i> {{ complaint.created_at|date:"M d, Y" }}
-                                    </span>
-                                    <span class="ms-2">
-                                        <i class="fas fa-clock"></i> {{ complaint.days_open }} days open
-                                    </span>
-                                </small>
-                            </div>
-                            
-                            <div class="col-md-2 text-center">
-                                <span class="badge bg-info">{{ complaint.get_complaint_type_display }}</span>
-                                <br>
-                                {% if complaint.priority == 'urgent' %}
-                                    <span class="badge bg-danger mt-1">{{ complaint.get_priority_display }}</span>
-                                {% elif complaint.priority == 'high' %}
-                                    <span class="badge bg-warning mt-1">{{ complaint.get_priority_display }}</span>
-                                {% elif complaint.priority == 'medium' %}
-                                    <span class="badge bg-info mt-1">{{ complaint.get_priority_display }}</span>
-                                {% else %}
-                                    <span class="badge bg-secondary mt-1">{{ complaint.get_priority_display }}</span>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="col-md-2 text-center">
-                                {% if complaint.status == 'pending' %}
-                                    <span class="badge bg-warning">{{ complaint.get_status_display }}</span>
-                                {% elif complaint.status == 'in_progress' %}
-                                    <span class="badge bg-info">{{ complaint.get_status_display }}</span>
-                                {% elif complaint.status == 'resolved' %}
-                                    <span class="badge bg-success">{{ complaint.get_status_display }}</span>
-                                {% elif complaint.status == 'rejected' %}
-                                    <span class="badge bg-danger">{{ complaint.get_status_display }}</span>
-                                {% elif complaint.status == 'escalated' %}
-                                    <span class="badge bg-dark">{{ complaint.get_status_display }}</span>
-                                {% endif %}
-                                
-                                {% if complaint.assigned_moderator %}
-                                    <br><small class="text-muted mt-1">{{ complaint.assigned_moderator.username }}</small>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="col-md-2 text-end">
-                                <a href="{% url 'moderation:complaint_detail' complaint.id %}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-eye"></i> Handle
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
+    <!-- Список жалоб -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white border-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-dark">
+                    Найдено жалоб: <span class="text-primary">{{ complaints|length }}</span>
+                </h5>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#massActionModal">
+                        <i class="fas fa-tasks me-1"></i> Массовые действия
+                    </button>
+                </div>
             </div>
         </div>
-        
-        <!-- Pagination -->
-        {% if complaints.has_other_pages %}
-            <nav aria-label="Complaints pagination" class="mt-4">
-                <ul class="pagination justify-content-center">
-                    {% if complaints.has_previous %}
+        <div class="card-body p-0">
+            {% if complaints %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="border-0 ps-3">
+                                <input type="checkbox" id="selectAll" class="form-check-input">
+                            </th>
+                            <th class="border-0">ID</th>
+                            <th class="border-0">Тип</th>
+                            <th class="border-0">Приоритет</th>
+                            <th class="border-0">Статус</th>
+                            <th class="border-0">Пользователь</th>
+                            <th class="border-0">Создана</th>
+                            <th class="border-0">Модератор</th>
+                            <th class="border-0 pe-3">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for complaint in complaints %}
+                        <tr class="{% if complaint.is_overdue %}table-warning{% endif %}">
+                            <td class="ps-3 align-middle">
+                                <input type="checkbox" class="form-check-input complaint-checkbox" value="{{ complaint.id }}">
+                            </td>
+                            <td class="align-middle">
+                                <strong>#{{ complaint.id }}</strong>
+                                {% if complaint.is_overdue %}
+                                <i class="fas fa-clock text-warning ms-1" title="Просрочена"></i>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle">
+                                <span class="badge bg-info">{{ complaint.get_complaint_type_display }}</span>
+                            </td>
+                            <td class="align-middle">
+                                {% if complaint.priority == 'urgent' %}
+                                <span class="badge bg-danger">{{ complaint.get_priority_display }}</span>
+                                {% elif complaint.priority == 'high' %}
+                                <span class="badge bg-warning">{{ complaint.get_priority_display }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ complaint.get_priority_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle">
+                                {% if complaint.status == 'pending' %}
+                                <span class="badge bg-warning">Ожидает</span>
+                                {% elif complaint.status == 'in_progress' %}
+                                <span class="badge bg-info">В работе</span>
+                                {% elif complaint.status == 'resolved' %}
+                                <span class="badge bg-success">Решено</span>
+                                {% elif complaint.status == 'escalated' %}
+                                <span class="badge bg-danger">Эскалировано</span>
+                                {% elif complaint.status == 'awaiting_response' %}
+                                <span class="badge bg-primary">Ожидает ответа</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ complaint.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                        {{ complaint.user.username|slice:":1"|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-medium">{{ complaint.user.username }}</div>
+                                        <small class="text-muted">{{ complaint.user.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="align-middle text-muted">
+                                <div>{{ complaint.created_at|date:"d.m.Y" }}</div>
+                                <small>{{ complaint.created_at|time:"H:i" }}</small>
+                            </td>
+                            <td class="align-middle">
+                                {% if complaint.assigned_moderator %}
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                        {{ complaint.assigned_moderator.username|slice:":1"|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-medium">{{ complaint.assigned_moderator.username }}</div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">Не назначен</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-3 align-middle">
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-cogs me-1"></i> Действия
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'moderation:complaint_detail' pk=complaint.id %}">
+                                                <i class="fas fa-eye me-1"></i> Просмотреть
+                                            </a>
+                                        </li>
+                                        {% if complaint.status == 'pending' %}
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="takeComplaint({{ complaint.id }})">
+                                                <i class="fas fa-hand-paper me-1"></i> Взять в работу
+                                            </a>
+                                        </li>
+                                        {% endif %}
+                                        {% if complaint.status == 'in_progress' and complaint.assigned_moderator == request.user %}
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="resolveComplaint({{ complaint.id }})">
+                                                <i class="fas fa-check me-1"></i> Решить
+                                            </a>
+                                        </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Пагинация -->
+            {% if is_paginated %}
+            <div class="d-flex justify-content-center py-3">
+                <nav aria-label="Навигация по страницам">
+                    <ul class="pagination">
+                        {% if page_obj.has_previous %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ complaints.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_complaint_type %}&complaint_type={{ current_complaint_type }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned_moderator %}&assigned_moderator={{ current_assigned_moderator }}{% endif %}">Previous</a>
+                            <a class="page-link" href="?page=1{{ filter_params }}">&laquo; Первая</a>
                         </li>
-                    {% endif %}
-                    
-                    {% for num in complaints.paginator.page_range %}
-                        {% if complaints.number == num %}
-                            <li class="page-item active">
-                                <span class="page-link">{{ num }}</span>
-                            </li>
-                        {% else %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ num }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_complaint_type %}&complaint_type={{ current_complaint_type }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned_moderator %}&assigned_moderator={{ current_assigned_moderator }}{% endif %}">{{ num }}</a>
-                            </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ filter_params }}">Предыдущая</a>
+                        </li>
                         {% endif %}
-                    {% endfor %}
-                    
-                    {% if complaints.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ complaints.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_complaint_type %}&complaint_type={{ current_complaint_type }}{% endif %}{% if current_priority %}&priority={{ current_priority }}{% endif %}{% if current_assigned_moderator %}&assigned_moderator={{ current_assigned_moderator }}{% endif %}">Next</a>
+                        
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
                         </li>
-                    {% endif %}
-                </ul>
-            </nav>
-        {% endif %}
-    {% else %}
-        <div class="text-center py-5">
-            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-            <h4 class="text-muted">No complaints found</h4>
-            <p class="text-muted">No complaints match your current filters.</p>
+                        
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{{ filter_params }}">Следующая</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{{ filter_params }}">Последняя &raquo;</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="p-5 text-center">
+                <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                <h5 class="text-muted">Жалобы не найдены</h5>
+                <p class="text-muted">Попробуйте изменить фильтры или проверьте позже</p>
+            </div>
+            {% endif %}
         </div>
-    {% endif %}
+    </div>
 </div>
+
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.025em;
+}
+
+.badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.table-warning {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Массовое выделение
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const complaintCheckboxes = document.querySelectorAll('.complaint-checkbox');
+    
+    selectAllCheckbox.addEventListener('change', function() {
+        complaintCheckboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+        });
+    });
+});
+
+function takeComplaint(complaintId) {
+    if (confirm('Взять эту жалобу в работу?')) {
+        fetch(`/moderation/complaints/${complaintId}/take/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        }).then(() => {
+            location.reload();
+        });
+    }
+}
+
+function resolveComplaint(complaintId) {
+    window.location.href = `/moderation/complaints/${complaintId}/`;
+}
+</script>
 {% endblock %}
