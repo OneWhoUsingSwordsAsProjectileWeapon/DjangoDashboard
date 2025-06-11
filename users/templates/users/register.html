@@ -105,26 +105,7 @@
                             <div class="form-text">Введите тот же пароль, что и ранее, для подтверждения.</div>
                         </div>
                         
-                        <div class="mb-4">
-                            <label class="form-label">{{ form.role.label }}</label>
-                            <div class="mt-2">
-                                {% for radio in form.role %}
-                                    <div class="form-check mb-2">
-                                        {{ radio.tag }}
-                                        <label class="form-check-label" for="{{ radio.id_for_label }}">
-                                            {{ radio.choice_label }}
-                                        </label>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                            {% if form.role.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.role.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
+                        
                         
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" id="termsCheck" required>
