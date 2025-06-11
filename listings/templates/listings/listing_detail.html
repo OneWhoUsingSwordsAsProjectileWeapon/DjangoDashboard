@@ -648,7 +648,7 @@
             <div class="modal-body">
                 <div class="row">
                     {% for amenity in listing.amenities %}
-                    <div class="col-md-6 mb-2">```python
+                    <div class="col-md-6 mb-2">
                         <div class="d-flex align-items-center">
                             <span class="me-2">{{ amenity|amenity_icon }}</span>
                             <span>{{ amenity }}</span>
@@ -812,7 +812,7 @@
         // Rating input handling
         const ratingInputs = document.querySelectorAll('input[name="rating"]');
         const ratingText = document.getElementById('rating-text');
-        
+
         if (ratingInputs.length > 0 && ratingText) {
             const ratingTexts = {
                 1: '1 звезда - Очень плохо',
@@ -826,6 +826,50 @@
                 input.addEventListener('change', function() {
                     ratingText.textContent = ratingTexts[this.value] || '';
                 });
+            });
+        }
+
+        // Auto-adjust column widths
+        for (column in listings_ws.columns:
+            max_length = 0
+            column_letter = get_column_letter(column[0].column)
+            for (cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            listings_ws.column_dimensions[column_letter].width = adjusted_width
+        }
+
+        // Similar listings scroll behavior
+        const similarListingsContainer = document.getElementById('similarListings');
+        if (similarListingsContainer) {
+            // Add smooth scroll behavior for better UX
+            similarListingsContainer.style.scrollBehavior = 'smooth';
+
+            // Add intersection observer for lazy loading animation
+            const observerOptions = {
+                root: similarListingsContainer,
+                threshold: 0.1
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, observerOptions);
+
+            // Observe all similar listing items
+            document.querySelectorAll('.similar-listing-item').forEach(item => {
+                item.style.opacity = '0';
+                item.style.transform = 'translateY(20px)';
+                item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                observer.observe(item);
             });
         }
     });

@@ -160,7 +160,41 @@ class ListingDetailView(DetailView):
         context['unavailable_dates_json'] = json.dumps(unavailable_dates)
         context['unavailable_dates'] = unavailable_dates
 
+        # Get similar listings
+        similar_listings = self.get_similar_listings(listing)
+        context['similar_listings'] = similar_listings
+
         return context
+
+    def get_similar_listings(self, listing):
+        """Get similar listings based on location, property type, and price range"""
+        from django.db.models import Q
+        
+        # Calculate price range (±30% from current listing price)
+        price_min = listing.price_per_night * 0.7
+        price_max = listing.price_per_night * 1.3
+        
+        # Get similar listings with multiple criteria
+        similar = Listing.objects.filter(
+            is_active=True,
+            is_approved=True
+        ).exclude(
+            id=listing.id  # Exclude current listing
+        ).filter(
+            Q(city__icontains=listing.city) |  # Same city
+            Q(state__icontains=listing.state) |  # Same state
+            Q(property_type=listing.property_type) |  # Same property type
+            Q(price_per_night__range=(price_min, price_max))  # Similar price range
+        ).annotate(
+            avg_rating=Avg('reviews__rating'),
+            review_count=Count('reviews')
+        ).order_by(
+            '-avg_rating',  # Best rated first
+            '-review_count',  # Most reviewed
+            'price_per_night'  # Cheapest first
+        )[:8]  # Limit to 8 similar listings
+        
+        return similar
 
 class HostDashboardView(LoginRequiredMixin, TemplateView):
     """Comprehensive host dashboard view"""

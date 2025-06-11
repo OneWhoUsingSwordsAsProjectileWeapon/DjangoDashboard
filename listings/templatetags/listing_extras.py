@@ -81,7 +81,7 @@ def get_booking_status_badge(status):
         'canceled': 'Отменено',
         'completed': 'Завершено'
     }
-    
+
     badge_classes = {
         'pending': 'bg-warning text-dark',
         'confirmed': 'bg-success',
@@ -172,3 +172,24 @@ def get_item(dictionary, key):
             return dictionary[key]
     except (KeyError, IndexError, TypeError, AttributeError):
         return None
+
+@register.filter
+def star_rating(rating):
+    """Convert numeric rating to star display"""
+    if not rating:
+        return ""
+
+    full_stars = int(rating)
+    half_star = 1 if rating - full_stars >= 0.5 else 0
+    empty_stars = 5 - full_stars - half_star
+
+    stars = "★" * full_stars + "☆" * half_star + "☆" * empty_stars
+    return mark_safe(stars)
+
+@register.filter
+def currency(value):
+    """Format currency value"""
+    try:
+        return f"{int(float(value)):,}".replace(",", " ")
+    except (ValueError, TypeError):
+        return value
