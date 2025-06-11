@@ -475,7 +475,7 @@ class UserComplaint(models.Model):
 
     def save(self, *args, **kwargs):
         from django.utils import timezone
-        
+
         # Auto-populate listing from booking if not set
         if self.booking and not self.listing:
             self.listing = self.booking.listing

@@ -262,6 +262,16 @@ def moderation_dashboard(request):
     # Recent reports
     recent_reports = Report.objects.all().order_by('-created_at')[:10]
 
+    # Get user complaints statistics
+    total_complaints = UserComplaint.objects.count()
+    pending_complaints = UserComplaint.objects.filter(status='pending').count()
+    in_progress_complaints = UserComplaint.objects.filter(status='in_progress').count()
+    resolved_complaints = UserComplaint.objects.filter(status='resolved').count()
+    escalated_complaints = UserComplaint.objects.filter(status='escalated').count()
+
+    # Recent complaints
+    recent_complaints = UserComplaint.objects.all().order_by('-created_at')[:10]
+
     # Listing approval statistics
     pending_listings = ListingApproval.objects.filter(status='pending').count()
     approved_listings = ListingApproval.objects.filter(status='approved').count()
@@ -294,6 +304,12 @@ def moderation_dashboard(request):
         'resolved_reports': resolved_reports,
         'rejected_reports': rejected_reports,
         'recent_reports': recent_reports,
+        'total_complaints': total_complaints,
+        'pending_complaints': pending_complaints,
+        'in_progress_complaints': in_progress_complaints,
+        'resolved_complaints': resolved_complaints,
+        'escalated_complaints': escalated_complaints,
+        'recent_complaints': recent_complaints,
         'pending_listings': pending_listings,
         'approved_listings': approved_listings,
         'rejected_listings': rejected_listings,
