@@ -178,4 +178,5 @@ def get_unread_count(request):
         sender=request.user
     ).count()
     
-    return JsonResponse({'unread_count': count})
+    # Return HTML template for HTMX
+    return render(request, 'chat/partials/unread_count.html', {'count': count})
