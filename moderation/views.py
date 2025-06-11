@@ -7,7 +7,7 @@ from django.core.paginator import Paginator
 import re
 
 from .models import Report, ReportCategory, BannedUser, ForbiddenKeyword, UserComplaint
-from .forms import UserComplaintForm, ComplaintResponseForm, BookingComplaintForm
+from .forms import UserComplaintForm, ComplaintResponseForm, BookingComplaintForm, ListingComplaintForm
 from listings.models import Listing, Review, Booking
 from chat.models import Message
 from users.models import User
@@ -482,21 +482,28 @@ def file_complaint(request, listing_id):
     listing = get_object_or_404(Listing, id=listing_id)
 
     if request.method == 'POST':
-        form = ComplaintForm(request.POST, listing=listing)
+        form = ListingComplaintForm(request.POST)
         if form.is_valid():
-            complaint = form.save(commit=False)
-            complaint.complainant = request.user
-            complaint.listing = listing
-            complaint.save()
+            # Create complaint from form data
+            complaint = UserComplaint.objects.create(
+                complainant=request.user,
+                listing=listing,
+                complaint_type=form.cleaned_data['complaint_type'],
+                subject=form.cleaned_data.get('subject') or f"Жалоба на объявление: {listing.title}",
+                description=form.cleaned_data['description'],
+                priority=form.cleaned_data['priority'],
+                contact_email=form.cleaned_data.get('contact_email', '')
+            )
 
             messages.success(request, 'Ваша жалоба была отправлена и будет рассмотрена.')
             return redirect('listings:listing_detail', pk=listing.pk)
     else:
-        form = ComplaintForm(listing=listing)
+        form = ListingComplaintForm()
 
     return render(request, 'moderation/file_complaint.html', {
         'form': form,
-        'listing': listing
+        'listing': listing,
+        'complaint_type': 'listing'
     })
 
 @login_required
@@ -518,7 +525,10 @@ def file_booking_complaint(request, booking_id):
                 booking=booking,
                 listing=booking.listing,
                 complaint_type=form.cleaned_data['complaint_type'],
-                description=form.cleaned_data['description']
+                subject=form.cleaned_data.get('subject') or f"Жалоба на бронирование {booking.booking_reference}",
+                description=form.cleaned_data['description'],
+                priority=form.cleaned_data['priority'],
+                contact_email=form.cleaned_data.get('contact_email', '')
             )
 
             messages.success(request, 'Ваша жалоба была отправлена и будет рассмотрена.')
@@ -529,7 +539,8 @@ def file_booking_complaint(request, booking_id):
     return render(request, 'moderation/file_complaint.html', {
         'form': form,
         'booking': booking,
-        'listing': booking.listing
+        'listing': booking.listing,
+        'complaint_type': 'booking'
     })
 
 @login_required
@@ -608,36 +619,86 @@ def complaint_detail(request, pk):
     if request.method == 'POST':
         form = ComplaintResponseForm(request.POST)
         if form.is_valid():
+            # Store original status for notifications
+            original_status = complaint.status
+            
             # Update complaint
             complaint.status = form.cleaned_data['status']
             complaint.moderator_response = form.cleaned_data['response']
             complaint.internal_notes = form.cleaned_data['internal_notes']
             complaint.assigned_moderator = request.user
-
-            # Set resolved timestamp if resolved
-            if complaint.status in ['resolved', 'rejected']:
-                complaint.resolved_at = timezone.now()
-            else:
-                complaint.resolved_at = None
+            
+            # Update priority if provided
+            if form.cleaned_data.get('priority'):
+                complaint.priority = form.cleaned_data['priority']
 
             complaint.save()
 
+            # Handle additional actions
+            action_type = form.cleaned_data.get('action_type')
+            if action_type and complaint.reported_user:
+                if action_type in ['temporary_ban', 'permanent_ban']:
+                    ban_reason = form.cleaned_data.get('action_reason', 'Жалоба пользователя')
+                    ban_days = form.cleaned_data.get('ban_duration_days') if action_type == 'temporary_ban' else None
+                    is_permanent = action_type == 'permanent_ban'
+                    
+                    # Calculate ban duration
+                    banned_until = None
+                    if not is_permanent and ban_days:
+                        banned_until = timezone.now() + timezone.timedelta(days=ban_days)
+
+                    # Create or update ban record
+                    ban, created = BannedUser.objects.update_or_create(
+                        user=complaint.reported_user,
+                        defaults={
+                            'reason': ban_reason,
+                            'banned_until': banned_until,
+                            'is_permanent': is_permanent,
+                            'banned_by': request.user,
+                            'notes': f"Ban issued from complaint #{complaint.id}"
+                        }
+                    )
+
+                    messages.success(request, f"Пользователь {complaint.reported_user.username} был заблокирован.")
+
+                elif action_type == 'deactivate_listing' and complaint.listing:
+                    complaint.listing.is_active = False
+                    complaint.listing.save(update_fields=['is_active'])
+                    messages.success(request, f"Объявление '{complaint.listing.title}' было деактивировано.")
+
+                elif action_type == 'cancel_booking' and complaint.booking:
+                    complaint.booking.status = 'canceled'
+                    complaint.booking.save(update_fields=['status'])
+                    messages.success(request, f"Бронирование {complaint.booking.booking_reference} было отменено.")
+
+            # Create notification for complainant if status changed
+            if original_status != complaint.status:
+                from notifications.models import Notification
+                status_display = complaint.get_status_display()
+                
+                Notification.objects.create(
+                    user=complaint.complainant,
+                    notification_type='system',
+                    title=f"Обновление жалобы #{complaint.id}",
+                    message=f"Статус вашей жалобы изменен на: {status_display}",
+                )
+
             # Create a moderation log entry
-            from .models import ModerationLog
             ModerationLog.objects.create(
                 moderator=request.user,
                 action_type='complaint_handled',
                 target_user=complaint.complainant,
-                description=f"Handled complaint #{complaint.id}: {complaint.subject}",
-                notes=f"Status: {complaint.get_status_display()}, Response: {complaint.moderator_response[:100]}..."
+                description=f"Обработана жалоба #{complaint.id}: {complaint.subject}",
+                notes=f"Статус: {complaint.get_status_display()}, Ответ: {complaint.moderator_response[:100]}..."
             )
 
-            messages.success(request, f"Complaint #{complaint.id} has been updated.")
+            messages.success(request, f"Жалоба #{complaint.id} была обновлена.")
             return redirect('moderation:complaint_list')
     else:
         # Pre-fill form with current values
         initial_data = {
             'status': complaint.status,
+            'priority': complaint.priority,
             'response': complaint.moderator_response,
             'internal_notes': complaint.internal_notes
         }

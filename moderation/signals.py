@@ -1,34 +1,59 @@
 
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
-from listings.models import Listing
-from .models import ListingApproval
+from django.utils import timezone
+from .models import UserComplaint
 
-@receiver(post_save, sender=Listing)
-def create_listing_approval(sender, instance, created, **kwargs):
-    """
-    Create a ListingApproval record when a new listing is created
-    """
-    if created:
-        ListingApproval.objects.create(
-            listing=instance,
-            status='pending'
-        )
-
-@receiver(post_save, sender=Listing)
-def save_listing_approval(sender, instance, **kwargs):
-    """
-    Update the listing approval status when listing is saved
-    """
+@receiver(post_save, sender=UserComplaint)
+def handle_complaint_status_change(sender, instance, created, **kwargs):
+    """Handle complaint creation and status changes"""
     try:
-        approval = instance.approval_record
-        # Auto-check some basic criteria
-        approval.has_valid_title = bool(instance.title and len(instance.title.strip()) > 5)
-        approval.has_valid_description = bool(instance.description and len(instance.description.strip()) > 20)
-        approval.has_valid_images = bool(instance.image_urls and len(instance.image_urls) > 0)
-        approval.has_valid_address = bool(instance.address and instance.city and instance.country)
-        approval.has_appropriate_pricing = bool(instance.price_per_night and instance.price_per_night > 0)
-        approval.has_verification_video = bool(instance.verification_video)
-        approval.save()
-    except ListingApproval.DoesNotExist:
+        from notifications.models import Notification
+        
+        if created:
+            # Notify moderators about new complaint
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            moderators = User.objects.filter(is_staff=True)
+            
+            for moderator in moderators:
+                Notification.objects.create(
+                    user=moderator,
+                    notification_type='system',
+                    title=f"Новая жалоба #{instance.id}",
+                    message=f"Пользователь {instance.complainant.username} подал жалобу: {instance.subject}",
+                )
+        else:
+            # Check if status changed by comparing with original
+            if hasattr(instance, '_original_status') and instance._original_status != instance.status:
+                # Notify complainant about status change
+                status_display = instance.get_status_display()
+                Notification.objects.create(
+                    user=instance.complainant,
+                    notification_type='system',
+                    title=f"Обновление жалобы #{instance.id}",
+                    message=f"Статус вашей жалобы изменен на: {status_display}",
+                )
+                
+                # If there's a response, also notify about it
+                if instance.moderator_response:
+                    Notification.objects.create(
+                        user=instance.complainant,
+                        notification_type='system',
+                        title=f"Ответ на жалобу #{instance.id}",
+                        message=f"Модератор ответил на вашу жалобу. Проверьте раздел 'Мои жалобы'.",
+                    )
+    except ImportError:
+        # notifications app not available
         pass
+
+@receiver(pre_save, sender=UserComplaint)
+def store_original_complaint_status(sender, instance, **kwargs):
+    """Store original complaint status before save"""
+    if instance.pk:
+        try:
+            instance._original_status = UserComplaint.objects.get(pk=instance.pk).status
+        except UserComplaint.DoesNotExist:
+            instance._original_status = None
+    else:
+        instance._original_status = None

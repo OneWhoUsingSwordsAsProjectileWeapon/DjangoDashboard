@@ -1,57 +1,161 @@
+
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}File a Complaint{% endblock %}
+{% block title %}
+    {% if booking %}
+        Подать жалобу на бронирование
+    {% else %}
+        Подать жалобу на объявление
+    {% endif %}
+{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h4>Подать жалобу</h4>
+                    <h4>
+                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                        {% if booking %}
+                            Подать жалобу на бронирование
+                        {% else %}
+                            Подать жалобу на объявление
+                        {% endif %}
+                    </h4>
                 </div>
+                
                 <div class="card-body">
-                    {% if booking %}
-                    <div class="alert alert-info">
-                        <strong>Бронирование:</strong> {{ booking.booking_reference }}<br>
-                        <strong>Объявление:</strong> {{ booking.listing.title }}<br>
-                        <strong>Даты:</strong> {{ booking.start_date }} - {{ booking.end_date }}<br>
-                        <strong>Хост:</strong> {{ booking.listing.host.get_full_name|default:booking.listing.host.username }}<br>
-                        <strong>Гость:</strong> {{ booking.guest.get_full_name|default:booking.guest.username }}
+                    <!-- Related Object Info -->
+                    <div class="alert alert-info mb-4">
+                        <h6><i class="fas fa-info-circle"></i> Информация</h6>
+                        {% if booking %}
+                            <strong>Бронирование:</strong> {{ booking.booking_reference }}<br>
+                            <strong>Объявление:</strong> 
+                            <a href="{% url 'listings:listing_detail' listing.id %}" target="_blank">
+                                {{ listing.title }}
+                            </a><br>
+                            <strong>Хост:</strong> {{ listing.host.username }}<br>
+                            <strong>Даты:</strong> {{ booking.check_in }} - {{ booking.check_out }}<br>
+                            <strong>Статус:</strong> {{ booking.get_status_display }}
+                        {% else %}
+                            <strong>Объявление:</strong> 
+                            <a href="{% url 'listings:listing_detail' listing.id %}" target="_blank">
+                                {{ listing.title }}
+                            </a><br>
+                            <strong>Хост:</strong> {{ listing.host.username }}<br>
+                            <strong>Тип:</strong> {{ listing.get_property_type_display }}<br>
+                            <strong>Адрес:</strong> {{ listing.address }}
+                        {% endif %}
                     </div>
-                    {% else %}
-                    <div class="alert alert-info">
-                        <strong>Объявление:</strong> {{ listing.title }}<br>
-                        <strong>Владелец:</strong> {{ listing.host.get_full_name|default:listing.host.username }}
-                    </div>
-                    {% endif %}
 
+                    <!-- Complaint Form -->
                     <form method="post">
                         {% csrf_token %}
-
+                        
                         <div class="mb-3">
-                            {{ form.complaint_type.label_tag }}
+                            <label for="{{ form.complaint_type.id_for_label }}" class="form-label">
+                                {{ form.complaint_type.label }} <span class="text-danger">*</span>
+                            </label>
                             {{ form.complaint_type }}
+                            {% if form.complaint_type.errors %}
+                                <div class="text-danger small">{{ form.complaint_type.errors }}</div>
+                            {% endif %}
                         </div>
 
                         <div class="mb-3">
-                            {{ form.description.label_tag }}
+                            <label for="{{ form.subject.id_for_label }}" class="form-label">
+                                {{ form.subject.label }}
+                            </label>
+                            {{ form.subject }}
+                            <small class="form-text text-muted">
+                                Если не указать, будет сгенерирована автоматически
+                            </small>
+                            {% if form.subject.errors %}
+                                <div class="text-danger small">{{ form.subject.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                {{ form.description.label }} <span class="text-danger">*</span>
+                            </label>
                             {{ form.description }}
                             <small class="form-text text-muted">
-                                Опишите проблему как можно подробнее. Это поможет нашей команде модерации быстрее разрешить ситуацию.
+                                Пожалуйста, опишите проблему как можно подробнее. Это поможет нам быстрее решить вопрос.
+                            </small>
+                            {% if form.description.errors %}
+                                <div class="text-danger small">{{ form.description.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.priority.id_for_label }}" class="form-label">
+                                    {{ form.priority.label }}
+                                </label>
+                                {{ form.priority }}
+                                {% if form.priority.errors %}
+                                    <div class="text-danger small">{{ form.priority.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.contact_email.id_for_label }}" class="form-label">
+                                    {{ form.contact_email.label }}
+                                </label>
+                                {{ form.contact_email }}
+                                <small class="form-text text-muted">
+                                    Альтернативный email для связи
+                                </small>
+                                {% if form.contact_email.errors %}
+                                    <div class="text-danger small">{{ form.contact_email.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Priority Help -->
+                        <div class="alert alert-light mb-4">
+                            <small>
+                                <strong>Выбор приоритета:</strong><br>
+                                <span class="badge bg-secondary">Низкий</span> - Общие вопросы и предложения<br>
+                                <span class="badge bg-info">Средний</span> - Стандартные проблемы<br>
+                                <span class="badge bg-warning">Высокий</span> - Серьезные проблемы, влияющие на бронирование<br>
+                                <span class="badge bg-danger">Срочный</span> - Критические проблемы безопасности или экстренные ситуации
                             </small>
                         </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             {% if booking %}
-                                <a href="{% url 'listings:booking_detail' reference=booking.booking_reference %}" class="btn btn-secondary me-md-2">Отмена</a>
+                                <a href="{% url 'listings:booking_detail' booking.booking_reference %}" class="btn btn-outline-secondary me-md-2">
+                                    <i class="fas fa-arrow-left"></i> Назад к бронированию
+                                </a>
                             {% else %}
-                                <a href="{% url 'listings:listing_detail' pk=listing.pk %}" class="btn btn-secondary me-md-2">Отмена</a>
+                                <a href="{% url 'listings:listing_detail' listing.id %}" class="btn btn-outline-secondary me-md-2">
+                                    <i class="fas fa-arrow-left"></i> Назад к объявлению
+                                </a>
                             {% endif %}
-                            <button type="submit" class="btn btn-danger">Отправить жалобу</button>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-paper-plane"></i> Подать жалобу
+                            </button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- Guidelines -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6><i class="fas fa-info-circle"></i> Рекомендации по подаче жалоб</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Предоставьте как можно больше деталей о проблеме</li>
+                        <li>Укажите конкретные даты и время, если это важно</li>
+                        <li>Приложите скриншоты или другие доказательства, если есть</li>
+                        <li>Будьте честными и объективными в описании ситуации</li>
+                        <li>Мы рассмотрим вашу жалобу в течение 24-72 часов в зависимости от приоритета</li>
+                    </ul>
                 </div>
             </div>
         </div>

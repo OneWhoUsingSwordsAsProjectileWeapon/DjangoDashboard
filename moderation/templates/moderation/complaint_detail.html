@@ -2,7 +2,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Complaint #{{ complaint.id }}{% endblock %}
+{% block title %}Жалоба #{{ complaint.id }}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -10,24 +10,27 @@
         <div class="col-md-8">
             <!-- Complaint Details -->
             <div class="card mb-4">
-                <div class="card-header">
-                    <h5><i class="fas fa-exclamation-triangle"></i> Complaint #{{ complaint.id }}</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-exclamation-triangle"></i> Жалоба #{{ complaint.id }}</h5>
+                    {% if complaint.is_overdue %}
+                        <span class="badge bg-danger">Просрочена</span>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <strong>Subject:</strong><br>
+                            <strong>Тема:</strong><br>
                             <span class="text-muted">{{ complaint.subject }}</span>
                         </div>
                         <div class="col-md-6">
-                            <strong>Type:</strong><br>
+                            <strong>Тип:</strong><br>
                             <span class="badge bg-info">{{ complaint.get_complaint_type_display }}</span>
                         </div>
                     </div>
                     
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <strong>Priority:</strong><br>
+                            <strong>Приоритет:</strong><br>
                             {% if complaint.priority == 'urgent' %}
                                 <span class="badge bg-danger">{{ complaint.get_priority_display }}</span>
                             {% elif complaint.priority == 'high' %}
@@ -39,14 +42,18 @@
                             {% endif %}
                         </div>
                         <div class="col-md-6">
-                            <strong>Status:</strong><br>
+                            <strong>Статус:</strong><br>
                             {% if complaint.status == 'pending' %}
                                 <span class="badge bg-warning">{{ complaint.get_status_display }}</span>
                             {% elif complaint.status == 'in_progress' %}
                                 <span class="badge bg-info">{{ complaint.get_status_display }}</span>
+                            {% elif complaint.status == 'investigating' %}
+                                <span class="badge bg-primary">{{ complaint.get_status_display }}</span>
+                            {% elif complaint.status == 'awaiting_response' %}
+                                <span class="badge bg-secondary">{{ complaint.get_status_display }}</span>
                             {% elif complaint.status == 'resolved' %}
                                 <span class="badge bg-success">{{ complaint.get_status_display }}</span>
-                            {% elif complaint.status == 'rejected' %}
+                            {% elif complaint.status == 'dismissed' %}
                                 <span class="badge bg-danger">{{ complaint.get_status_display }}</span>
                             {% elif complaint.status == 'escalated' %}
                                 <span class="badge bg-dark">{{ complaint.get_status_display }}</span>
@@ -54,25 +61,41 @@
                         </div>
                     </div>
                     
+                    <!-- Related Object -->
+                    {% if complaint.booking or complaint.listing %}
+                        <div class="mb-3">
+                            <strong>Связанный объект:</strong><br>
+                            <a href="{{ complaint.get_related_object_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-external-link-alt"></i> {{ complaint.get_related_object_display }}
+                            </a>
+                        </div>
+                    {% endif %}
+                    
                     <div class="mb-3">
-                        <strong>Description:</strong><br>
+                        <strong>Описание:</strong><br>
                         <div class="bg-light p-3 rounded mt-2">
                             {{ complaint.description|linebreaks }}
                         </div>
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-6">
-                            <strong>Complainant:</strong><br>
+                        <div class="col-md-4">
+                            <strong>Заявитель:</strong><br>
                             <span class="text-muted">{{ complaint.complainant.username }}</span>
                             {% if complaint.contact_email %}
                                 <br><small class="text-muted">{{ complaint.contact_email }}</small>
                             {% endif %}
                         </div>
-                        <div class="col-md-6">
-                            <strong>Filed:</strong><br>
-                            <span class="text-muted">{{ complaint.created_at|date:"M d, Y g:i A" }}</span>
-                            <br><small class="text-muted">{{ complaint.days_open }} days ago</small>
+                        <div class="col-md-4">
+                            <strong>Дата подачи:</strong><br>
+                            <span class="text-muted">{{ complaint.created_at|date:"d.m.Y H:i" }}</span>
+                            <br><small class="text-muted">{{ complaint.days_open }} дней назад</small>
+                        </div>
+                        <div class="col-md-4">
+                            {% if complaint.reported_user %}
+                                <strong>Пользователь:</strong><br>
+                                <span class="text-muted">{{ complaint.reported_user.username }}</span>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -82,15 +105,23 @@
             {% if complaint.moderator_response %}
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h6><i class="fas fa-reply"></i> Current Response</h6>
+                        <h6><i class="fas fa-reply"></i> Текущий ответ</h6>
                     </div>
                     <div class="card-body">
                         <div class="bg-light p-3 rounded">
                             {{ complaint.moderator_response|linebreaks }}
                         </div>
-                        {% if complaint.resolved_at %}
+                        {% if complaint.first_response_at %}
                             <small class="text-muted">
-                                Resolved on {{ complaint.resolved_at|date:"M d, Y g:i A" }} by {{ complaint.assigned_moderator.username }}
+                                Первый ответ: {{ complaint.first_response_at|date:"d.m.Y H:i" }}
+                            </small>
+                        {% endif %}
+                        {% if complaint.resolved_at %}
+                            <br><small class="text-muted">
+                                Решено: {{ complaint.resolved_at|date:"d.m.Y H:i" }} 
+                                {% if complaint.assigned_moderator %}
+                                    модератором {{ complaint.assigned_moderator.username }}
+                                {% endif %}
                             </small>
                         {% endif %}
                     </div>
@@ -102,17 +133,25 @@
             <!-- Response Form -->
             <div class="card">
                 <div class="card-header">
-                    <h6><i class="fas fa-edit"></i> Handle Complaint</h6>
+                    <h6><i class="fas fa-edit"></i> Обработка жалобы</h6>
                 </div>
                 <div class="card-body">
                     <form method="post">
                         {% csrf_token %}
                         
-                        <div class="mb-3">
-                            <label for="{{ form.status.id_for_label }}" class="form-label">
-                                {{ form.status.label }}
-                            </label>
-                            {{ form.status }}
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label for="{{ form.status.id_for_label }}" class="form-label">
+                                    {{ form.status.label }}
+                                </label>
+                                {{ form.status }}
+                            </div>
+                            <div class="col-6">
+                                <label for="{{ form.priority.id_for_label }}" class="form-label">
+                                    {{ form.priority.label }}
+                                </label>
+                                {{ form.priority }}
+                            </div>
                         </div>
                         
                         <div class="mb-3">
@@ -120,7 +159,7 @@
                                 {{ form.response.label }}
                             </label>
                             {{ form.response }}
-                            <small class="form-text text-muted">This will be visible to the user</small>
+                            <small class="form-text text-muted">{{ form.response.help_text }}</small>
                         </div>
                         
                         <div class="mb-3">
@@ -128,15 +167,36 @@
                                 {{ form.internal_notes.label }}
                             </label>
                             {{ form.internal_notes }}
-                            <small class="form-text text-muted">Internal notes (not visible to user)</small>
+                        </div>
+
+                        <!-- Additional Actions -->
+                        <div class="mb-3">
+                            <label for="{{ form.action_type.id_for_label }}" class="form-label">
+                                {{ form.action_type.label }}
+                            </label>
+                            {{ form.action_type }}
+                        </div>
+
+                        <div class="mb-3" id="ban-duration" style="display: none;">
+                            <label for="{{ form.ban_duration_days.id_for_label }}" class="form-label">
+                                {{ form.ban_duration_days.label }}
+                            </label>
+                            {{ form.ban_duration_days }}
+                        </div>
+
+                        <div class="mb-3" id="action-reason" style="display: none;">
+                            <label for="{{ form.action_reason.id_for_label }}" class="form-label">
+                                {{ form.action_reason.label }}
+                            </label>
+                            {{ form.action_reason }}
                         </div>
                         
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Update Complaint
+                                <i class="fas fa-save"></i> Обновить жалобу
                             </button>
                             <a href="{% url 'moderation:complaint_list' %}" class="btn btn-outline-secondary">
-                                <i class="fas fa-arrow-left"></i> Back to List
+                                <i class="fas fa-arrow-left"></i> К списку жалоб
                             </a>
                         </div>
                     </form>
@@ -146,32 +206,44 @@
             <!-- Complaint Info -->
             <div class="card mt-4">
                 <div class="card-header">
-                    <h6><i class="fas fa-info-circle"></i> Complaint Info</h6>
+                    <h6><i class="fas fa-info-circle"></i> Информация о жалобе</h6>
                 </div>
                 <div class="card-body">
                     <div class="mb-2">
-                        <strong>Days Open:</strong> {{ complaint.days_open }}
+                        <strong>Дней открыта:</strong> {{ complaint.days_open }}
+                        {% if complaint.is_overdue %}
+                            <span class="text-danger"><i class="fas fa-exclamation-triangle"></i> Просрочена</span>
+                        {% endif %}
                     </div>
                     
                     {% if complaint.assigned_moderator %}
                         <div class="mb-2">
-                            <strong>Assigned to:</strong><br>
+                            <strong>Назначена:</strong><br>
                             {{ complaint.assigned_moderator.username }}
                         </div>
                     {% endif %}
                     
-                    {% if complaint.related_listing %}
+                    {% if complaint.listing %}
                         <div class="mb-2">
-                            <strong>Related Listing:</strong><br>
-                            <a href="{% url 'listings:listing_detail' complaint.related_listing.id %}">
-                                {{ complaint.related_listing.title }}
+                            <strong>Объявление:</strong><br>
+                            <a href="{% url 'listings:listing_detail' complaint.listing.id %}" target="_blank">
+                                {{ complaint.listing.title }}
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    {% if complaint.booking %}
+                        <div class="mb-2">
+                            <strong>Бронирование:</strong><br>
+                            <a href="{% url 'listings:booking_detail' complaint.booking.booking_reference %}" target="_blank">
+                                {{ complaint.booking.booking_reference }}
                             </a>
                         </div>
                     {% endif %}
                     
                     {% if complaint.internal_notes %}
                         <div class="mb-2">
-                            <strong>Internal Notes:</strong><br>
+                            <strong>Внутренние заметки:</strong><br>
                             <small class="text-muted">{{ complaint.internal_notes|linebreaks }}</small>
                         </div>
                     {% endif %}
@@ -180,4 +252,28 @@
         </div>
     </div>
 </div>
+
+<script>
+// Show/hide additional fields based on action type
+document.getElementById('{{ form.action_type.id_for_label }}').addEventListener('change', function() {
+    const actionType = this.value;
+    const banDuration = document.getElementById('ban-duration');
+    const actionReason = document.getElementById('action-reason');
+    
+    // Hide all fields first
+    banDuration.style.display = 'none';
+    actionReason.style.display = 'none';
+    
+    // Show relevant fields
+    if (actionType === 'temporary_ban') {
+        banDuration.style.display = 'block';
+        actionReason.style.display = 'block';
+    } else if (actionType && actionType !== '') {
+        actionReason.style.display = 'block';
+    }
+});
+
+// Trigger on page load to show correct fields
+document.getElementById('{{ form.action_type.id_for_label }}').dispatchEvent(new Event('change'));
+</script>
 {% endblock %}

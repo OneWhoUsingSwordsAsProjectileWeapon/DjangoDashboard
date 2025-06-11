@@ -308,15 +308,26 @@ class UserComplaint(models.Model):
 
     STATUS_CHOICES = [
         ('pending', 'В ожидании'),
+        ('in_progress', 'В обработке'),
         ('investigating', 'Расследуется'),
+        ('awaiting_response', 'Ожидает ответа'),
         ('resolved', 'Решено'),
         ('dismissed', 'Отклонено'),
+        ('escalated', 'Эскалировано'),
+    ]
+
+    PRIORITY_CHOICES = [
+        ('low', 'Низкий'),
+        ('medium', 'Средний'),
+        ('high', 'Высокий'),
+        ('urgent', 'Срочный'),
     ]
 
     complainant = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='complaints_made'
+        related_name='complaints_made',
+        verbose_name='Заявитель'
     )
 
     # Booking is now the primary reference point
@@ -325,7 +336,8 @@ class UserComplaint(models.Model):
         on_delete=models.CASCADE,
         related_name='complaints',
         null=True,
-        blank=True
+        blank=True,
+        verbose_name='Бронирование'
     )
 
     # Listing can be optional now, since we can get it from booking
@@ -334,7 +346,8 @@ class UserComplaint(models.Model):
         on_delete=models.CASCADE,
         related_name='complaints',
         null=True,
-        blank=True
+        blank=True,
+        verbose_name='Объявление'
     )
 
     # The person being complained about
@@ -343,36 +356,73 @@ class UserComplaint(models.Model):
         on_delete=models.CASCADE,
         related_name='complaints_received',
         null=True,
-        blank=True
+        blank=True,
+        verbose_name='Пользователь, на которого жалуются'
     )
 
     complaint_type = models.CharField(
+        'Тип жалобы',
         max_length=20,
         choices=COMPLAINT_TYPES,
         default='booking_issue'
     )
 
+    subject = models.CharField(
+        'Тема жалобы',
+        max_length=200,
+        default='Жалоба'
+    )
+
     description = models.TextField('Описание жалобы')
 
+    priority = models.CharField(
+        'Приоритет',
+        max_length=10,
+        choices=PRIORITY_CHOICES,
+        default='medium'
+    )
+
     status = models.CharField(
+        'Статус',
         max_length=20,
         choices=STATUS_CHOICES,
         default='pending'
     )
 
-    moderator = models.ForeignKey(
+    # Moderator handling
+    assigned_moderator = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='complaints_moderated'
+        related_name='assigned_complaints',
+        verbose_name='Назначенный модератор'
     )
 
-    moderator_notes = models.TextField('Заметки модератора', blank=True)
+    moderator_response = models.TextField(
+        'Ответ модератора',
+        blank=True,
+        help_text='Ответ, который увидит пользователь'
+    )
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    resolved_at = models.DateTimeField(null=True, blank=True)
+    internal_notes = models.TextField(
+        'Внутренние заметки',
+        blank=True,
+        help_text='Заметки для внутреннего использования'
+    )
+
+    # Contact info
+    contact_email = models.EmailField(
+        'Контактный email',
+        blank=True,
+        help_text='Альтернативный email для связи'
+    )
+
+    # Timestamps
+    created_at = models.DateTimeField('Создано', auto_now_add=True)
+    updated_at = models.DateTimeField('Обновлено', auto_now=True)
+    resolved_at = models.DateTimeField('Решено', null=True, blank=True)
+    first_response_at = models.DateTimeField('Первый ответ', null=True, blank=True)
 
     class Meta:
         verbose_name = 'Жалоба пользователя'
@@ -381,13 +431,51 @@ class UserComplaint(models.Model):
 
     def __str__(self):
         if self.booking:
-            return f"Жалоба от {self.complainant.username} на бронирование {self.booking.booking_reference}"
+            return f"Жалоба #{self.id} от {self.complainant.username} на бронирование {self.booking.booking_reference}"
         elif self.listing:
-            return f"Жалоба от {self.complainant.username} на объявление {self.listing.title}"
+            return f"Жалоба #{self.id} от {self.complainant.username} на объявление {self.listing.title}"
         else:
-            return f"Жалоба от {self.complainant.username}"
+            return f"Жалоба #{self.id} от {self.complainant.username}"
+
+    @property
+    def days_open(self):
+        """Calculate how many days the complaint has been open"""
+        from django.utils import timezone
+        if self.resolved_at:
+            return (self.resolved_at - self.created_at).days
+        return (timezone.now() - self.created_at).days
+
+    @property
+    def is_overdue(self):
+        """Check if complaint is overdue based on priority"""
+        priority_days = {
+            'urgent': 1,
+            'high': 3,
+            'medium': 7,
+            'low': 14
+        }
+        max_days = priority_days.get(self.priority, 7)
+        return self.days_open > max_days and self.status not in ['resolved', 'dismissed']
+
+    def get_related_object_url(self):
+        """Get URL to the related object (booking or listing)"""
+        if self.booking:
+            return f"/listings/bookings/{self.booking.booking_reference}/"
+        elif self.listing:
+            return f"/listings/{self.listing.id}/"
+        return None
+
+    def get_related_object_display(self):
+        """Get display name for the related object"""
+        if self.booking:
+            return f"Бронирование {self.booking.booking_reference}"
+        elif self.listing:
+            return f"Объявление: {self.listing.title}"
+        return "Нет связанного объекта"
 
     def save(self, *args, **kwargs):
+        from django.utils import timezone
+        
         # Auto-populate listing from booking if not set
         if self.booking and not self.listing:
             self.listing = self.booking.listing
@@ -405,6 +493,25 @@ class UserComplaint(models.Model):
                 # For listing complaints, reported user is the host
                 if self.complainant != self.listing.host:
                     self.reported_user = self.listing.host
+
+        # Auto-generate subject if not provided
+        if not self.subject or self.subject == 'Жалоба':
+            if self.booking:
+                self.subject = f"Жалоба на бронирование {self.booking.booking_reference}"
+            elif self.listing:
+                self.subject = f"Жалоба на объявление: {self.listing.title[:50]}"
+            else:
+                self.subject = f"Жалоба от {self.complainant.username}"
+
+        # Set resolved timestamp
+        if self.status in ['resolved', 'dismissed'] and not self.resolved_at:
+            self.resolved_at = timezone.now()
+        elif self.status not in ['resolved', 'dismissed']:
+            self.resolved_at = None
+
+        # Set first response timestamp
+        if self.moderator_response and not self.first_response_at:
+            self.first_response_at = timezone.now()
 
         super().save(*args, **kwargs)
 

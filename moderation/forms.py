@@ -36,10 +36,27 @@ class BookingComplaintForm(forms.Form):
         ('other', 'Другое'),
     ]
 
+    PRIORITY_CHOICES = [
+        ('low', 'Низкий'),
+        ('medium', 'Средний'),
+        ('high', 'Высокий'),
+        ('urgent', 'Срочный - требуется немедленное вмешательство'),
+    ]
+
     complaint_type = forms.ChoiceField(
         choices=COMPLAINT_TYPES,
         widget=forms.Select(attrs={'class': 'form-control'}),
         label="Тип жалобы"
+    )
+
+    subject = forms.CharField(
+        max_length=200,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Краткое описание проблемы'
+        }),
+        label="Тема жалобы",
+        required=False
     )
 
     description = forms.CharField(
@@ -49,6 +66,89 @@ class BookingComplaintForm(forms.Form):
             'placeholder': 'Опишите проблему как можно подробнее...'
         }),
         label="Описание жалобы"
+    )
+
+    priority = forms.ChoiceField(
+        choices=PRIORITY_CHOICES,
+        initial='medium',
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label="Приоритет"
+    )
+
+    contact_email = forms.EmailField(
+        required=False,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Альтернативный email для связи (необязательно)'
+        }),
+        label="Контактный email"
+    )
+
+    def clean_description(self):
+        description = self.cleaned_data.get('description')
+        if len(description) < 20:
+            raise forms.ValidationError("Пожалуйста, опишите проблему более подробно (минимум 20 символов).")
+        return description
+
+class ListingComplaintForm(forms.Form):
+    """Form for users to submit complaints about listings"""
+    COMPLAINT_TYPES = [
+        ('listing_issue', 'Проблема с объявлением'),
+        ('false_listing', 'Ложная информация в объявлении'),
+        ('host_behavior', 'Поведение хоста'),
+        ('safety_concern', 'Вопросы безопасности'),
+        ('discrimination', 'Дискриминация'),
+        ('inappropriate_content', 'Неподходящий контент'),
+        ('pricing_issue', 'Проблемы с ценообразованием'),
+        ('other', 'Другое'),
+    ]
+
+    PRIORITY_CHOICES = [
+        ('low', 'Низкий'),
+        ('medium', 'Средний'),
+        ('high', 'Высокий'),
+        ('urgent', 'Срочный - требуется немедленное вмешательство'),
+    ]
+
+    complaint_type = forms.ChoiceField(
+        choices=COMPLAINT_TYPES,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label="Тип жалобы"
+    )
+
+    subject = forms.CharField(
+        max_length=200,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Краткое описание проблемы'
+        }),
+        label="Тема жалобы",
+        required=False
+    )
+
+    description = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 6,
+            'placeholder': 'Опишите проблему как можно подробнее...'
+        }),
+        label="Описание жалобы"
+    )
+
+    priority = forms.ChoiceField(
+        choices=PRIORITY_CHOICES,
+        initial='medium',
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label="Приоритет"
+    )
+
+    contact_email = forms.EmailField(
+        required=False,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Альтернативный email для связи (необязательно)'
+        }),
+        label="Контактный email"
     )
 
     def clean_description(self):
@@ -126,26 +226,43 @@ class UserComplaintForm(forms.Form):
 class ComplaintResponseForm(forms.Form):
     """Form for moderators to respond to complaints"""
     STATUS_CHOICES = [
-        ('pending', _('Pending')),
-        ('in_progress', _('In Progress')),
-        ('resolved', _('Resolved')),
-        ('rejected', _('Rejected')),
-        ('escalated', _('Escalated')),
+        ('pending', 'В ожидании'),
+        ('in_progress', 'В обработке'),
+        ('investigating', 'Расследуется'),
+        ('awaiting_response', 'Ожидает ответа'),
+        ('resolved', 'Решено'),
+        ('dismissed', 'Отклонено'),
+        ('escalated', 'Эскалировано'),
+    ]
+
+    PRIORITY_CHOICES = [
+        ('low', 'Низкий'),
+        ('medium', 'Средний'),
+        ('high', 'Высокий'),
+        ('urgent', 'Срочный'),
     ]
 
     status = forms.ChoiceField(
         choices=STATUS_CHOICES,
         widget=forms.Select(attrs={'class': 'form-control'}),
-        label=_("Status")
+        label="Статус"
+    )
+
+    priority = forms.ChoiceField(
+        choices=PRIORITY_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label="Приоритет",
+        required=False
     )
 
     response = forms.CharField(
         widget=forms.Textarea(attrs={
             'class': 'form-control',
             'rows': 4,
-            'placeholder': 'Response to the complaint...'
+            'placeholder': 'Ответ пользователю...'
         }),
-        label=_("Response")
+        label="Ответ пользователю",
+        help_text="Этот ответ увидит пользователь, подавший жалобу"
     )
 
     internal_notes = forms.CharField(
@@ -153,7 +270,43 @@ class ComplaintResponseForm(forms.Form):
         widget=forms.Textarea(attrs={
             'class': 'form-control',
             'rows': 3,
-            'placeholder': 'Internal notes (not visible to user)...'
+            'placeholder': 'Внутренние заметки (не видны пользователю)...'
         }),
-        label=_("Internal Notes")
+        label="Внутренние заметки"
+    )
+
+    # Action options
+    action_type = forms.ChoiceField(
+        choices=[
+            ('', 'Без дополнительных действий'),
+            ('warn_user', 'Предупредить пользователя'),
+            ('temporary_ban', 'Временная блокировка'),
+            ('permanent_ban', 'Постоянная блокировка'),
+            ('deactivate_listing', 'Деактивировать объявление'),
+            ('cancel_booking', 'Отменить бронирование'),
+        ],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label="Дополнительные действия"
+    )
+
+    ban_duration_days = forms.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=365,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Количество дней'
+        }),
+        label="Длительность блокировки (дни)"
+    )
+
+    action_reason = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 2,
+            'placeholder': 'Причина действия...'
+        }),
+        label="Причина действия"
     )
