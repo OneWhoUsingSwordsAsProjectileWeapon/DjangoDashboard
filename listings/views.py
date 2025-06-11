@@ -1112,9 +1112,12 @@ def calculate_booking_price(request, pk):
         end_date = request.GET.get('end_date') or request.GET.get('check_out')
 
         if not start_date or not end_date:
-            return JsonResponse({
-                'error': 'Пожалуйста, укажите даты заезда и выезда'
-            }, status=400)
+            # Return empty pricing template if no dates provided
+            return render(request, 'listings/partials/_pricing.html', {
+                'listing': listing,
+                'check_in': None,
+                'check_out': None
+            })
 
         # Calculate price
         try:
@@ -1123,21 +1126,35 @@ def calculate_booking_price(request, pk):
             # Check availability
             is_available = listing.is_available(start_date, end_date)
 
-            return JsonResponse({
-                'base_price': float(price_data['base_price']),
-                'cleaning_fee': float(price_data['cleaning_fee']),
-                'service_fee': float(price_data['service_fee']),
-                'total_price': float(price_data['total_price']),
+            # Prepare context for template
+            context = {
+                'listing': listing,
+                'check_in': start_date,
+                'check_out': end_date,
                 'nights': price_data['nights'],
+                'base_price': price_data['base_price'],
+                'base_price_per_night': listing.price_per_night,
+                'cleaning_fee': price_data['cleaning_fee'],
+                'service_fee': price_data['service_fee'],
+                'total_price': price_data['total_price'],
                 'is_available': is_available
-            })
+            }
+
+            return render(request, 'listings/partials/_pricing.html', context)
+
         except (ValueError, TypeError):
-            return JsonResponse({
+            # Return error in pricing template
+            return render(request, 'listings/partials/_pricing.html', {
+                'listing': listing,
+                'check_in': start_date,
+                'check_out': end_date,
                 'error': 'Неверный формат даты. Используйте ГГГГ-ММ-ДД.'
-            }, status=400)
+            })
 
     except Listing.DoesNotExist:
-        return JsonResponse({'error': 'Listing not found'}, status=404)
+        return render(request, 'listings/partials/_pricing.html', {
+            'error': 'Объявление не найдено'
+        })
 
 @login_required
 def toggle_listing_status(request, pk):
