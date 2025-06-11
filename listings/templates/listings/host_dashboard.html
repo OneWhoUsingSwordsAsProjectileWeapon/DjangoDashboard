@@ -37,6 +37,9 @@
     height: 300px;
     position: relative;
     margin: 0 auto;
+    background: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 70%);
+    border-radius: 50%;
+    padding: 10px;
 }
 
 .pie-chart svg {
@@ -47,29 +50,62 @@
 
 .chart-legend {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 15px;
+    flex-direction: column;
+    gap: 12px;
     margin-top: 20px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 8px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .legend-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    font-weight: 500;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    background: rgba(255,255,255,0.7);
+    border: 1px solid transparent;
+}
+
+.legend-item:hover,
+.legend-item.highlighted {
+    background: rgba(255,255,255,0.95);
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0,123,255,0.15);
+    transform: translateX(3px);
 }
 
 .legend-color {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.8);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 2px solid rgba(255,255,255,0.9);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    flex-shrink: 0;
+}
+
+.legend-label-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.legend-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+    line-height: 1.2;
+}
+
+.legend-count {
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: 500;
 }
 
 .chart-tooltip {
@@ -824,11 +860,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const data = statusStats.map(item => ({
             label: statusMap[item.status] || item.status,
             value: item.count,
-            color: statusColors[item.status] || '#6c757d'
+            color: statusColors[item.status] || '#6c757d',
+            status: item.status
         }));
 
         const total = data.reduce((sum, d) => sum + d.value, 0);
-        const radius = 120;
+        const radius = 110;
         const centerX = 150;
         const centerY = 150;
 
@@ -865,27 +902,50 @@ document.addEventListener('DOMContentLoaded', function() {
             path.setAttribute('d', pathData);
             path.setAttribute('fill', segment.color);
             path.setAttribute('stroke', '#ffffff');
-            path.setAttribute('stroke-width', '2');
+            path.setAttribute('stroke-width', '3');
             path.style.cursor = 'pointer';
             path.style.transition = 'all 0.3s ease';
+            path.setAttribute('data-status', segment.status);
 
             // Add hover effects
-            path.addEventListener('mouseenter', function() {
-                path.style.filter = 'brightness(1.1)';
+            path.addEventListener('mouseenter', function(e) {
+                // Highlight corresponding legend item
+                const legendItems = legendContainer.querySelectorAll('.legend-item');
+                legendItems.forEach(item => item.classList.remove('highlighted'));
+                const correspondingLegend = legendContainer.querySelector(`[data-status="${segment.status}"]`);
+                if (correspondingLegend) {
+                    correspondingLegend.classList.add('highlighted');
+                }
+                
+                // Transform path
+                const transform = `scale(1.05)`;
+                path.style.transformOrigin = `${centerX}px ${centerY}px`;
+                path.style.transform = transform;
+                path.style.filter = 'brightness(1.15) drop-shadow(0 2px 8px rgba(0,0,0,0.3))';
                 
                 const tooltip = document.createElement('div');
                 tooltip.className = 'chart-tooltip';
-                tooltip.innerHTML = `${segment.label}<br>${segment.value} (${((segment.value / total) * 100).toFixed(1)}%)`;
-                tooltip.style.left = '50%';
-                tooltip.style.top = '50%';
-                tooltip.style.transform = 'translate(-50%, -50%)';
+                tooltip.innerHTML = `${segment.label}<br><strong>${segment.value} бронирований</strong><br>(${((segment.value / total) * 100).toFixed(1)}%)`;
+                
+                const rect = container.getBoundingClientRect();
+                tooltip.style.position = 'absolute';
+                tooltip.style.left = (e.clientX - rect.left + 15) + 'px';
+                tooltip.style.top = (e.clientY - rect.top - 40) + 'px';
                 tooltip.style.display = 'block';
+                tooltip.style.zIndex = '1001';
+                container.style.position = 'relative';
                 container.appendChild(tooltip);
                 
                 path._tooltip = tooltip;
             });
 
             path.addEventListener('mouseleave', function() {
+                // Remove highlighting
+                const legendItems = legendContainer.querySelectorAll('.legend-item');
+                legendItems.forEach(item => item.classList.remove('highlighted'));
+                
+                // Reset path
+                path.style.transform = 'none';
                 path.style.filter = 'none';
                 if (path._tooltip) {
                     path._tooltip.remove();
@@ -899,21 +959,56 @@ document.addEventListener('DOMContentLoaded', function() {
         container.innerHTML = '';
         container.appendChild(svg);
 
-        // Create legend
+        // Create improved legend
         legendContainer.innerHTML = '';
-        data.forEach(segment => {
+        data.forEach((segment, index) => {
             const legendItem = document.createElement('div');
             legendItem.className = 'legend-item';
+            legendItem.setAttribute('data-status', segment.status);
             
-            const color = document.createElement('div');
-            color.className = 'legend-color';
-            color.style.backgroundColor = segment.color;
+            const colorBox = document.createElement('div');
+            colorBox.className = 'legend-color';
+            colorBox.style.backgroundColor = segment.color;
+            colorBox.style.border = '2px solid rgba(255,255,255,0.9)';
+            colorBox.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15)';
             
-            const label = document.createElement('span');
-            label.textContent = `${segment.label} (${segment.value})`;
+            const labelContainer = document.createElement('div');
+            labelContainer.className = 'legend-label-container';
             
-            legendItem.appendChild(color);
-            legendItem.appendChild(label);
+            const label = document.createElement('div');
+            label.className = 'legend-label';
+            label.textContent = segment.label;
+            
+            const count = document.createElement('div');
+            count.className = 'legend-count';
+            count.textContent = `${segment.value} (${((segment.value / total) * 100).toFixed(1)}%)`;
+            
+            labelContainer.appendChild(label);
+            labelContainer.appendChild(count);
+            
+            legendItem.appendChild(colorBox);
+            legendItem.appendChild(labelContainer);
+            
+            // Add hover effect to legend items
+            legendItem.addEventListener('mouseenter', function() {
+                const correspondingPath = svg.querySelector(`[data-status="${segment.status}"]`);
+                if (correspondingPath) {
+                    correspondingPath.style.transform = 'scale(1.05)';
+                    correspondingPath.style.transformOrigin = `${centerX}px ${centerY}px`;
+                    correspondingPath.style.filter = 'brightness(1.15) drop-shadow(0 2px 8px rgba(0,0,0,0.3))';
+                }
+                legendItem.classList.add('highlighted');
+            });
+            
+            legendItem.addEventListener('mouseleave', function() {
+                const correspondingPath = svg.querySelector(`[data-status="${segment.status}"]`);
+                if (correspondingPath) {
+                    correspondingPath.style.transform = 'none';
+                    correspondingPath.style.filter = 'none';
+                }
+                legendItem.classList.remove('highlighted');
+            });
+            
             legendContainer.appendChild(legendItem);
         });
     }
