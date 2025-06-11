@@ -59,6 +59,35 @@
     .modal-thumbnail.active {
         border: 2px solid #007bff;
     }
+
+    /* Similar listings horizontal scroll styles */
+    .similar-listings-container {
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE and Edge */
+    }
+
+    .similar-listings-container::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+    }
+
+    .similar-listing-item {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        cursor: pointer;
+    }
+
+    .similar-listing-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .similar-listing-item .card {
+        border: 1px solid #e0e0e0;
+        transition: border-color 0.2s ease;
+    }
+
+    .similar-listing-item:hover .card {
+        border-color: #007bff;
+    }
 </style>
 {% endblock %}
 
@@ -529,30 +558,77 @@
     <!-- Similar Listings -->
     <section class="mt-5 mb-5">
         <h3 class="mb-4">Похожая недвижимость</h3>
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-            <!-- Similar properties will be populated here -->
-            {% for i in '1234' %}
-            <div class="col">
-                <div class="card h-100 shadow-sm listing-card">
-                    {% if forloop.counter == 1 %}
-                    <img src="https://pixabay.com/get/g23947b9f5878d75714796043d96a0faecc8a1eaa9446ba1e2575df10132a3c8baaf353a84a00e1cdbe74a4da12177798715ac6bd280084a781756083cf0ef776_1280.jpg" class="card-img-top" alt="Недвижимость">
-                    {% elif forloop.counter == 2 %}
-                    <img src="https://pixabay.com/get/geee494ac5fb4861288b566165a191c21db8a3228bbe0a1edf3865817288a3a5d2eff8603997afba2f0b92bb6e735e16b70efedce858943065d9520974af58427_1280.jpg" class="card-img-top" alt="Недвижимость">
-                    {% elif forloop.counter == 3 %}
-                    <img src="https://pixabay.com/get/gdbdd76969985cdff44ad3f53db6426342aaf0ca3eafc0b7e0c299f84bd59b51d0e6dccb56a20b1c9648bbd1265d8cc0e55bf22001ba2e91f5223fb926125c2d1_1280.jpg" class="card-img-top" alt="Недвижимость">
-                    {% elif forloop.counter == 4 %}
-                    <img src="https://pixabay.com/get/g4ed469d7dbe2db950e47562a11382208f65bc24b98e0236e4c22086f45a20dcbff2d7dd151b1952bce89ea4fd0706cd5ebc8038505313f6438954d36f230790d_1280.jpg" class="card-img-top" alt="Недвижимость">
+        <div class="position-relative">
+            <div class="similar-listings-container overflow-auto" id="similarListings">
+                <div class="d-flex gap-3 pb-3" style="width: max-content;">
+                    {% if similar_listings %}
+                        {% for similar in similar_listings %}
+                        <div class="similar-listing-item" style="min-width: 280px; max-width: 280px;">
+                            <div class="card h-100 shadow-sm listing-card">
+                                <a href="{% url 'listings:listing_detail' pk=similar.id %}" class="text-decoration-none">
+                                    <img src="{{ similar.main_image_url }}" class="card-img-top" alt="{{ similar.title }}" style="height: 180px; object-fit: cover;">
+                                </a>
+                                <div class="card-body p-3">
+                                    <h6 class="card-title mb-2" style="font-size: 0.9rem; line-height: 1.3;">{{ similar.title|truncatechars:40 }}</h6>
+                                    <p class="listing-location text-muted mb-2" style="font-size: 0.8rem;">
+                                        <i class="fas fa-map-marker-alt"></i> {{ similar.city }}, {{ similar.state }}
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <p class="listing-price mb-0" style="font-size: 0.9rem; font-weight: 600;">
+                                            {{ similar.price_per_night|currency }} <span class="text-muted" style="font-size: 0.8rem; font-weight: normal;">/ночь</span>
+                                        </p>
+                                        {% if similar.avg_rating %}
+                                        <div class="text-warning" style="font-size: 0.8rem;">
+                                            <i class="fas fa-star"></i> {{ similar.avg_rating|floatformat:1 }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <!-- Fallback static data if no similar listings found -->
+                        {% for i in '1234' %}
+                        <div class="similar-listing-item" style="min-width: 280px; max-width: 280px;">
+                            <div class="card h-100 shadow-sm listing-card">
+                                {% if forloop.counter == 1 %}
+                                <img src="https://pixabay.com/get/g23947b9f5878d75714796043d96a0faecc8a1eaa9446ba1e2575df10132a3c8baaf353a84a00e1cdbe74a4da12177798715ac6bd280084a781756083cf0ef776_1280.jpg" class="card-img-top" alt="Недвижимость" style="height: 180px; object-fit: cover;">
+                                {% elif forloop.counter == 2 %}
+                                <img src="https://pixabay.com/get/geee494ac5fb4861288b566165a191c21db8a3228bbe0a1edf3865817288a3a5d2eff8603997afba2f0b92bb6e735e16b70efedce858943065d9520974af58427_1280.jpg" class="card-img-top" alt="Недвижимость" style="height: 180px; object-fit: cover;">
+                                {% elif forloop.counter == 3 %}
+                                <img src="https://pixabay.com/get/gdbdd76969985cdff44ad3f53db6426342aaf0ca3eafc0b7e0c299f84bd59b51d0e6dccb56a20b1c9648bbd1265d8cc0e55bf22001ba2e91f5223fb926125c2d1_1280.jpg" class="card-img-top" alt="Недвижимость" style="height: 180px; object-fit: cover;">
+                                {% elif forloop.counter == 4 %}
+                                <img src="https://pixabay.com/get/g4ed469d7dbe2db950e47562a11382208f65bc24b98e0236e4c22086f45a20dcbff2d7dd151b1952bce89ea4fd0706cd5ebc8038505313f6438954d36f230790d_1280.jpg" class="card-img-top" alt="Недвижимость" style="height: 180px; object-fit: cover;">
+                                {% endif %}
+                                <div class="card-body p-3">
+                                    <h6 class="card-title mb-2" style="font-size: 0.9rem;">Похожая недвижимость {{ forloop.counter }}</h6>
+                                    <p class="listing-location text-muted mb-2" style="font-size: 0.8rem;">
+                                        <i class="fas fa-map-marker-alt"></i> {{ listing.city }}, {{ listing.state }}
+                                    </p>
+                                    <p class="listing-price mb-0" style="font-size: 0.9rem; font-weight: 600;">
+                                        ₽{{ listing.price_per_night|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0 }} <span class="text-muted" style="font-size: 0.8rem; font-weight: normal;">/ночь</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
                     {% endif %}
-                    <div class="card-body">
-                        <h5 class="card-title">Похожая недвижимость {{ forloop.counter }}</h5>
-                        <p class="listing-location text-muted mb-2">
-                            <i class="fas fa-map-marker-alt"></i> {{ listing.city }}, {{ listing.state }}
-                        </p>
-                        <p class="listing-price card-text">₽{{ listing.price_per_night|add:forloop.counter0|add:forloop.counter0|add:forloop.counter0 }} <span class="text-muted">/ночь</span></p>
-                    </div>
                 </div>
             </div>
-            {% endfor %}
+            <!-- Navigation arrows -->
+            <button class="btn btn-light position-absolute top-50 start-0 translate-middle-y ms-2 shadow-sm" 
+                    id="scrollLeft" 
+                    style="z-index: 10; border-radius: 50%; width: 40px; height: 40px; display: none;"
+                    onclick="scrollSimilarListings(-280)">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="btn btn-light position-absolute top-50 end-0 translate-middle-y me-2 shadow-sm" 
+                    id="scrollRight" 
+                    style="z-index: 10; border-radius: 50%; width: 40px; height: 40px;"
+                    onclick="scrollSimilarListings(280)">
+                <i class="fas fa-chevron-right"></i>
+            </button>
         </div>
     </section>
 </div>
@@ -846,12 +922,31 @@
         // Similar listings scroll behavior
         const similarListingsContainer = document.getElementById('similarListings');
         if (similarListingsContainer) {
-            // Add smooth scroll behavior for better UX
+            // Add smooth scroll behavior
             similarListingsContainer.style.scrollBehavior = 'smooth';
 
-            // Add intersection observer for lazy loading animation
+            // Show/hide navigation arrows based on scroll position
+            function updateScrollButtons() {
+                const scrollLeft = similarListingsContainer.scrollLeft;
+                const maxScroll = similarListingsContainer.scrollWidth - similarListingsContainer.clientWidth;
+                
+                const leftBtn = document.getElementById('scrollLeft');
+                const rightBtn = document.getElementById('scrollRight');
+                
+                if (leftBtn && rightBtn) {
+                    leftBtn.style.display = scrollLeft > 0 ? 'block' : 'none';
+                    rightBtn.style.display = scrollLeft < maxScroll - 10 ? 'block' : 'none';
+                }
+            }
+
+            // Initial check for scroll buttons
+            updateScrollButtons();
+
+            // Update buttons on scroll
+            similarListingsContainer.addEventListener('scroll', updateScrollButtons);
+
+            // Add intersection observer for animation
             const observerOptions = {
-                root: similarListingsContainer,
                 threshold: 0.1
             };
 
@@ -870,6 +965,17 @@
                 item.style.transform = 'translateY(20px)';
                 item.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
                 observer.observe(item);
+            });
+        }
+    }
+
+    // Function to scroll similar listings
+    function scrollSimilarListings(distance) {
+        const container = document.getElementById('similarListings');
+        if (container) {
+            container.scrollBy({
+                left: distance,
+                behavior: 'smooth'
             });
         }
     });

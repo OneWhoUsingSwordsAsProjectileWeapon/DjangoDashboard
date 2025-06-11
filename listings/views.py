@@ -169,10 +169,11 @@ class ListingDetailView(DetailView):
     def get_similar_listings(self, listing):
         """Get similar listings based on location, property type, and price range"""
         from django.db.models import Q
+        from decimal import Decimal
         
         # Calculate price range (±30% from current listing price)
-        price_min = listing.price_per_night * 0.7
-        price_max = listing.price_per_night * 1.3
+        price_min = listing.price_per_night * Decimal('0.7')
+        price_max = listing.price_per_night * Decimal('1.3')
         
         # Get similar listings with multiple criteria
         similar = Listing.objects.filter(
