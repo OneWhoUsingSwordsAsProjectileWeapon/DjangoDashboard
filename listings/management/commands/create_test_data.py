@@ -12,6 +12,62 @@ User = get_user_model()
 class Command(BaseCommand):
     help = 'Create test data for the dashboard'
 
+    def get_moderator_notes(self, status):
+        """Получить заметки модератора в зависимости от статуса"""
+        if status == 'pending':
+            return ''
+        elif status == 'approved':
+            return random.choice([
+                'Все критерии соблюдены',
+                'Отличное качество объявления',
+                'Хорошие фотографии и описание',
+                'Объявление соответствует стандартам',
+                ''
+            ])
+        elif status == 'rejected':
+            return random.choice([
+                'Множественные нарушения критериев',
+                'Неподходящий контент',
+                'Нарушение правил платформы',
+                'Недостоверная информация'
+            ])
+        elif status == 'requires_changes':
+            return random.choice([
+                'Требуются незначительные исправления',
+                'Необходимо улучшить некоторые аспекты',
+                'Почти готово, нужны небольшие доработки',
+                'Хорошая база, но требуются улучшения'
+            ])
+        return ''
+
+    def get_rejection_reason(self, status):
+        """Получить причину отклонения"""
+        if status != 'rejected':
+            return ''
+        return random.choice([
+            'Неподходящие или некачественные фотографии',
+            'Некорректная или недостоверная информация',
+            'Нарушение правил контента платформы',
+            'Подозрительная ценовая политика',
+            'Неполное или неточное описание',
+            'Проблемы с указанным адресом'
+        ])
+
+    def get_required_changes(self, status):
+        """Получить требуемые изменения"""
+        if status != 'requires_changes':
+            return ''
+        return random.choice([
+            'Добавить качественные фотографии всех комнат',
+            'Исправить и дополнить описание объекта',
+            'Обновить контактную информацию и адрес',
+            'Скорректировать ценовую политику',
+            'Добавить информацию об удобствах',
+            'Уточнить правила проживания',
+            'Добавить фотографии санузла и кухни',
+            'Исправить орфографические ошибки в описании'
+        ])
+
     def handle(self, *args, **options):
         self.stdout.write('Creating test data...')
         
@@ -127,10 +183,10 @@ class Command(BaseCommand):
                 bathrooms = random.choice([1, 1.5, 2, 2.5, 3])
                 accommodates = random.randint(bedrooms, bedrooms * 2 + 2)
                 
-                # Различные статусы модерации
+                # Различные статусы модерации - более сбалансированное распределение
                 approval_status = random.choices(
                     [True, False], 
-                    weights=[0.7, 0.3]  # 70% одобрены, 30% не одобрены
+                    weights=[0.6, 0.4]  # 60% одобрены, 40% не одобрены
                 )[0]
                 
                 listing = Listing.objects.create(
@@ -158,43 +214,67 @@ class Command(BaseCommand):
                 listings.append(listing)
                 
                 # Создаем запись модерации для каждого листинга
-                approval_statuses = ['pending', 'approved', 'rejected', 'requires_changes']
+                # Более реалистичное распределение статусов модерации
                 if approval_status:
                     moderation_status = 'approved'
                 else:
-                    moderation_status = random.choice(['pending', 'rejected', 'requires_changes'])
+                    # Если не одобрено, распределяем между различными статусами
+                    moderation_status = random.choices(
+                        ['pending', 'rejected', 'requires_changes'],
+                        weights=[0.5, 0.3, 0.2]  # 50% в ожидании, 30% отклонены, 20% требуют изменений
+                    )[0]
                 
-                # Случайные значения для критериев модерации
+                # Критерии модерации зависят от статуса
+                if moderation_status == 'approved':
+                    # Одобренные листинги имеют лучшие показатели
+                    has_valid_title = random.choice([True, True, True, False])
+                    has_valid_description = random.choice([True, True, True, False])
+                    has_valid_images = random.choice([True, True, False])
+                    has_valid_address = random.choice([True, True, True, False])
+                    has_appropriate_pricing = random.choice([True, True, True, False])
+                    follows_content_policy = random.choice([True, True, True, False])
+                    has_verification_video = random.choice([True, False, False])
+                elif moderation_status == 'rejected':
+                    # Отклоненные листинги имеют больше проблем
+                    has_valid_title = random.choice([True, False, False])
+                    has_valid_description = random.choice([True, False, False])
+                    has_valid_images = random.choice([False, False, True])
+                    has_valid_address = random.choice([True, False, False])
+                    has_appropriate_pricing = random.choice([True, False, False])
+                    follows_content_policy = random.choice([False, False, True])
+                    has_verification_video = random.choice([False, False, False, True])
+                elif moderation_status == 'requires_changes':
+                    # Требующие изменений имеют смешанные показатели
+                    has_valid_title = random.choice([True, True, False])
+                    has_valid_description = random.choice([True, False])
+                    has_valid_images = random.choice([True, False])
+                    has_valid_address = random.choice([True, True, False])
+                    has_appropriate_pricing = random.choice([True, False])
+                    follows_content_policy = random.choice([True, True, False])
+                    has_verification_video = random.choice([False, False, True])
+                else:  # pending
+                    # Ожидающие рассмотрения - случайные значения
+                    has_valid_title = random.choice([True, True, False])
+                    has_valid_description = random.choice([True, True, False])
+                    has_valid_images = random.choice([True, False, False])
+                    has_valid_address = random.choice([True, True, False])
+                    has_appropriate_pricing = random.choice([True, True, False])
+                    follows_content_policy = random.choice([True, True, False])
+                    has_verification_video = random.choice([True, False, False, False])
+
                 listing_approval = ListingApproval.objects.create(
                     listing=listing,
                     status=moderation_status,
-                    has_valid_title=random.choice([True, True, False]),
-                    has_valid_description=random.choice([True, True, False]),
-                    has_valid_images=random.choice([True, False, False]),
-                    has_valid_address=random.choice([True, True, False]),
-                    has_appropriate_pricing=random.choice([True, True, False]),
-                    follows_content_policy=random.choice([True, True, False]),
-                    has_verification_video=random.choice([True, False, False, False]),
-                    moderator_notes=random.choice([
-                        '', 
-                        'Требуется добавить больше фотографий',
-                        'Цена кажется завышенной',
-                        'Необходимо уточнить адрес',
-                        'Описание слишком краткое',
-                        'Все критерии соблюдены'
-                    ]) if moderation_status != 'pending' else '',
-                    rejection_reason=random.choice([
-                        '',
-                        'Неподходящие фотографии',
-                        'Некорректная информация',
-                        'Нарушение правил платформы'
-                    ]) if moderation_status == 'rejected' else '',
-                    required_changes=random.choice([
-                        '',
-                        'Добавить качественные фотографии',
-                        'Исправить описание объекта',
-                        'Обновить контактную информацию'
-                    ]) if moderation_status == 'requires_changes' else ''
+                    has_valid_title=has_valid_title,
+                    has_valid_description=has_valid_description,
+                    has_valid_images=has_valid_images,
+                    has_valid_address=has_valid_address,
+                    has_appropriate_pricing=has_appropriate_pricing,
+                    follows_content_policy=follows_content_policy,
+                    has_verification_video=has_verification_video,
+                    moderator_notes=self.get_moderator_notes(moderation_status),
+                    rejection_reason=self.get_rejection_reason(moderation_status),
+                    required_changes=self.get_required_changes(moderation_status)
                 )
                 
                 self.stdout.write(f'Created listing: {listing.title} (status: {moderation_status})')
