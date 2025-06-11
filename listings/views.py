@@ -435,7 +435,9 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
 
                 # Get bookings for this listing in the time period
                 listing_bookings = listing.bookings.filter(
-                    status__in=['completed', 'confirmed']
+                    status__in=['completed', 'confirmed'],
+                    start_date__lte=listing_end,
+                    end_date__gte=listing_start
                 )
 
                 for booking in listing_bookings:
@@ -459,7 +461,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         stats['total_possible_nights'] = total_possible_nights
 
         # Revenue by month (last 12 months)
-        monthly_revenue = all_bookings.filter(
+        monthly_revenue_qs = all_bookings.filter(
             status='completed',
             created_at__gte=timezone.now() - timedelta(days=365)
         ).annotate(
@@ -469,8 +471,18 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
             bookings=Count('id')
         ).order_by('month')
 
+        # Convert to list with proper formatting
+        monthly_revenue = []
+        for item in monthly_revenue_qs:
+            if item['month']:
+                monthly_revenue.append({
+                    'month': item['month'].strftime('%Y-%m-01'),
+                    'revenue': float(item['revenue'] or 0),
+                    'bookings': item['bookings']
+                })
+
         # Bookings by status
-        status_stats = all_bookings.values('status').annotate(
+        status_stats_qs = all_bookings.values('status').annotate(
             count=Count('id'),
             revenue=Sum(Case(
                 When(status='completed', then='total_price'),
@@ -478,6 +490,16 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                 output_field=DecimalField()
             ))
         )
+
+        # Convert to list with proper formatting
+        status_stats = []
+        for item in status_stats_qs:
+            if item['count'] > 0:  # Only include statuses that have bookings
+                status_stats.append({
+                    'status': item['status'],
+                    'count': item['count'],
+                    'revenue': float(item['revenue'] or 0)
+                })
 
         # Top performing listings with proper annotations
         top_listings = host_listings.annotate(
@@ -535,8 +557,8 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
 
         context.update({
             'stats': stats,
-            'monthly_revenue': list(monthly_revenue),
-            'status_stats': list(status_stats),
+            'monthly_revenue': monthly_revenue,
+            'status_stats': status_stats,
             'top_listings': top_listings,
             'recent_bookings': recent_bookings,
             'guest_stats': guest_stats,

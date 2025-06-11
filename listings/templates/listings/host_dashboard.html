@@ -649,7 +649,7 @@ document.addEventListener('DOMContentLoaded', function() {
             container.innerHTML = `
                 <div class="no-data-message">
                     <i class="fas fa-chart-line"></i>
-                    <span>Нет данных о доходах</span>
+                    <span>Нет данных о доходах за выбранный период</span>
                 </div>
             `;
             return;
@@ -657,7 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Prepare data
         const data = monthlyRevenue.map(item => ({
-            label: new Date(item.month).toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }),
+            label: new Date(item.month + 'T00:00:00').toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }),
             value: parseFloat(item.revenue) || 0
         }));
 
@@ -800,10 +800,10 @@ document.addEventListener('DOMContentLoaded', function() {
             container.innerHTML = `
                 <div class="no-data-message">
                     <i class="fas fa-chart-pie"></i>
-                    <span>Нет данных о бронированиях</span>
+                    <span>Нет данных о бронированиях за выбранный период</span>
                 </div>
             `;
-            legendContainer.innerHTML = '';
+            if (legendContainer) legendContainer.innerHTML = '';
             return;
         }
 
