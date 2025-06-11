@@ -459,10 +459,11 @@ class UserComplaint(models.Model):
 
     def get_related_object_url(self):
         """Get URL to the related object (booking or listing)"""
+        from django.urls import reverse
         if self.booking:
-            return f"/listings/bookings/{self.booking.booking_reference}/"
+            return reverse('listings:booking_detail', kwargs={'reference': self.booking.booking_reference})
         elif self.listing:
-            return f"/listings/{self.listing.id}/"
+            return reverse('listings:listing_detail', kwargs={'pk': self.listing.id})
         return None
 
     def get_related_object_display(self):

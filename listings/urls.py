@@ -26,6 +26,7 @@ urlpatterns = [
     # Booking views
     path('<int:pk>/book/', views.create_booking, name='create_booking'),
     path('bookings/<uuid:reference>/', views.booking_detail, name='booking_detail'),
+    path('booking/<uuid:reference>/', views.booking_detail, name='booking_detail_alt'),
     path('my-bookings/', views.user_bookings, name='user_bookings'),
     path('host-bookings/', views.host_bookings, name='host_bookings'),
     path('bookings/<uuid:reference>/status/<str:status>/', views.update_booking_status, name='update_booking_status'),

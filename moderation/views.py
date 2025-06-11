@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 import re
 
-from .models import Report, ReportCategory, BannedUser, ForbiddenKeyword, UserComplaint
+from .models import Report, ReportCategory, BannedUser, ForbiddenKeyword, UserComplaint, ModerationLog
 from .forms import UserComplaintForm, ComplaintResponseForm, BookingComplaintForm, ListingComplaintForm
 from listings.models import Listing, Review, Booking
 from chat.models import Message
