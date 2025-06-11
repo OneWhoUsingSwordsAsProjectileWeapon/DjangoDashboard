@@ -21,6 +21,42 @@ class ReportForm(forms.ModelForm):
         self.fields['category'].queryset = ReportCategory.objects.filter(is_active=True)
         self.fields['category'].empty_label = "Select a category"
 
+class BookingComplaintForm(forms.Form):
+    """Form for users to submit complaints about bookings"""
+    COMPLAINT_TYPES = [
+        ('booking_issue', 'Проблема с бронированием'),
+        ('listing_issue', 'Проблема с объявлением'),
+        ('host_behavior', 'Поведение хоста'),
+        ('guest_behavior', 'Поведение гостя'),
+        ('safety_concern', 'Вопросы безопасности'),
+        ('false_listing', 'Ложная информация в объявлении'),
+        ('discrimination', 'Дискриминация'),
+        ('payment_issue', 'Проблемы с оплатой'),
+        ('cleanliness', 'Чистота'),
+        ('other', 'Другое'),
+    ]
+
+    complaint_type = forms.ChoiceField(
+        choices=COMPLAINT_TYPES,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label="Тип жалобы"
+    )
+
+    description = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 6,
+            'placeholder': 'Опишите проблему как можно подробнее...'
+        }),
+        label="Описание жалобы"
+    )
+
+    def clean_description(self):
+        description = self.cleaned_data.get('description')
+        if len(description) < 20:
+            raise forms.ValidationError("Пожалуйста, опишите проблему более подробно (минимум 20 символов).")
+        return description
+
 class UserComplaintForm(forms.Form):
     """Form for users to submit general complaints"""
     COMPLAINT_TYPES = [

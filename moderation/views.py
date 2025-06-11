@@ -7,7 +7,7 @@ from django.core.paginator import Paginator
 import re
 
 from .models import Report, ReportCategory, BannedUser, ForbiddenKeyword, UserComplaint
-from .forms import UserComplaintForm, ComplaintResponseForm
+from .forms import UserComplaintForm, ComplaintResponseForm, BookingComplaintForm
 from listings.models import Listing, Review, Booking
 from chat.models import Message
 from users.models import User
@@ -510,18 +510,21 @@ def file_booking_complaint(request, booking_id):
         return redirect('listings:booking_detail', reference=booking.booking_reference)
 
     if request.method == 'POST':
-        form = ComplaintForm(request.POST, booking=booking)
+        form = BookingComplaintForm(request.POST)
         if form.is_valid():
-            complaint = form.save(commit=False)
-            complaint.complainant = request.user
-            complaint.booking = booking
-            complaint.listing = booking.listing
-            complaint.save()
+            # Create complaint from form data
+            complaint = UserComplaint.objects.create(
+                complainant=request.user,
+                booking=booking,
+                listing=booking.listing,
+                complaint_type=form.cleaned_data['complaint_type'],
+                description=form.cleaned_data['description']
+            )
 
             messages.success(request, 'Ваша жалоба была отправлена и будет рассмотрена.')
             return redirect('listings:booking_detail', reference=booking.booking_reference)
     else:
-        form = ComplaintForm(booking=booking)
+        form = BookingComplaintForm()
 
     return render(request, 'moderation/file_complaint.html', {
         'form': form,
