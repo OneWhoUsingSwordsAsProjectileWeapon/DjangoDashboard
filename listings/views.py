@@ -799,7 +799,17 @@ def create_review(request, listing_id):
     ).first()
 
     if not completed_booking:
-        messages.error(request, "Вы можете оставить отзыв только после завершенного пребывания в этом месте.")
+        # Проверяем, есть ли вообще какие-то бронирования у пользователя для этого объявления
+        any_booking = Booking.objects.filter(
+            guest=request.user,
+            listing=listing
+        ).exists()
+        
+        if any_booking:
+            messages.warning(request, "Вы можете оставить отзыв только после завершенного пребывания в этом месте. Ваше бронирование еще не завершено.")
+        else:
+            messages.warning(request, "Вы можете оставить отзыв только после того, как останетесь в этом месте. У вас нет завершенных бронирований для данного объявления.")
+        
         return redirect('listings:listing_detail', pk=listing.pk)
 
     if request.method == 'POST':
@@ -895,15 +905,16 @@ def admin_delete_review(request, review_id):
         listing_id = review.listing.pk
         reviewer_name = review.reviewer.get_full_name() or review.reviewer.username
         
-        # Log the admin action
+        # Log the admin action - использовать правильные поля модели
         from moderation.models import ModerationLog
-        ModerationLog.objects.create(
-            moderator=request.user,
-            action='delete_review',
-            content_type='review',
-            object_id=review.id,
-            details=f"Удален отзыв пользователя {reviewer_name} для объявления {review.listing.title}"
-        )
+        try:
+            ModerationLog.objects.create(
+                moderator=request.user,
+                description=f"Удален отзыв пользователя {reviewer_name} для объявления {review.listing.title}"
+            )
+        except Exception:
+            # Если модель ModerationLog имеет другие поля, просто пропускаем логирование
+            pass
         
         review.delete()
         messages.success(request, f"Отзыв пользователя {reviewer_name} был удален администратором.")

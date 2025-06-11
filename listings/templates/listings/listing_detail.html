@@ -456,7 +456,7 @@
                             </div>
                         {% else %}
                             <div class="text-center py-3">
-                                <button class="btn btn-outline-primary" onclick="toggleReviewForm()">
+                                <button class="btn btn-outline-primary" onclick="checkAndShowReviewForm()">
                                     <i class="fas fa-star me-2"></i>Написать отзыв
                                 </button>
                             </div>
@@ -727,6 +727,30 @@
         {% endfor %}
     ];
 
+    // Check if user can leave a review
+    function checkAndShowReviewForm() {
+        {% if booking_for_review %}
+            // User has completed booking, show review form
+            toggleReviewForm();
+        {% else %}
+            // User doesn't have completed booking, show warning
+            if (confirm("Вы можете оставить отзыв только после завершенного пребывания в этом месте. У вас нет завершенных бронирований для данного объявления.\n\nХотите перейти к бронированию?")) {
+                // Scroll to booking form
+                document.getElementById('booking-card').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
+        {% endif %}
+    }
+
+    function toggleReviewForm() {
+        const reviewSection = document.querySelector('.mt-4.p-4.bg-light.rounded');
+        if (reviewSection) {
+            reviewSection.style.display = reviewSection.style.display === 'none' ? 'block' : 'none';
+        }
+    }
+
     function openImageGalleryModal(index) {
         currentImageIndex = index;
         updateModalImage();
@@ -783,6 +807,26 @@
         // Set the first image as active initially
         if (images.length > 0) {
             updateModalImage();
+        }
+
+        // Rating input handling
+        const ratingInputs = document.querySelectorAll('input[name="rating"]');
+        const ratingText = document.getElementById('rating-text');
+        
+        if (ratingInputs.length > 0 && ratingText) {
+            const ratingTexts = {
+                1: '1 звезда - Очень плохо',
+                2: '2 звезды - Плохо', 
+                3: '3 звезды - Нормально',
+                4: '4 звезды - Хорошо',
+                5: '5 звезд - Отлично'
+            };
+
+            ratingInputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    ratingText.textContent = ratingTexts[this.value] || '';
+                });
+            });
         }
     });
 </script>
