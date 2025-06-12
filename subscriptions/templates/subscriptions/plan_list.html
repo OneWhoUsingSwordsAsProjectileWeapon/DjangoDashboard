@@ -202,7 +202,7 @@
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let currentPlanData = {};
@@ -309,30 +309,24 @@ function showQRPayment(planData, autoRenew) {
         qrCodeContainer.innerHTML = '';
         
         try {
-            // Create QR code using qrcode-generator library
-            const qr = qrcode(0, 'M');
-            qr.addData(JSON.stringify(paymentData));
-            qr.make();
-            
             // Create canvas element
             const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 256;
-            const ctx = canvas.getContext('2d');
-            
-            // Draw QR code on canvas
-            const moduleCount = qr.getModuleCount();
-            const tileW = canvas.width / moduleCount;
-            const tileH = canvas.height / moduleCount;
-            
-            for (let row = 0; row < moduleCount; row++) {
-                for (let col = 0; col < moduleCount; col++) {
-                    ctx.fillStyle = qr.isDark(row, col) ? '#000000' : '#ffffff';
-                    ctx.fillRect(col * tileW, row * tileH, tileW, tileH);
-                }
-            }
-            
             qrCodeContainer.appendChild(canvas);
+            
+            // Generate QR code using QRCode.js library
+            QRCode.toCanvas(canvas, JSON.stringify(paymentData), {
+                width: 256,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#ffffff'
+                }
+            }, function (error) {
+                if (error) {
+                    console.error('QR Code generation error:', error);
+                    qrCodeContainer.innerHTML = '<div class="alert alert-danger">Ошибка генерации QR-кода</div>';
+                }
+            });
             
             // Show the QR modal
             const qrModal = new bootstrap.Modal(document.getElementById('qrPaymentModal'));
@@ -424,6 +418,8 @@ function createSubscription(planId, autoRenew) {
 
 // Simulate QR code scanning (for testing)
 function simulateQRScan(paymentData) {
+    console.log('Simulating QR payment with data:', paymentData);
+    
     return fetch('/api/subscriptions/qr-payment/', {
         method: 'POST',
         headers: {
@@ -435,8 +431,15 @@ function simulateQRScan(paymentData) {
             user_id: {% if user.is_authenticated %}{{ user.id }}{% else %}null{% endif %}
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('QR payment response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
+        console.log('QR payment response data:', data);
         if (data.success) {
             // Hide QR modal
             const qrModal = bootstrap.Modal.getInstance(document.getElementById('qrPaymentModal'));
@@ -452,7 +455,7 @@ function simulateQRScan(paymentData) {
     })
     .catch(error => {
         console.error('QR payment error:', error);
-        alert('Ошибка при обработке QR-платежа');
+        alert('Ошибка при обработке QR-платежа: ' + error.message);
     });
 }
 
