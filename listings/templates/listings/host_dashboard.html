@@ -225,17 +225,17 @@
     .chart-container {
         height: 300px !important;
     }
-    
+
     .line-chart, .bar-chart {
         height: 250px !important;
         padding: 15px !important;
     }
-    
+
     .pie-chart {
         width: 250px !important;
         height: 250px !important;
     }
-    
+
     .chart-label {
         font-size: 10px !important;
     }
@@ -762,10 +762,19 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Dashboard charts initializing...');
 
-    // Chart data
-    const monthlyData = {{ monthly_revenue|safe }};
-    const quarterlyData = {{ quarterly_revenue|safe }};
-    const seasonalData = {{ seasonal_revenue|safe }};
+    // Chart data - ensure proper JSON parsing
+    let monthlyData, quarterlyData, seasonalData;
+
+    try {
+        monthlyData = {{ monthly_revenue|safe }};
+        quarterlyData = {{ quarterly_revenue|safe }};
+        seasonalData = {{ seasonal_revenue|safe }};
+    } catch (e) {
+        console.error('Error parsing chart data:', e);
+        monthlyData = [];
+        quarterlyData = [];
+        seasonalData = [];
+    }
 
     let currentChartType = 'monthly';
 
@@ -790,7 +799,7 @@ document.addEventListener('DOMContentLoaded', function() {
             chartButtons.forEach(btn => btn.classList.remove('active'));
             this.classList.add('active');
             currentChartType = this.dataset.chart;
-            createRevenueChart();
+                        createRevenueChart();
         });
     });
 
