@@ -1,10 +1,6 @@
-{% extends 'base.html' %}
-{% load static %}
-{% load listing_extras %}
-
-{% block title %}{{ listing.title }} - Агрегатор Аренды{% endblock %}
-
-{% block extra_css %}
+{% extends 'base.html' %} {% load static %} {% load listing_extras %} {% block
+title %}{{ listing.title }} - Агрегатор Аренды{% endblock %} {% block extra_css
+%}
 <link rel="stylesheet" href="{% static 'listings/css/calendar.css' %}" />
 <link rel="stylesheet" href="{% static 'static/css/global.css' %}" />
 <style>
