@@ -469,6 +469,11 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         monthly_revenue = []
         current_date = timezone.now().date()
         
+        month_names_ru = {
+            1: 'Янв', 2: 'Фев', 3: 'Мар', 4: 'Апр', 5: 'Май', 6: 'Июн',
+            7: 'Июл', 8: 'Авг', 9: 'Сен', 10: 'Окт', 11: 'Ноя', 12: 'Дек'
+        }
+        
         for i in range(11, -1, -1):  # Go from 11 months ago to current month
             target_date = current_date.replace(day=1) - relativedelta(months=i)
             month_end = target_date + relativedelta(months=1)
@@ -483,9 +488,11 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                 total_bookings=Count('id')
             )
             
+            month_name = f"{month_names_ru[target_date.month]} {target_date.year}"
+            
             monthly_revenue.append({
                 'month': target_date.strftime('%Y-%m-01'),
-                'month_name': target_date.strftime('%B %Y'),
+                'month_name': month_name,
                 'revenue': float(month_revenue['total_revenue'] or 0),
                 'bookings': month_revenue['total_bookings'] or 0
             })
@@ -513,13 +520,16 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                 'quarter': f"{quarter_start.year}-Q{quarter_num}",
                 'quarter_name': f"Q{quarter_num} {quarter_start.year}",
                 'revenue': float(quarter_revenue['total_revenue'] or 0),
-                'bookings': quarter_revenue['total_bookings'] or 0,
-                'start_date': quarter_start,
-                'end_date': quarter_end
+                'bookings': quarter_revenue['total_bookings'] or 0
             })
 
         # Seasonal revenue analysis (by month across all years)
         seasonal_data = {}
+        month_names_ru = [
+            '', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+            'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+        ]
+        
         for month in range(1, 13):
             month_bookings = all_bookings.filter(
                 status='completed',
@@ -532,7 +542,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
             
             seasonal_data[month] = {
                 'month': month,
-                'month_name': calendar.month_name[month],
+                'month_name': month_names_ru[month],
                 'total_revenue': float(month_bookings['total_revenue'] or 0),
                 'bookings': month_bookings['total_bookings'] or 0,
                 'avg_revenue': float(month_bookings['avg_revenue'] or 0)

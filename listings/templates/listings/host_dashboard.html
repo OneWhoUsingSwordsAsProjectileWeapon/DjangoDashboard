@@ -1,4 +1,3 @@
-
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
@@ -263,7 +262,7 @@
                                         </select>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Custom Date Range -->
                                 <div id="customDateRange" style="{% if current_filters.time_filter != 'custom' %}display: none;{% endif %}">
                                     <div class="row">
@@ -279,7 +278,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="mb-3">
                                     <label class="form-label">Статус бронирования</label>
                                     <select name="status_filter" class="form-select">
@@ -701,18 +700,18 @@
 // Native JavaScript chart implementation
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Dashboard charts initializing...');
-    
+
     // Chart data
     const monthlyData = {{ monthly_revenue|safe }};
     const quarterlyData = {{ quarterly_revenue|safe }};
     const seasonalData = {{ seasonal_revenue|safe }};
-    
+
     let currentChartType = 'monthly';
-    
+
     // Custom date range toggle
     const timeFilterSelect = document.getElementById('timeFilterSelect');
     const customDateRange = document.getElementById('customDateRange');
-    
+
     if (timeFilterSelect && customDateRange) {
         timeFilterSelect.addEventListener('change', function() {
             if (this.value === 'custom') {
@@ -740,7 +739,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!container) return;
 
         let chartData, chartTitle;
-        
+
         switch(currentChartType) {
             case 'quarterly':
                 chartData = quarterlyData;
@@ -808,17 +807,17 @@ document.addEventListener('DOMContentLoaded', function() {
         gradient.setAttribute('y1', '0%');
         gradient.setAttribute('x2', '0%');
         gradient.setAttribute('y2', '100%');
-        
+
         const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
         stop1.setAttribute('offset', '0%');
         stop1.setAttribute('stop-color', '#28a745');
         stop1.setAttribute('stop-opacity', '0.3');
-        
+
         const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
         stop2.setAttribute('offset', '100%');
         stop2.setAttribute('stop-color', '#28a745');
         stop2.setAttribute('stop-opacity', '0.1');
-        
+
         gradient.appendChild(stop1);
         gradient.appendChild(stop2);
         defs.appendChild(gradient);
@@ -832,7 +831,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 x = padding + (i * (chartWidth / (data.length - 1)));
             }
-            
+
             const normalizedValue = maxValue > 0 ? (d.value / maxValue) : 0;
             const y = padding + (chartHeight - (normalizedValue * chartHeight));
             return { x, y, value: d.value, label: d.label };
@@ -842,7 +841,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const gridCount = 5;
         for (let i = 0; i <= gridCount; i++) {
             const y = padding + (i * (chartHeight / gridCount));
-            
+
             // Grid line
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line.setAttribute('x1', padding);
@@ -859,7 +858,7 @@ document.addEventListener('DOMContentLoaded', function() {
             text.setAttribute('y', y + 4);
             text.setAttribute('text-anchor', 'end');
             text.setAttribute('class', 'chart-label');
-            
+
             // Better number formatting
             if (value >= 1000000) {
                 text.textContent = '₽' + (value / 1000000).toFixed(1) + 'М';
@@ -868,7 +867,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 text.textContent = '₽' + Math.round(value).toLocaleString('ru-RU');
             }
-            
+
             svg.appendChild(text);
         }
 
@@ -909,12 +908,12 @@ document.addEventListener('DOMContentLoaded', function() {
             circle.setAttribute('cy', point.y);
             circle.setAttribute('r', 4);
             circle.setAttribute('class', 'chart-point');
-            
+
             // Add tooltip
             circle.addEventListener('mouseenter', function(e) {
                 const tooltip = document.createElement('div');
                 tooltip.className = 'chart-tooltip';
-                
+
                 // Better number formatting for tooltip
                 let valueText;
                 if (point.value >= 1000000) {
@@ -924,9 +923,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     valueText = point.value.toLocaleString('ru-RU');
                 }
-                
+
                 tooltip.innerHTML = `${point.label}<br>₽${valueText}`;
-                
+
                 // Better tooltip positioning
                 const rect = container.getBoundingClientRect();
                 tooltip.style.position = 'absolute';
@@ -936,16 +935,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 tooltip.style.zIndex = '1001';
                 container.style.position = 'relative';
                 container.appendChild(tooltip);
-                
+
                 circle._tooltip = tooltip;
             });
-            
+
             circle.addEventListener('mouseleave', function() {
                 if (circle._tooltip) {
                     circle._tooltip.remove();
                 }
             });
-            
+
             svg.appendChild(circle);
 
             // X-axis labels
@@ -1055,17 +1054,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (correspondingLegend) {
                     correspondingLegend.classList.add('highlighted');
                 }
-                
+
                 // Transform path
                 const transform = `scale(1.05)`;
                 path.style.transformOrigin = `${centerX}px ${centerY}px`;
                 path.style.transform = transform;
                 path.style.filter = 'brightness(1.15) drop-shadow(0 2px 8px rgba(0,0,0,0.3))';
-                
+
                 const tooltip = document.createElement('div');
                 tooltip.className = 'chart-tooltip';
                 tooltip.innerHTML = `${segment.label}<br><strong>${segment.value} бронирований</strong><br>(${((segment.value / total) * 100).toFixed(1)}%)`;
-                
+
                 const rect = container.getBoundingClientRect();
                 tooltip.style.position = 'absolute';
                 tooltip.style.left = (e.clientX - rect.left + 15) + 'px';
@@ -1074,7 +1073,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 tooltip.style.zIndex = '1001';
                 container.style.position = 'relative';
                 container.appendChild(tooltip);
-                
+
                 path._tooltip = tooltip;
             });
 
@@ -1082,7 +1081,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Remove highlighting
                 const legendItems = legendContainer.querySelectorAll('.legend-item');
                 legendItems.forEach(item => item.classList.remove('highlighted'));
-                
+
                 // Reset path
                 path.style.transform = 'none';
                 path.style.filter = 'none';
@@ -1104,30 +1103,30 @@ document.addEventListener('DOMContentLoaded', function() {
             const legendItem = document.createElement('div');
             legendItem.className = 'legend-item';
             legendItem.setAttribute('data-status', segment.status);
-            
+
             const colorBox = document.createElement('div');
             colorBox.className = 'legend-color';
             colorBox.style.backgroundColor = segment.color;
             colorBox.style.border = '2px solid rgba(255,255,255,0.9)';
             colorBox.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15)';
-            
+
             const labelContainer = document.createElement('div');
             labelContainer.className = 'legend-label-container';
-            
+
             const label = document.createElement('div');
             label.className = 'legend-label';
             label.textContent = segment.label;
-            
+
             const count = document.createElement('div');
             count.className = 'legend-count';
             count.textContent = `${segment.value} (${((segment.value / total) * 100).toFixed(1)}%)`;
-            
+
             labelContainer.appendChild(label);
             labelContainer.appendChild(count);
-            
+
             legendItem.appendChild(colorBox);
             legendItem.appendChild(labelContainer);
-            
+
             // Add hover effect to legend items
             legendItem.addEventListener('mouseenter', function() {
                 const correspondingPath = svg.querySelector(`[data-status="${segment.status}"]`);
@@ -1138,7 +1137,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 legendItem.classList.add('highlighted');
             });
-            
+
             legendItem.addEventListener('mouseleave', function() {
                 const correspondingPath = svg.querySelector(`[data-status="${segment.status}"]`);
                 if (correspondingPath) {
@@ -1147,7 +1146,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 legendItem.classList.remove('highlighted');
             });
-            
+
             legendContainer.appendChild(legendItem);
         });
     }
@@ -1206,117 +1205,127 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Generic Bar Chart Creator
     function createBarChart(container, data, color) {
-        const maxValue = Math.max(...data.map(d => d.value), 1000);
-        const padding = 40;
-        const chartWidth = container.clientWidth - (padding * 2);
-        const chartHeight = container.clientHeight - (padding * 2);
-        const barWidth = chartWidth / data.length * 0.7;
-        const barSpacing = chartWidth / data.length * 0.3;
+        try {
+            const maxValue = Math.max(...data.map(d => d.value), 1000);
+            const padding = 40;
+            const chartWidth = container.clientWidth - (padding * 2);
+            const chartHeight = container.clientHeight - (padding * 2);
+            const barWidth = chartWidth / data.length * 0.7;
+            const barSpacing = chartWidth / data.length * 0.3;
 
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('width', '100%');
-        svg.setAttribute('height', '100%');
-        svg.setAttribute('viewBox', `0 0 ${container.clientWidth} ${container.clientHeight}`);
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            svg.setAttribute('viewBox', `0 0 ${container.clientWidth} ${container.clientHeight}`);
 
-        // Create grid lines and Y-axis labels
-        const gridCount = 5;
-        for (let i = 0; i <= gridCount; i++) {
-            const y = padding + (i * (chartHeight / gridCount));
-            
-            // Grid line
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', padding);
-            line.setAttribute('y1', y);
-            line.setAttribute('x2', padding + chartWidth);
-            line.setAttribute('y2', y);
-            line.setAttribute('class', 'chart-grid');
-            svg.appendChild(line);
+            // Create grid lines and Y-axis labels
+            const gridCount = 5;
+            for (let i = 0; i <= gridCount; i++) {
+                const y = padding + (i * (chartHeight / gridCount));
 
-            // Y-axis labels
-            const value = maxValue - (i * (maxValue / gridCount));
-            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('x', padding - 10);
-            text.setAttribute('y', y + 4);
-            text.setAttribute('text-anchor', 'end');
-            text.setAttribute('class', 'chart-label');
-            
-            if (value >= 1000000) {
-                text.textContent = '₽' + (value / 1000000).toFixed(1) + 'М';
-            } else if (value >= 1000) {
-                text.textContent = '₽' + (value / 1000).toFixed(0) + 'К';
-            } else {
-                text.textContent = '₽' + Math.round(value).toLocaleString('ru-RU');
-            }
-            
-            svg.appendChild(text);
-        }
+                // Grid line
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', padding);
+                line.setAttribute('y1', y);
+                line.setAttribute('x2', padding + chartWidth);
+                line.setAttribute('y2', y);
+                line.setAttribute('class', 'chart-grid');
+                svg.appendChild(line);
 
-        // Create bars
-        data.forEach((item, index) => {
-            const barHeight = maxValue > 0 ? (item.value / maxValue) * chartHeight : 0;
-            const x = padding + (index * (chartWidth / data.length)) + (barSpacing / 2);
-            const y = padding + chartHeight - barHeight;
+                // Y-axis labels
+                const value = maxValue - (i * (maxValue / gridCount));
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', padding - 10);
+                text.setAttribute('y', y + 4);
+                text.setAttribute('text-anchor', 'end');
+                text.setAttribute('class', 'chart-label');
 
-            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            rect.setAttribute('x', x);
-            rect.setAttribute('y', y);
-            rect.setAttribute('width', barWidth);
-            rect.setAttribute('height', barHeight);
-            rect.setAttribute('fill', color);
-            rect.setAttribute('rx', '4');
-            rect.style.cursor = 'pointer';
-            rect.style.transition = 'all 0.3s ease';
-
-            rect.addEventListener('mouseenter', function(e) {
-                rect.style.filter = 'brightness(1.2)';
-                
-                const tooltip = document.createElement('div');
-                tooltip.className = 'chart-tooltip';
-                
-                let valueText;
-                if (item.value >= 1000000) {
-                    valueText = (item.value / 1000000).toFixed(1) + 'М';
-                } else if (item.value >= 1000) {
-                    valueText = (item.value / 1000).toFixed(0) + 'К';
+                if (value >= 1000000) {
+                    text.textContent = '₽' + (value / 1000000).toFixed(1) + 'М';
+                } else if (value >= 1000) {
+                    text.textContent = '₽' + (value / 1000).toFixed(0) + 'К';
                 } else {
-                    valueText = item.value.toLocaleString('ru-RU');
+                    text.textContent = '₽' + Math.round(value).toLocaleString('ru-RU');
                 }
-                
-                tooltip.innerHTML = `${item.label}<br>₽${valueText}<br>${item.bookings} бронирований`;
-                
-                const rect_container = container.getBoundingClientRect();
-                tooltip.style.position = 'absolute';
-                tooltip.style.left = (e.clientX - rect_container.left + 10) + 'px';
-                tooltip.style.top = (e.clientY - rect_container.top - 40) + 'px';
-                tooltip.style.display = 'block';
-                tooltip.style.zIndex = '1001';
-                container.style.position = 'relative';
-                container.appendChild(tooltip);
-                
-                rect._tooltip = tooltip;
+
+                svg.appendChild(text);
+            }
+
+            // Create bars
+            data.forEach((item, index) => {
+                const barHeight = maxValue > 0 ? (item.value / maxValue) * chartHeight : 0;
+                const x = padding + (index * (chartWidth / data.length)) + (barSpacing / 2);
+                const y = padding + chartHeight - barHeight;
+
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', x);
+                rect.setAttribute('y', y);
+                rect.setAttribute('width', barWidth);
+                rect.setAttribute('height', barHeight);
+                rect.setAttribute('fill', color);
+                rect.setAttribute('rx', '4');
+                rect.style.cursor = 'pointer';
+                rect.style.transition = 'all 0.3s ease';
+
+                rect.addEventListener('mouseenter', function(e) {
+                    rect.style.filter = 'brightness(1.2)';
+
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'chart-tooltip';
+
+                    let valueText;
+                    if (item.value >= 1000000) {
+                        valueText = (item.value / 1000000).toFixed(1) + 'М';
+                    } else if (item.value >= 1000) {
+                        valueText = (item.value / 1000).toFixed(0) + 'К';
+                    } else {
+                        valueText = item.value.toLocaleString('ru-RU');
+                    }
+
+                    tooltip.innerHTML = `${item.label}<br>₽${valueText}<br>${item.bookings} бронирований`;
+
+                    const rect_container = container.getBoundingClientRect();
+                    tooltip.style.position = 'absolute';
+                    tooltip.style.left = (e.clientX - rect_container.left + 10) + 'px';
+                    tooltip.style.top = (e.clientY - rect_container.top - 40) + 'px';
+                    tooltip.style.display = 'block';
+                    tooltip.style.zIndex = '1001';
+                    container.style.position = 'relative';
+                    container.appendChild(tooltip);
+
+                    rect._tooltip = tooltip;
+                });
+
+                rect.addEventListener('mouseleave', function() {
+                    rect.style.filter = 'none';
+                    if (rect._tooltip) {
+                        rect._tooltip.remove();
+                    }
+                });
+
+                svg.appendChild(rect);
+
+                // X-axis labels
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', x + barWidth / 2);
+                text.setAttribute('y', padding + chartHeight + 20);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('class', 'chart-label');
+                text.textContent = item.label;
+                svg.appendChild(text);
             });
-            
-            rect.addEventListener('mouseleave', function() {
-                rect.style.filter = 'none';
-                if (rect._tooltip) {
-                    rect._tooltip.remove();
-                }
-            });
 
-            svg.appendChild(rect);
-
-            // X-axis labels
-            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('x', x + barWidth / 2);
-            text.setAttribute('y', padding + chartHeight + 20);
-            text.setAttribute('text-anchor', 'middle');
-            text.setAttribute('class', 'chart-label');
-            text.textContent = item.label;
-            svg.appendChild(text);
-        });
-
-        container.innerHTML = '';
-        container.appendChild(svg);
+            container.innerHTML = '';
+            container.appendChild(svg);
+        } catch (error) {
+            console.error('Error creating bar chart:', error);
+            container.innerHTML = `
+                <div class="no-data-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Ошибка создания графика</span>
+                </div>
+            `;
+        }
     }
 
     // Initialize charts
