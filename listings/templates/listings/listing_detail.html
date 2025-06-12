@@ -1,10 +1,6 @@
-{% extends 'base.html' %}
-{% load static %}
-{% load listing_extras %}
-
-{% block title %}{{ listing.title }} - Агрегатор Аренды{% endblock %}
-
-{% block extra_css %}
+{% extends 'base.html' %} {% load static %} {% load listing_extras %} {% block
+title %}{{ listing.title }} - Агрегатор Аренды{% endblock %} {% block extra_css
+%}
 <link rel="stylesheet" href="{% static 'listings/css/calendar.css' %}" />
 <link rel="stylesheet" href="{% static 'static/css/global.css' %}" />
 <style>
@@ -64,7 +60,8 @@
 
     /* Similar listings section styles */
     .similar-listings-section {
-        background: #f8f9fa;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
 
     .similar-listings-container {
@@ -537,7 +534,7 @@
                                 }}</span
                             >
                             {{ listing.average_rating|star_rating }}
-                         </div>
+                        </div>
                         {% endif %}
                     </div>
 
@@ -939,7 +936,7 @@
                                 {% elif forloop.counter == 2 %}
                                 <img
                                     src="https://pixabay.com/get/geee494ac5fb4861288b566165a191c21db8a3228bbe0a1edf3865817288a3a5d2eff8603997afba2f0b92bb6e735e16b70efedce858943065d9520974af58427_1280.jpg"
-                               class="card-img-top"
+                                    class="card-img-top"
                                     alt="Недвижимость"
                                     style="height: 180px; object-fit: cover"
                                 />
