@@ -1,5 +1,0 @@
-pip install Django djangorestframework django-filter channels channels-redis daphne django-extensions django-redis Pillow pytest pytest-django six redis asgiref python-dateutil pytz openpyxl==3.1.2
-
-
-
-python manage.py create_test_data

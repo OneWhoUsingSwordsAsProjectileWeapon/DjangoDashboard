@@ -1,0 +1,11 @@
+pip install Django djangorestframework django-filter channels channels-redis daphne django-extensions django-redis Pillow pytest pytest-django six redis asgiref python-dateutil pytz djangorestframework-simplejwt openpyxl==3.1.2
+
+python manage.py migrate
+
+python manage.py create_admin_moder
+
+python manage.py create_test_data
+
+python manage.py setup_default_plans
+
+python manage.py process_subscription_renewals
