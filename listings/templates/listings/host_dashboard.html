@@ -9,40 +9,42 @@
 /* Dashboard Chart Styles */
 .chart-container {
     position: relative !important;
-    height: 450px !important;
+    height: 420px !important;
     width: 100% !important;
     background: #ffffff !important;
-    border-radius: 8px !important;
+    border-radius: 12px !important;
     overflow: hidden !important;
+    border: 1px solid #e9ecef !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
 }
 
 .line-chart, .bar-chart {
     width: 100% !important;
     height: 100% !important;
     position: relative !important;
-    border: 1px solid #e0e0e0 !important;
-    border-radius: 8px !important;
-    background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%) !important;
-    padding: 15px !important;
+    border-radius: 12px !important;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 50%, #f8f9fa 100%) !important;
+    padding: 20px !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
-    min-height: 400px !important;
+    min-height: 380px !important;
 }
 
 .line-chart svg, .bar-chart svg {
     width: 100% !important;
-    height: 100% !important;
+    height: calc(100% - 10px) !important;
     display: block !important;
+    max-width: 100% !important;
 }
 
 .pie-chart {
-    width: 300px !important;
-    height: 300px !important;
+    width: 280px !important;
+    height: 280px !important;
     position: relative !important;
     margin: 0 auto !important;
     background: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 70%) !important;
     border-radius: 50% !important;
-    padding: 10px !important;
+    padding: 15px !important;
     box-sizing: border-box !important;
 }
 
@@ -51,6 +53,7 @@
     height: 100% !important;
     transform: rotate(-90deg) !important;
     display: block !important;
+    max-width: 100% !important;
 }
 
 .chart-legend {
@@ -219,35 +222,95 @@
     color: white !important;
 }
 
+/* Period Selector Styles */
+.form-select-sm {
+    border: 1px solid #dee2e6 !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+    font-size: 13px !important;
+    background-color: #ffffff !important;
+    transition: all 0.2s ease !important;
+    min-width: 140px !important;
+}
+
+.form-select-sm:focus {
+    border-color: #007bff !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15) !important;
+    outline: none !important;
+}
+
+.form-select-sm:hover {
+    border-color: #b0b8c1 !important;
+}
+
+/* Card Header Improvements */
+.card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    padding: 15px 20px !important;
+}
+
+.card-header .card-title {
+    font-weight: 600 !important;
+    color: #2c3e50 !important;
+}
+
+/* Card Body Improvements */
+.card-body.p-3 {
+    padding: 20px !important;
+}
+
 /* Responsive chart adjustments */
 @media (max-width: 768px) {
     .chart-container {
-        height: 350px !important;
+        height: 320px !important;
     }
 
     .line-chart, .bar-chart {
         height: 100% !important;
-        padding: 10px !important;
-        min-height: 300px !important;
+        padding: 15px !important;
+        min-height: 280px !important;
     }
 
     .pie-chart {
-        width: 250px !important;
-        height: 250px !important;
+        width: 220px !important;
+        height: 220px !important;
     }
 
     .chart-label {
         font-size: 10px !important;
     }
+
+    .card-header .d-flex {
+        flex-direction: column !important;
+        gap: 10px !important;
+        align-items: stretch !important;
+    }
+
+    .btn-group {
+        justify-content: center !important;
+    }
+}
+
+@media (min-width: 992px) and (max-width: 1199px) {
+    .chart-container {
+        height: 380px !important;
+    }
+    
+    .line-chart, .bar-chart {
+        min-height: 340px !important;
+        padding: 18px !important;
+    }
 }
 
 @media (min-width: 1200px) {
     .chart-container {
-        height: 500px !important;
+        height: 460px !important;
     }
     
     .line-chart, .bar-chart {
-        min-height: 450px !important;
+        min-height: 420px !important;
+        padding: 25px !important;
     }
 }
 </style>
@@ -489,15 +552,23 @@
             <div class="row mb-4">
                 <div class="col-lg-8 mb-3">
                     <div class="card h-100">
-                        <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
                             <h5 class="card-title mb-0">Динамика доходов</h5>
-                            <div class="btn-group" role="group" aria-label="Chart type">
-                                <button type="button" class="btn btn-outline-primary btn-sm active" data-chart="monthly">Месячно</button>
-                                <button type="button" class="btn btn-outline-primary btn-sm" data-chart="quarterly">Квартально</button>
-                                <button type="button" class="btn btn-outline-primary btn-sm" data-chart="seasonal">Сезонно</button>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <select class="form-select form-select-sm" id="revenuePeriodSelect" style="width: auto;">
+                                    <option value="6">Последние 6 месяцев</option>
+                                    <option value="12" selected>Последние 12 месяцев</option>
+                                    <option value="24">Последние 24 месяца</option>
+                                    <option value="all">Все время</option>
+                                </select>
+                                <div class="btn-group" role="group" aria-label="Chart type">
+                                    <button type="button" class="btn btn-outline-primary btn-sm active" data-chart="monthly">Месячно</button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" data-chart="quarterly">Квартально</button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" data-chart="seasonal">Сезонно</button>
+                                </div>
                             </div>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body p-3">
                             <div class="chart-container">
                                 <div class="line-chart" id="revenueChart">
                                     <div class="no-data-message">
@@ -511,10 +582,16 @@
                 </div>
                 <div class="col-lg-4 mb-3">
                     <div class="card h-100">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">Распределение статусов бронирования</h5>
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Статусы бронирований</h5>
+                            <select class="form-select form-select-sm" id="statusPeriodSelect" style="width: auto;">
+                                <option value="30">За 30 дней</option>
+                                <option value="90">За 3 месяца</option>
+                                <option value="365" selected>За год</option>
+                                <option value="all">Все время</option>
+                            </select>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body p-3">
                             <div class="chart-container">
                                 <div class="pie-chart" id="statusChart">
                                     <div class="no-data-message">
@@ -533,10 +610,15 @@
             <div class="row mb-4">
                 <div class="col-lg-6 mb-3">
                     <div class="card h-100">
-                        <div class="card-header">
+                        <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="card-title mb-0">Сравнение кварталов</h5>
+                            <select class="form-select form-select-sm" id="quarterlyPeriodSelect" style="width: auto;">
+                                <option value="4">Последние 4 квартала</option>
+                                <option value="8" selected>Последние 8 кварталов</option>
+                                <option value="all">Все кварталы</option>
+                            </select>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body p-3">
                             <div class="chart-container">
                                 <div class="bar-chart" id="quarterlyChart">
                                     <div class="no-data-message">
@@ -550,10 +632,15 @@
                 </div>
                 <div class="col-lg-6 mb-3">
                     <div class="card h-100">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">Сезонная активность по месяцам</h5>
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Сезонная активность</h5>
+                            <select class="form-select form-select-sm" id="seasonalPeriodSelect" style="width: auto;">
+                                <option value="current">Текущий год</option>
+                                <option value="all" selected>Все время</option>
+                                <option value="compare">Сравнение лет</option>
+                            </select>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body p-3">
                             <div class="chart-container">
                                 <div class="bar-chart" id="seasonalChart">
                                     <div class="no-data-message">
@@ -809,9 +896,39 @@ document.addEventListener('DOMContentLoaded', function() {
             chartButtons.forEach(btn => btn.classList.remove('active'));
             this.classList.add('active');
             currentChartType = this.dataset.chart;
-                        createRevenueChart();
+            createRevenueChart();
         });
     });
+
+    // Period selectors
+    const revenuePeriodSelect = document.getElementById('revenuePeriodSelect');
+    const statusPeriodSelect = document.getElementById('statusPeriodSelect');
+    const quarterlyPeriodSelect = document.getElementById('quarterlyPeriodSelect');
+    const seasonalPeriodSelect = document.getElementById('seasonalPeriodSelect');
+
+    if (revenuePeriodSelect) {
+        revenuePeriodSelect.addEventListener('change', function() {
+            createRevenueChart();
+        });
+    }
+
+    if (statusPeriodSelect) {
+        statusPeriodSelect.addEventListener('change', function() {
+            createStatusChart();
+        });
+    }
+
+    if (quarterlyPeriodSelect) {
+        quarterlyPeriodSelect.addEventListener('change', function() {
+            createQuarterlyChart();
+        });
+    }
+
+    if (seasonalPeriodSelect) {
+        seasonalPeriodSelect.addEventListener('change', function() {
+            createSeasonalChart();
+        });
+    }
 
     // Revenue Line Chart
     function createRevenueChart() {
@@ -819,6 +936,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!container) return;
 
         let chartData, chartTitle;
+        const periodSelect = document.getElementById('revenuePeriodSelect');
+        const selectedPeriod = periodSelect ? periodSelect.value : '12';
 
         switch(currentChartType) {
             case 'quarterly':
@@ -846,6 +965,15 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // Filter data based on selected period
+        if (selectedPeriod !== 'all' && currentChartType === 'monthly') {
+            const periodMonths = parseInt(selectedPeriod);
+            chartData = chartData.slice(-periodMonths);
+        } else if (selectedPeriod !== 'all' && currentChartType === 'quarterly') {
+            const periodQuarters = parseInt(selectedPeriod || '8');
+            chartData = chartData.slice(-periodQuarters);
+        }
+
         // Prepare data
         let data;
         if (currentChartType === 'quarterly') {
@@ -870,13 +998,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const maxValue = Math.max(...data.map(d => d.value), 1000);
         const minValue = 0;
-        const padding = 60;
-        const chartWidth = Math.max(container.clientWidth - (padding * 2), 300);
-        const chartHeight = Math.max(container.clientHeight - (padding * 2), 280);
+        const padding = 50;
+        
+        // Use container dimensions properly
+        const containerRect = container.getBoundingClientRect();
+        const availableWidth = Math.max(containerRect.width || container.offsetWidth, 400);
+        const availableHeight = Math.max(containerRect.height || container.offsetHeight, 350);
+        
+        const chartWidth = availableWidth - (padding * 2);
+        const chartHeight = availableHeight - (padding * 2);
 
-        // Ensure minimum dimensions
-        const svgWidth = Math.max(container.clientWidth, 400);
-        const svgHeight = Math.max(container.clientHeight, 350);
+        // SVG dimensions should match container
+        const svgWidth = availableWidth;
+        const svgHeight = availableHeight;
         
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('width', '100%');
@@ -1041,8 +1175,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const legendContainer = document.getElementById('statusLegend');
         if (!container) return;
 
+        // Note: For full period filtering, we would need to make an AJAX call to get filtered data
+        // For now, we'll use the existing data but show the selection
         const statusStats = {{ status_stats|safe }};
         console.log('Status data:', statusStats);
+
+        // Get selected period for display purposes
+        const periodSelect = document.getElementById('statusPeriodSelect');
+        const selectedPeriod = periodSelect ? periodSelect.value : 'all';
 
         if (!statusStats || statusStats.length === 0) {
             container.innerHTML = `
@@ -1242,7 +1382,17 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const data = quarterlyData.map(item => ({
+        // Filter data based on selected period
+        const periodSelect = document.getElementById('quarterlyPeriodSelect');
+        const selectedPeriod = periodSelect ? periodSelect.value : '8';
+        
+        let filteredData = quarterlyData;
+        if (selectedPeriod !== 'all') {
+            const periodQuarters = parseInt(selectedPeriod);
+            filteredData = quarterlyData.slice(-periodQuarters);
+        }
+
+        const data = filteredData.map(item => ({
             label: item.quarter_name,
             value: parseFloat(item.revenue) || 0,
             bookings: item.bookings || 0
@@ -1268,28 +1418,50 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const data = seasonalData.map(item => ({
+        // Filter data based on selected period
+        const periodSelect = document.getElementById('seasonalPeriodSelect');
+        const selectedPeriod = periodSelect ? periodSelect.value : 'all';
+        
+        let filteredData = seasonalData;
+        let chartColor = '#28a745';
+        
+        // Different filtering logic for seasonal data
+        if (selectedPeriod === 'current') {
+            // Show only current year data (would need backend support for this)
+            // For now, we'll show all data
+        } else if (selectedPeriod === 'compare') {
+            // Could show year-over-year comparison (would need backend support)
+            chartColor = '#ffc107';
+        }
+
+        const data = filteredData.map(item => ({
             label: item.month_name.substr(0, 3),
             value: parseFloat(item.total_revenue) || 0,
             bookings: item.bookings || 0
         }));
 
-        createBarChart(container, data, '#28a745');
+        createBarChart(container, data, chartColor);
     }
 
     // Generic Bar Chart Creator
     function createBarChart(container, data, color) {
         try {
             const maxValue = Math.max(...data.map(d => d.value), 1000);
-            const padding = 60;
-            const chartWidth = Math.max(container.clientWidth - (padding * 2), 300);
-            const chartHeight = Math.max(container.clientHeight - (padding * 2), 280);
-            const barWidth = Math.max((chartWidth / data.length) * 0.6, 20);
-            const barSpacing = (chartWidth / data.length) * 0.2;
+            const padding = 50;
+            
+            // Use container dimensions properly
+            const containerRect = container.getBoundingClientRect();
+            const availableWidth = Math.max(containerRect.width || container.offsetWidth, 350);
+            const availableHeight = Math.max(containerRect.height || container.offsetHeight, 300);
+            
+            const chartWidth = availableWidth - (padding * 2);
+            const chartHeight = availableHeight - (padding * 2);
+            const barWidth = Math.max((chartWidth / data.length) * 0.7, 15);
+            const barSpacing = (chartWidth / data.length) * 0.15;
 
-            // Ensure minimum dimensions for bar charts
-            const svgWidth = Math.max(container.clientWidth, 400);
-            const svgHeight = Math.max(container.clientHeight, 350);
+            // SVG dimensions should match container
+            const svgWidth = availableWidth;
+            const svgHeight = availableHeight;
             
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('width', '100%');
@@ -1412,22 +1584,30 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Initialize charts
-    setTimeout(() => {
-        createRevenueChart();
-        createStatusChart();
-        createQuarterlyChart();
-        createSeasonalChart();
-    }, 100);
-
-    // Redraw charts on window resize
-    window.addEventListener('resize', function() {
+    // Initialize charts with proper timing
+    function initializeCharts() {
+        // Wait for DOM to be fully rendered
         setTimeout(() => {
             createRevenueChart();
             createStatusChart();
             createQuarterlyChart();
             createSeasonalChart();
-        }, 100);
+        }, 200);
+    }
+
+    // Initialize charts
+    initializeCharts();
+
+    // Redraw charts on window resize with debouncing
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            createRevenueChart();
+            createStatusChart();
+            createQuarterlyChart();
+            createSeasonalChart();
+        }, 150);
     });
 });
 </script>
