@@ -10,20 +10,13 @@ from django.views.generic import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('listings.urls')),
+    path('', RedirectView.as_view(pattern_name='listings:listing_list'), name='home'),
+    path('listings/', include('listings.urls')),
     path('users/', include('users.urls')),
     path('chat/', include('chat.urls')),
     path('notifications/', include('notifications.urls')),
     path('moderation/', include('moderation.urls')),
     path('subscriptions/', include('subscriptions.urls')),
-
-    # API URLs
-    path('api/users/', include('users.urls')),
-    path('api/listings/', include('listings.urls')),
-    path('api/chat/', include('chat.urls')),
-    path('api/notifications/', include('notifications.urls')),
-    path('api/moderation/', include('moderation.urls')),
-    path('api/subscriptions/', include('subscriptions.urls')),
 ]
 
 # Serve media files in development
