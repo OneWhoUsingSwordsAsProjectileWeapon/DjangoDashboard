@@ -858,15 +858,15 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        const maxValue = Math.max(...data.map(d => d.value), 1000); // Ensure minimum scale
-        const minValue = 0; // Always start from 0 for revenue
-        const padding = 40;
+        const maxValue = Math.max(...data.map(d => d.value), 1000);
+        const minValue = 0;
+        const padding = 50;
         const chartWidth = container.clientWidth - (padding * 2);
         const chartHeight = container.clientHeight - (padding * 2);
 
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('width', '100%');
-        svg.setAttribute('height', '100%');
+        svg.setAttribute('width', container.clientWidth);
+        svg.setAttribute('height', container.clientHeight);
         svg.setAttribute('viewBox', `0 0 ${container.clientWidth} ${container.clientHeight}`);
 
         // Create gradient
@@ -893,20 +893,6 @@ document.addEventListener('DOMContentLoaded', function() {
         defs.appendChild(gradient);
         svg.appendChild(defs);
 
-        // Create points and path
-        const points = data.map((d, i) => {
-            let x;
-            if (data.length <= 1) {
-                x = padding + chartWidth / 2;
-            } else {
-                x = padding + (i * (chartWidth / (data.length - 1)));
-            }
-
-            const normalizedValue = maxValue > 0 ? (d.value / maxValue) : 0;
-            const y = padding + (chartHeight - (normalizedValue * chartHeight));
-            return { x, y, value: d.value, label: d.label };
-        });
-
         // Create grid lines and Y-axis labels
         const gridCount = 5;
         for (let i = 0; i <= gridCount; i++) {
@@ -929,7 +915,6 @@ document.addEventListener('DOMContentLoaded', function() {
             text.setAttribute('text-anchor', 'end');
             text.setAttribute('class', 'chart-label');
 
-            // Better number formatting
             if (value >= 1000000) {
                 text.textContent = '₽' + (value / 1000000).toFixed(1) + 'М';
             } else if (value >= 1000) {
@@ -941,33 +926,36 @@ document.addEventListener('DOMContentLoaded', function() {
             svg.appendChild(text);
         }
 
-        // Create area and line paths
-        if (points.length >= 1) {
-            if (points.length > 1) {
-                // Area path for multiple points
-                const pointsStr = points.map(p => `${p.x} ${p.y}`).join(' L ');
-                const areaPath = `M ${padding} ${padding + chartHeight} L ${pointsStr} L ${padding + chartWidth} ${padding + chartHeight} Z`;
-                const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                area.setAttribute('d', areaPath);
-                area.setAttribute('class', 'chart-area');
-                svg.appendChild(area);
+        // Calculate points
+        const points = data.map((d, i) => {
+            const x = padding + (i * (chartWidth / Math.max(data.length - 1, 1)));
+            const normalizedValue = maxValue > 0 ? (d.value / maxValue) : 0;
+            const y = padding + chartHeight - (normalizedValue * chartHeight);
+            return { x, y, value: d.value, label: d.label };
+        });
 
-                // Line path for multiple points
-                const linePath = `M ${pointsStr}`;
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                line.setAttribute('d', linePath);
-                line.setAttribute('class', 'chart-line');
-                svg.appendChild(line);
-            } else {
-                // Single point - draw a horizontal line
-                const point = points[0];
-                const linePath = `M ${padding} ${point.y} L ${padding + chartWidth} ${point.y}`;
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                line.setAttribute('d', linePath);
-                line.setAttribute('class', 'chart-line');
-                line.setAttribute('stroke-dasharray', '5,5');
-                svg.appendChild(line);
-            }
+        // Create area path
+        if (points.length > 1) {
+            const areaPoints = points.map(p => `${p.x},${p.y}`).join(' L');
+            const areaPath = `M ${padding},${padding + chartHeight} L${areaPoints} L${padding + chartWidth},${padding + chartHeight} Z`;
+            
+            const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            area.setAttribute('d', areaPath);
+            area.setAttribute('fill', 'url(#gradient)');
+            svg.appendChild(area);
+
+            // Create line path
+            const linePoints = points.map(p => `${p.x},${p.y}`).join(' L');
+            const linePath = `M${linePoints}`;
+            
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            line.setAttribute('d', linePath);
+            line.setAttribute('fill', 'none');
+            line.setAttribute('stroke', '#28a745');
+            line.setAttribute('stroke-width', '3');
+            line.setAttribute('stroke-linecap', 'round');
+            line.setAttribute('stroke-linejoin', 'round');
+            svg.appendChild(line);
         }
 
         // Create points and labels
@@ -976,15 +964,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             circle.setAttribute('cx', point.x);
             circle.setAttribute('cy', point.y);
-            circle.setAttribute('r', 4);
-            circle.setAttribute('class', 'chart-point');
+            circle.setAttribute('r', 5);
+            circle.setAttribute('fill', '#28a745');
+            circle.setAttribute('stroke', '#ffffff');
+            circle.setAttribute('stroke-width', '2');
+            circle.style.cursor = 'pointer';
 
             // Add tooltip
             circle.addEventListener('mouseenter', function(e) {
                 const tooltip = document.createElement('div');
                 tooltip.className = 'chart-tooltip';
 
-                // Better number formatting for tooltip
                 let valueText;
                 if (point.value >= 1000000) {
                     valueText = (point.value / 1000000).toFixed(1) + 'М';
@@ -996,7 +986,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 tooltip.innerHTML = `${point.label}<br>₽${valueText}`;
 
-                // Better tooltip positioning
                 const rect = container.getBoundingClientRect();
                 tooltip.style.position = 'absolute';
                 tooltip.style.left = (e.clientX - rect.left + 10) + 'px';
@@ -1277,15 +1266,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function createBarChart(container, data, color) {
         try {
             const maxValue = Math.max(...data.map(d => d.value), 1000);
-            const padding = 40;
+            const padding = 50;
             const chartWidth = container.clientWidth - (padding * 2);
             const chartHeight = container.clientHeight - (padding * 2);
-            const barWidth = chartWidth / data.length * 0.7;
-            const barSpacing = chartWidth / data.length * 0.3;
+            const barWidth = (chartWidth / data.length) * 0.7;
+            const barSpacing = (chartWidth / data.length) * 0.15;
 
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', '100%');
-            svg.setAttribute('height', '100%');
+            svg.setAttribute('width', container.clientWidth);
+            svg.setAttribute('height', container.clientHeight);
             svg.setAttribute('viewBox', `0 0 ${container.clientWidth} ${container.clientHeight}`);
 
             // Create grid lines and Y-axis labels
@@ -1299,7 +1288,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 line.setAttribute('y1', y);
                 line.setAttribute('x2', padding + chartWidth);
                 line.setAttribute('y2', y);
-                line.setAttribute('class', 'chart-grid');
+                line.setAttribute('stroke', '#e0e0e0');
+                line.setAttribute('stroke-width', '1');
+                line.setAttribute('stroke-dasharray', '2,2');
                 svg.appendChild(line);
 
                 // Y-axis labels
@@ -1308,7 +1299,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 text.setAttribute('x', padding - 10);
                 text.setAttribute('y', y + 4);
                 text.setAttribute('text-anchor', 'end');
-                text.setAttribute('class', 'chart-label');
+                text.setAttribute('fill', '#6c757d');
+                text.setAttribute('font-size', '12');
+                text.setAttribute('font-family', 'Arial, sans-serif');
 
                 if (value >= 1000000) {
                     text.textContent = '₽' + (value / 1000000).toFixed(1) + 'М';
@@ -1324,21 +1317,20 @@ document.addEventListener('DOMContentLoaded', function() {
             // Create bars
             data.forEach((item, index) => {
                 const barHeight = maxValue > 0 ? (item.value / maxValue) * chartHeight : 0;
-                const x = padding + (index * (chartWidth / data.length)) + (barSpacing / 2);
+                const x = padding + (index * (chartWidth / data.length)) + barSpacing;
                 const y = padding + chartHeight - barHeight;
 
                 const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
                 rect.setAttribute('x', x);
                 rect.setAttribute('y', y);
                 rect.setAttribute('width', barWidth);
-                rect.setAttribute('height', barHeight);
+                rect.setAttribute('height', Math.max(barHeight, 0));
                 rect.setAttribute('fill', color);
                 rect.setAttribute('rx', '4');
                 rect.style.cursor = 'pointer';
-                rect.style.transition = 'all 0.3s ease';
 
                 rect.addEventListener('mouseenter', function(e) {
-                    rect.style.filter = 'brightness(1.2)';
+                    rect.setAttribute('fill', color === '#17a2b8' ? '#138496' : '#1e7e34');
 
                     const tooltip = document.createElement('div');
                     tooltip.className = 'chart-tooltip';
@@ -1357,7 +1349,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const rect_container = container.getBoundingClientRect();
                     tooltip.style.position = 'absolute';
                     tooltip.style.left = (e.clientX - rect_container.left + 10) + 'px';
-                    tooltip.style.top = (e.clientY - rect_container.top - 40) + 'px';
+                    tooltip.style.top = (e.clientY - rect_container.top - 50) + 'px';
                     tooltip.style.display = 'block';
                     tooltip.style.zIndex = '1001';
                     container.style.position = 'relative';
@@ -1367,7 +1359,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 rect.addEventListener('mouseleave', function() {
-                    rect.style.filter = 'none';
+                    rect.setAttribute('fill', color);
                     if (rect._tooltip) {
                         rect._tooltip.remove();
                     }
@@ -1380,7 +1372,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 text.setAttribute('x', x + barWidth / 2);
                 text.setAttribute('y', padding + chartHeight + 20);
                 text.setAttribute('text-anchor', 'middle');
-                text.setAttribute('class', 'chart-label');
+                text.setAttribute('fill', '#6c757d');
+                text.setAttribute('font-size', '12');
+                text.setAttribute('font-family', 'Arial, sans-serif');
                 text.textContent = item.label;
                 svg.appendChild(text);
             });
