@@ -61,15 +61,82 @@
                 <h5 class="mb-0 text-dark">
                     Найдено объявлений: <span class="text-primary">{{ approvals|length }}</span>
                 </h5>
+                <!-- Bulk Actions -->
+                <div class="d-flex align-items-center">
+                    <button type="button" class="btn btn-outline-primary btn-sm me-2" onclick="toggleBulkActions()">
+                        <i class="fas fa-tasks me-1"></i> Массовые действия
+                    </button>
+                </div>
             </div>
         </div>
+        
+        <!-- Bulk Actions Panel -->
+        <div id="bulk-actions-panel" class="card-header bg-light border-top d-none">
+            <form method="post" id="bulk-actions-form">
+                {% csrf_token %}
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Действие</label>
+                        <select name="bulk_action" id="bulk_action" class="form-select form-select-sm">
+                            <option value="">Выберите действие</option>
+                            <option value="bulk_approve">Одобрить выбранные</option>
+                            <option value="bulk_reject">Отклонить выбранные</option>
+                            <option value="bulk_require_changes">Требуют изменений</option>
+                            <option value="bulk_assign">Назначить модератора</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Conditional fields -->
+                    <div class="col-md-3" id="rejection-reason-field" style="display: none;">
+                        <label class="form-label">Причина отклонения</label>
+                        <input type="text" name="bulk_rejection_reason" class="form-control form-control-sm" placeholder="Причина отклонения">
+                    </div>
+                    
+                    <div class="col-md-3" id="required-changes-field" style="display: none;">
+                        <label class="form-label">Необходимые изменения</label>
+                        <input type="text" name="bulk_required_changes" class="form-control form-control-sm" placeholder="Что нужно изменить">
+                    </div>
+                    
+                    <div class="col-md-3" id="assign-moderator-field" style="display: none;">
+                        <label class="form-label">Модератор</label>
+                        <select name="bulk_assign_moderator" class="form-select form-select-sm">
+                            <option value="">Выберите модератора</option>
+                            {% for moderator in moderators %}
+                            <option value="{{ moderator.id }}">{{ moderator.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="fas fa-check me-1"></i> Применить
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleBulkActions()">
+                            Отмена
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <span id="selected-count">0</span> объявлений выбрано
+                    </small>
+                </div>
+            </form>
+        </div>
+        
         <div class="card-body p-0">
             {% if approvals %}
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th class="border-0 ps-3">ID</th>
+                            <th class="border-0 ps-3" style="width: 40px;">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="select-all">
+                                </div>
+                            </th>
+                            <th class="border-0">ID</th>
                             <th class="border-0">Объявление</th>
                             <th class="border-0">Владелец</th>
                             <th class="border-0">Статус</th>
@@ -83,6 +150,13 @@
                         {% for approval in approvals %}
                         <tr>
                             <td class="ps-3 align-middle">
+                                <div class="form-check">
+                                    <input class="form-check-input approval-checkbox" type="checkbox" 
+                                           name="selected_approvals" value="{{ approval.id }}" form="bulk-actions-form"
+                                           {% if approval.status != 'pending' %}disabled{% endif %}>
+                                </div>
+                            </td>
+                            <td class="align-middle">
                                 <strong>#{{ approval.id }}</strong>
                             </td>
                             <td class="align-middle">
@@ -228,4 +302,126 @@
     font-weight: 500;
 }
 </style>
+
+<script>
+function toggleBulkActions() {
+    const panel = document.getElementById('bulk-actions-panel');
+    panel.classList.toggle('d-none');
+    
+    if (!panel.classList.contains('d-none')) {
+        updateSelectedCount();
+    }
+}
+
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.approval-checkbox:checked');
+    const count = checkboxes.length;
+    document.getElementById('selected-count').textContent = count;
+    
+    // Enable/disable bulk actions based on selection
+    const bulkActionSelect = document.getElementById('bulk_action');
+    const submitButton = document.querySelector('#bulk-actions-form button[type="submit"]');
+    
+    if (count > 0) {
+        bulkActionSelect.disabled = false;
+        submitButton.disabled = false;
+    } else {
+        bulkActionSelect.disabled = true;
+        submitButton.disabled = true;
+    }
+}
+
+// Select all functionality
+document.getElementById('select-all').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.approval-checkbox:not(:disabled)');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+    });
+    updateSelectedCount();
+});
+
+// Individual checkbox change
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('approval-checkbox')) {
+        updateSelectedCount();
+        
+        // Update select-all checkbox state
+        const allCheckboxes = document.querySelectorAll('.approval-checkbox:not(:disabled)');
+        const checkedCheckboxes = document.querySelectorAll('.approval-checkbox:checked');
+        const selectAllCheckbox = document.getElementById('select-all');
+        
+        if (checkedCheckboxes.length === 0) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = false;
+        } else if (checkedCheckboxes.length === allCheckboxes.length) {
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = true;
+        } else {
+            selectAllCheckbox.indeterminate = true;
+        }
+    }
+});
+
+// Bulk action change
+document.getElementById('bulk_action').addEventListener('change', function() {
+    const action = this.value;
+    
+    // Hide all conditional fields
+    document.getElementById('rejection-reason-field').style.display = 'none';
+    document.getElementById('required-changes-field').style.display = 'none';
+    document.getElementById('assign-moderator-field').style.display = 'none';
+    
+    // Show relevant field based on action
+    if (action === 'bulk_reject') {
+        document.getElementById('rejection-reason-field').style.display = 'block';
+    } else if (action === 'bulk_require_changes') {
+        document.getElementById('required-changes-field').style.display = 'block';
+    } else if (action === 'bulk_assign') {
+        document.getElementById('assign-moderator-field').style.display = 'block';
+    }
+});
+
+// Form submission confirmation
+document.getElementById('bulk-actions-form').addEventListener('submit', function(e) {
+    const selectedCount = document.querySelectorAll('.approval-checkbox:checked').length;
+    const action = document.getElementById('bulk_action').value;
+    
+    if (selectedCount === 0) {
+        e.preventDefault();
+        alert('Пожалуйста, выберите хотя бы одно объявление.');
+        return;
+    }
+    
+    if (!action) {
+        e.preventDefault();
+        alert('Пожалуйста, выберите действие.');
+        return;
+    }
+    
+    let actionText = '';
+    switch(action) {
+        case 'bulk_approve':
+            actionText = 'одобрить';
+            break;
+        case 'bulk_reject':
+            actionText = 'отклонить';
+            break;
+        case 'bulk_require_changes':
+            actionText = 'установить статус "Требуют изменений" для';
+            break;
+        case 'bulk_assign':
+            actionText = 'назначить модератора для';
+            break;
+    }
+    
+    if (!confirm(`Вы уверены, что хотите ${actionText} ${selectedCount} объявлений?`)) {
+        e.preventDefault();
+    }
+});
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    updateSelectedCount();
+});
+</script>
 {% endblock %}

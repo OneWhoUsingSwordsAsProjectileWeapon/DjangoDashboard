@@ -327,6 +327,91 @@ def listing_approval_list(request):
     """View for listing all pending listing approvals"""
     from .models import ListingApproval
 
+    # Handle bulk actions
+    if request.method == 'POST':
+        action = request.POST.get('bulk_action')
+        selected_ids = request.POST.getlist('selected_approvals')
+        
+        if action and selected_ids:
+            selected_approvals = ListingApproval.objects.filter(id__in=selected_ids)
+            
+            if action == 'bulk_approve':
+                count = 0
+                for approval in selected_approvals.filter(status='pending'):
+                    approval.status = 'approved'
+                    approval.moderator = request.user
+                    approval.reviewed_at = timezone.now()
+                    approval.listing.is_approved = True
+                    approval.listing.is_active = True
+                    approval.listing.save(update_fields=['is_approved', 'is_active'])
+                    approval.save()
+                    
+                    # Log the action
+                    ModerationLog.objects.create(
+                        moderator=request.user,
+                        action_type='listing_approved',
+                        target_listing=approval.listing,
+                        target_user=approval.listing.host,
+                        description=f"Bulk approved listing: {approval.listing.title}",
+                        notes="Bulk approval action"
+                    )
+                    count += 1
+                
+                messages.success(request, f"Одобрено {count} объявлений.")
+                
+            elif action == 'bulk_reject':
+                rejection_reason = request.POST.get('bulk_rejection_reason', 'Отклонено при массовой модерации')
+                count = 0
+                for approval in selected_approvals.filter(status='pending'):
+                    approval.status = 'rejected'
+                    approval.moderator = request.user
+                    approval.reviewed_at = timezone.now()
+                    approval.rejection_reason = rejection_reason
+                    approval.listing.is_approved = False
+                    approval.listing.is_active = False
+                    approval.listing.save(update_fields=['is_approved', 'is_active'])
+                    approval.save()
+                    
+                    # Log the action
+                    ModerationLog.objects.create(
+                        moderator=request.user,
+                        action_type='listing_rejected',
+                        target_listing=approval.listing,
+                        target_user=approval.listing.host,
+                        description=f"Bulk rejected listing: {approval.listing.title}",
+                        notes=f"Bulk rejection: {rejection_reason}"
+                    )
+                    count += 1
+                
+                messages.success(request, f"Отклонено {count} объявлений.")
+                
+            elif action == 'bulk_require_changes':
+                required_changes = request.POST.get('bulk_required_changes', 'Требуются изменения')
+                count = 0
+                for approval in selected_approvals.filter(status='pending'):
+                    approval.status = 'requires_changes'
+                    approval.moderator = request.user
+                    approval.reviewed_at = timezone.now()
+                    approval.required_changes = required_changes
+                    approval.listing.is_approved = False
+                    approval.listing.save(update_fields=['is_approved'])
+                    approval.save()
+                    count += 1
+                
+                messages.success(request, f"Для {count} объявлений установлено 'Требуют изменений'.")
+                
+            elif action == 'bulk_assign':
+                moderator_id = request.POST.get('bulk_assign_moderator')
+                if moderator_id:
+                    try:
+                        moderator = User.objects.get(id=int(moderator_id), is_staff=True)
+                        count = selected_approvals.filter(status='pending').update(moderator=moderator)
+                        messages.success(request, f"{count} объявлений назначено модератору {moderator.username}.")
+                    except (User.DoesNotExist, ValueError):
+                        messages.error(request, "Неверный модератор.")
+        
+        return redirect('moderation:listing_approval_list')
+
     # Get all listing approvals, filter by status if provided
     status = request.GET.get('status')
     approvals = ListingApproval.objects.select_related('listing', 'moderator').all()
@@ -342,11 +427,15 @@ def listing_approval_list(request):
         except ValueError:
             pass
 
+    # Get moderators for bulk assignment
+    moderators = User.objects.filter(is_staff=True)
+
     return render(request, 'moderation/listing_approval_list.html', {
         'approvals': approvals,
         'status_choices': ListingApproval.STATUS_CHOICES,
         'current_status': status,
-        'current_moderator': moderator_id
+        'current_moderator': moderator_id,
+        'moderators': moderators
     })
 
 @login_required
