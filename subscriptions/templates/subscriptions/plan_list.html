@@ -202,7 +202,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let currentPlanData = {};
@@ -260,6 +260,7 @@ document.addEventListener('DOMContentLoaded', function() {
             currency: 'USD',
             auto_renew: autoRenew,
             test_mode: true,
+            payment_reference: generatePaymentReference(),
             timestamp: Date.now()
         };
         
@@ -302,6 +303,7 @@ function showQRPayment(planData, autoRenew) {
             currency: 'USD',
             auto_renew: autoRenew,
             test_mode: true,
+            payment_reference: generatePaymentReference(),
             timestamp: Date.now()
         };
         
@@ -309,24 +311,22 @@ function showQRPayment(planData, autoRenew) {
         qrCodeContainer.innerHTML = '';
         
         try {
-            // Create canvas element
-            const canvas = document.createElement('canvas');
-            qrCodeContainer.appendChild(canvas);
+            // Generate QR code using qrcode-generator library
+            const qr = qrcode(0, 'M');
+            qr.addData(JSON.stringify(paymentData));
+            qr.make();
             
-            // Generate QR code using QRCode.js library
-            QRCode.toCanvas(canvas, JSON.stringify(paymentData), {
-                width: 256,
-                margin: 2,
-                color: {
-                    dark: '#000000',
-                    light: '#ffffff'
-                }
-            }, function (error) {
-                if (error) {
-                    console.error('QR Code generation error:', error);
-                    qrCodeContainer.innerHTML = '<div class="alert alert-danger">Ошибка генерации QR-кода</div>';
-                }
-            });
+            // Create QR code as SVG
+            const qrSvg = qr.createSvgTag(4, 0);
+            qrCodeContainer.innerHTML = qrSvg;
+            
+            // Style the SVG
+            const svg = qrCodeContainer.querySelector('svg');
+            if (svg) {
+                svg.style.width = '256px';
+                svg.style.height = '256px';
+                svg.style.border = '1px solid #ddd';
+            }
             
             // Show the QR modal
             const qrModal = new bootstrap.Modal(document.getElementById('qrPaymentModal'));
@@ -460,7 +460,12 @@ function simulateQRScan(paymentData) {
 }
 
 function generatePaymentReference() {
-    return 'qr_test_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
+    // Generate UUID-like string
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
 }
 
 function getCookie(name) {

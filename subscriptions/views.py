@@ -137,10 +137,16 @@ def process_qr_payment(request):
             
             # Create subscription
             with transaction.atomic():
+                payment_ref = payment_data.get('payment_reference')
+                if not payment_ref:
+                    # Generate UUID if not provided
+                    import uuid
+                    payment_ref = str(uuid.uuid4())
+                
                 subscription = SubscriptionService.create_subscription(
                     user=user,
                     plan=plan,
-                    payment_reference=f"qr_test_{payment_data.get('timestamp', '')}",
+                    payment_reference=payment_ref,
                     auto_renew=payment_data.get('auto_renew', False)
                 )
                 
