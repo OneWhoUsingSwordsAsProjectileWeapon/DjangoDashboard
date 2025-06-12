@@ -9,25 +9,24 @@
 /* Dashboard Chart Styles */
 .chart-container {
     position: relative !important;
-    height: 400px !important;
+    height: 450px !important;
     width: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
     background: #ffffff !important;
     border-radius: 8px !important;
+    overflow: hidden !important;
 }
 
 .line-chart, .bar-chart {
     width: 100% !important;
-    height: 350px !important;
+    height: 100% !important;
     position: relative !important;
     border: 1px solid #e0e0e0 !important;
     border-radius: 8px !important;
     background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%) !important;
-    padding: 20px !important;
+    padding: 15px !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
+    min-height: 400px !important;
 }
 
 .line-chart svg, .bar-chart svg {
@@ -223,12 +222,13 @@
 /* Responsive chart adjustments */
 @media (max-width: 768px) {
     .chart-container {
-        height: 300px !important;
+        height: 350px !important;
     }
 
     .line-chart, .bar-chart {
-        height: 250px !important;
-        padding: 15px !important;
+        height: 100% !important;
+        padding: 10px !important;
+        min-height: 300px !important;
     }
 
     .pie-chart {
@@ -238,6 +238,16 @@
 
     .chart-label {
         font-size: 10px !important;
+    }
+}
+
+@media (min-width: 1200px) {
+    .chart-container {
+        height: 500px !important;
+    }
+    
+    .line-chart, .bar-chart {
+        min-height: 450px !important;
     }
 }
 </style>
@@ -860,14 +870,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const maxValue = Math.max(...data.map(d => d.value), 1000);
         const minValue = 0;
-        const padding = 50;
-        const chartWidth = container.clientWidth - (padding * 2);
-        const chartHeight = container.clientHeight - (padding * 2);
+        const padding = 60;
+        const chartWidth = Math.max(container.clientWidth - (padding * 2), 300);
+        const chartHeight = Math.max(container.clientHeight - (padding * 2), 280);
 
+        // Ensure minimum dimensions
+        const svgWidth = Math.max(container.clientWidth, 400);
+        const svgHeight = Math.max(container.clientHeight, 350);
+        
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('width', container.clientWidth);
-        svg.setAttribute('height', container.clientHeight);
-        svg.setAttribute('viewBox', `0 0 ${container.clientWidth} ${container.clientHeight}`);
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+        svg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
+        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
         // Create gradient
         const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
@@ -1266,16 +1281,21 @@ document.addEventListener('DOMContentLoaded', function() {
     function createBarChart(container, data, color) {
         try {
             const maxValue = Math.max(...data.map(d => d.value), 1000);
-            const padding = 50;
-            const chartWidth = container.clientWidth - (padding * 2);
-            const chartHeight = container.clientHeight - (padding * 2);
-            const barWidth = (chartWidth / data.length) * 0.7;
-            const barSpacing = (chartWidth / data.length) * 0.15;
+            const padding = 60;
+            const chartWidth = Math.max(container.clientWidth - (padding * 2), 300);
+            const chartHeight = Math.max(container.clientHeight - (padding * 2), 280);
+            const barWidth = Math.max((chartWidth / data.length) * 0.6, 20);
+            const barSpacing = (chartWidth / data.length) * 0.2;
 
+            // Ensure minimum dimensions for bar charts
+            const svgWidth = Math.max(container.clientWidth, 400);
+            const svgHeight = Math.max(container.clientHeight, 350);
+            
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', container.clientWidth);
-            svg.setAttribute('height', container.clientHeight);
-            svg.setAttribute('viewBox', `0 0 ${container.clientWidth} ${container.clientHeight}`);
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            svg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
+            svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
             // Create grid lines and Y-axis labels
             const gridCount = 5;
