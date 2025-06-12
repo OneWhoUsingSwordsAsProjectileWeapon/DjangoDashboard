@@ -138,10 +138,16 @@
                     </label>
                 </div>
                 
-                <button type="button" class="btn btn-success btn-lg" id="simulatePayment">
-                    <i class="fas fa-qrcode"></i>
-                    Симуляция оплаты (Тест)
-                </button>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-primary btn-lg" id="scanQRCode">
+                        <i class="fas fa-camera"></i>
+                        Сканировать QR-код
+                    </button>
+                    <button type="button" class="btn btn-success btn-lg" id="simulatePayment">
+                        <i class="fas fa-qrcode"></i>
+                        Симуляция оплаты (Тест)
+                    </button>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -196,7 +202,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let currentPlanData = {};
@@ -241,46 +247,106 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Handle simulate payment
+    // Handle simulate payment (simulate QR scan)
     document.getElementById('simulatePayment').addEventListener('click', function() {
         const autoRenew = document.getElementById('qrAutoRenewCheck').checked;
-        createSubscription(currentPlanData.planId, autoRenew);
+        
+        // Create payment data that would be in QR code
+        const paymentData = {
+            action: 'subscription_payment',
+            plan_id: currentPlanData.planId,
+            plan_name: currentPlanData.planName,
+            amount: currentPlanData.planPrice,
+            currency: 'USD',
+            auto_renew: autoRenew,
+            test_mode: true,
+            timestamp: Date.now()
+        };
+        
+        // Simulate QR scan
+        simulateQRScan(paymentData);
+    });
+    
+    // Handle real QR scan button
+    document.getElementById('scanQRCode').addEventListener('click', function() {
+        // In a real app, this would open camera for QR scanning
+        // For now, we'll provide instructions
+        alert('Для сканирования QR-кода:\n\n' +
+              '1. Откройте камеру на телефоне\n' +
+              '2. Наведите на QR-код выше\n' +
+              '3. Или используйте кнопку "Симуляция оплаты" для тестирования\n\n' +
+              'В тестовом режиме подписка активируется автоматически.');
     });
 });
 
 function showQRPayment(planData, autoRenew) {
-    // Hide subscription modal
-    bootstrap.Modal.getInstance(document.getElementById('subscriptionModal')).hide();
+    // Hide subscription modal first
+    const subscriptionModal = bootstrap.Modal.getInstance(document.getElementById('subscriptionModal'));
+    if (subscriptionModal) {
+        subscriptionModal.hide();
+    }
     
-    // Show QR payment modal
-    document.getElementById('qr-plan-name').textContent = planData.planName;
-    document.getElementById('qr-plan-price').textContent = planData.planPrice;
-    document.getElementById('qrAutoRenewCheck').checked = autoRenew;
-    
-    // Generate QR code
-    const paymentData = {
-        plan_id: planData.planId,
-        plan_name: planData.planName,
-        amount: planData.planPrice,
-        currency: 'USD',
-        test_mode: true
-    };
-    
-    const qrCodeContainer = document.getElementById('qr-code');
-    qrCodeContainer.innerHTML = '';
-    
-    QRCode.toCanvas(qrCodeContainer, JSON.stringify(paymentData), {
-        width: 256,
-        height: 256,
-        margin: 2
-    }, function (error) {
-        if (error) {
+    // Wait for modal to hide, then show QR modal
+    setTimeout(function() {
+        // Show QR payment modal
+        document.getElementById('qr-plan-name').textContent = planData.planName;
+        document.getElementById('qr-plan-price').textContent = planData.planPrice;
+        document.getElementById('qrAutoRenewCheck').checked = autoRenew;
+        
+        // Generate QR code with payment data
+        const paymentData = {
+            action: 'subscription_payment',
+            plan_id: planData.planId,
+            plan_name: planData.planName,
+            amount: planData.planPrice,
+            currency: 'USD',
+            auto_renew: autoRenew,
+            test_mode: true,
+            timestamp: Date.now()
+        };
+        
+        const qrCodeContainer = document.getElementById('qr-code');
+        qrCodeContainer.innerHTML = '';
+        
+        try {
+            // Create QR code using qrcode-generator library
+            const qr = qrcode(0, 'M');
+            qr.addData(JSON.stringify(paymentData));
+            qr.make();
+            
+            // Create canvas element
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            
+            // Draw QR code on canvas
+            const moduleCount = qr.getModuleCount();
+            const tileW = canvas.width / moduleCount;
+            const tileH = canvas.height / moduleCount;
+            
+            for (let row = 0; row < moduleCount; row++) {
+                for (let col = 0; col < moduleCount; col++) {
+                    ctx.fillStyle = qr.isDark(row, col) ? '#000000' : '#ffffff';
+                    ctx.fillRect(col * tileW, row * tileH, tileW, tileH);
+                }
+            }
+            
+            qrCodeContainer.appendChild(canvas);
+            
+            // Show the QR modal
+            const qrModal = new bootstrap.Modal(document.getElementById('qrPaymentModal'));
+            qrModal.show();
+            
+        } catch (error) {
+            console.error('QR Code generation error:', error);
             qrCodeContainer.innerHTML = '<div class="alert alert-danger">Ошибка генерации QR-кода</div>';
+            
+            // Still show the modal even if QR generation failed
+            const qrModal = new bootstrap.Modal(document.getElementById('qrPaymentModal'));
+            qrModal.show();
         }
-    });
-    
-    const qrModal = new bootstrap.Modal(document.getElementById('qrPaymentModal'));
-    qrModal.show();
+    }, 300);
 }
 
 function updateSubscriptionStatus(data) {
@@ -337,14 +403,56 @@ function createSubscription(planId, autoRenew) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Подписка успешно оформлена!');
+            // Hide QR modal
+            const qrModal = bootstrap.Modal.getInstance(document.getElementById('qrPaymentModal'));
+            if (qrModal) {
+                qrModal.hide();
+            }
+            
+            // Show success message
+            alert('Подписка успешно оформлена через QR-код!');
             location.reload();
         } else {
             alert(data.message || 'Ошибка при оформлении подписки');
         }
     })
     .catch(error => {
+        console.error('Subscription creation error:', error);
         alert('Ошибка при оформлении подписки');
+    });
+}
+
+// Simulate QR code scanning (for testing)
+function simulateQRScan(paymentData) {
+    return fetch('/api/subscriptions/qr-payment/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            qr_data: paymentData,
+            user_id: {% if user.is_authenticated %}{{ user.id }}{% else %}null{% endif %}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Hide QR modal
+            const qrModal = bootstrap.Modal.getInstance(document.getElementById('qrPaymentModal'));
+            if (qrModal) {
+                qrModal.hide();
+            }
+            
+            alert('QR-код успешно отсканирован! Подписка активирована.');
+            location.reload();
+        } else {
+            alert(data.message || 'Ошибка при обработке QR-кода');
+        }
+    })
+    .catch(error => {
+        console.error('QR payment error:', error);
+        alert('Ошибка при обработке QR-платежа');
     });
 }
 

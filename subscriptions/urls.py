@@ -11,6 +11,7 @@ urlpatterns = [
         path('plans/', views.SubscriptionPlanListView.as_view(), name='api_plan_list'),
         path('status/', views.subscription_status, name='api_status'),
         path('create/', views.create_subscription, name='api_create'),
+        path('qr-payment/', views.process_qr_payment, name='api_qr_payment'),
         path('cancel/', views.cancel_subscription, name='api_cancel'),
         path('toggle-auto-renew/', views.toggle_auto_renew, name='api_toggle_auto_renew'),
         path('usage/', views.subscription_usage, name='api_usage'),

@@ -61,6 +61,112 @@ def subscription_status(request):
     return Response(serializer.data)
 
 @api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def process_qr_payment(request):
+    """Process QR code payment (test mode - auto approve)"""
+    import json
+    
+    try:
+        # Extract payment data from QR scan
+        qr_data = request.data.get('qr_data')
+        if not qr_data:
+            return Response({
+                'success': False,
+                'message': _('No QR data provided')
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Parse QR data
+        if isinstance(qr_data, str):
+            try:
+                payment_data = json.loads(qr_data)
+            except json.JSONDecodeError:
+                return Response({
+                    'success': False,
+                    'message': _('Invalid QR data format')
+                }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            payment_data = qr_data
+        
+        # Validate payment data
+        required_fields = ['action', 'plan_id', 'test_mode']
+        for field in required_fields:
+            if field not in payment_data:
+                return Response({
+                    'success': False,
+                    'message': _('Missing required field: {}').format(field)
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if payment_data.get('action') != 'subscription_payment':
+            return Response({
+                'success': False,
+                'message': _('Invalid payment action')
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # In test mode, auto-approve payment
+        if payment_data.get('test_mode'):
+            # Get user ID from request (authenticated user)
+            user_id = request.data.get('user_id')
+            if not user_id and request.user.is_authenticated:
+                user_id = request.user.id
+                
+            if not user_id:
+                return Response({
+                    'success': False,
+                    'message': _('User authentication required')
+                }, status=status.HTTP_401_UNAUTHORIZED)
+            
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return Response({
+                    'success': False,
+                    'message': _('User not found')
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Get plan
+            try:
+                plan = SubscriptionPlan.objects.get(id=payment_data['plan_id'])
+            except SubscriptionPlan.DoesNotExist:
+                return Response({
+                    'success': False,
+                    'message': _('Subscription plan not found')
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Create subscription
+            with transaction.atomic():
+                subscription = SubscriptionService.create_subscription(
+                    user=user,
+                    plan=plan,
+                    payment_reference=f"qr_test_{payment_data.get('timestamp', '')}",
+                    auto_renew=payment_data.get('auto_renew', False)
+                )
+                
+                logger.info(f"QR payment processed for user {user.username}, subscription {subscription.id}")
+                
+                return Response({
+                    'success': True,
+                    'message': _('Payment processed successfully'),
+                    'subscription_id': subscription.id,
+                    'plan_name': plan.name
+                }, status=status.HTTP_201_CREATED)
+        
+        return Response({
+            'success': False,
+            'message': _('Only test payments are supported')
+        }, status=status.HTTP_400_BAD_REQUEST)
+        
+    except Exception as e:
+        logger.error(f"Error processing QR payment: {e}")
+        return Response({
+            'success': False,
+            'message': _('Error processing payment'),
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def create_subscription(request):
     """Create a new subscription for user"""
