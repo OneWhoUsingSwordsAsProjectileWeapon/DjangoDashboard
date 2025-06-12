@@ -16,7 +16,7 @@
     justify-content: center;
 }
 
-.line-chart {
+.line-chart, .bar-chart {
     width: 100%;
     height: 350px;
     position: relative;
@@ -419,8 +419,13 @@
             <div class="row mb-4">
                 <div class="col-lg-8 mb-3">
                     <div class="card h-100">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">Тренд доходов (последние 12 месяцев)</h5>
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Динамика доходов</h5>
+                            <div class="btn-group" role="group" aria-label="Chart type">
+                                <button type="button" class="btn btn-outline-primary btn-sm active" data-chart="monthly">Месячно</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" data-chart="quarterly">Квартально</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" data-chart="seasonal">Сезонно</button>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="chart-container">
@@ -448,6 +453,44 @@
                                     </div>
                                 </div>
                                 <div class="chart-legend" id="statusLegend"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Charts Row -->
+            <div class="row mb-4">
+                <div class="col-lg-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Сравнение кварталов</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <div class="bar-chart" id="quarterlyChart">
+                                    <div class="no-data-message">
+                                        <i class="fas fa-chart-bar"></i>
+                                        <span>Загрузка данных...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Сезонная активность по месяцам</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <div class="bar-chart" id="seasonalChart">
+                                    <div class="no-data-message">
+                                        <i class="fas fa-chart-bar"></i>
+                                        <span>Загрузка данных...</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -659,6 +702,13 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Dashboard charts initializing...');
     
+    // Chart data
+    const monthlyData = {{ monthly_revenue|safe }};
+    const quarterlyData = {{ quarterly_revenue|safe }};
+    const seasonalData = {{ seasonal_revenue|safe }};
+    
+    let currentChartType = 'monthly';
+    
     // Custom date range toggle
     const timeFilterSelect = document.getElementById('timeFilterSelect');
     const customDateRange = document.getElementById('customDateRange');
@@ -673,15 +723,41 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Chart type switcher
+    const chartButtons = document.querySelectorAll('[data-chart]');
+    chartButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            chartButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            currentChartType = this.dataset.chart;
+            createRevenueChart();
+        });
+    });
+
     // Revenue Line Chart
     function createRevenueChart() {
         const container = document.getElementById('revenueChart');
         if (!container) return;
 
-        const monthlyRevenue = {{ monthly_revenue|safe }};
-        console.log('Revenue data:', monthlyRevenue);
+        let chartData, chartTitle;
+        
+        switch(currentChartType) {
+            case 'quarterly':
+                chartData = quarterlyData;
+                chartTitle = 'Квартальная динамика доходов';
+                break;
+            case 'seasonal':
+                chartData = seasonalData;
+                chartTitle = 'Сезонная статистика доходов';
+                break;
+            default:
+                chartData = monthlyData;
+                chartTitle = 'Месячная динамика доходов';
+        }
 
-        if (!monthlyRevenue || monthlyRevenue.length === 0) {
+        console.log('Revenue data:', chartData);
+
+        if (!chartData || chartData.length === 0) {
             container.innerHTML = `
                 <div class="no-data-message">
                     <i class="fas fa-chart-line"></i>
@@ -692,13 +768,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Prepare data
-        const data = monthlyRevenue.map(item => {
-            const date = new Date(item.month + 'T00:00:00');
-            return {
-                label: date.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }),
+        let data;
+        if (currentChartType === 'quarterly') {
+            data = chartData.map(item => ({
+                label: item.quarter_name,
                 value: parseFloat(item.revenue) || 0
-            };
-        });
+            }));
+        } else if (currentChartType === 'seasonal') {
+            data = chartData.map(item => ({
+                label: item.month_name.substr(0, 3),
+                value: parseFloat(item.total_revenue) || 0
+            }));
+        } else {
+            data = chartData.map(item => {
+                const date = new Date(item.month + 'T00:00:00');
+                return {
+                    label: date.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }),
+                    value: parseFloat(item.revenue) || 0
+                };
+            });
+        }
 
         const maxValue = Math.max(...data.map(d => d.value), 1000); // Ensure minimum scale
         const minValue = 0; // Always start from 0 for revenue
@@ -1063,10 +1152,179 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Quarterly Bar Chart
+    function createQuarterlyChart() {
+        const container = document.getElementById('quarterlyChart');
+        if (!container) return;
+
+        console.log('Quarterly data:', quarterlyData);
+
+        if (!quarterlyData || quarterlyData.length === 0) {
+            container.innerHTML = `
+                <div class="no-data-message">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Нет квартальных данных</span>
+                </div>
+            `;
+            return;
+        }
+
+        const data = quarterlyData.map(item => ({
+            label: item.quarter_name,
+            value: parseFloat(item.revenue) || 0,
+            bookings: item.bookings || 0
+        }));
+
+        createBarChart(container, data, '#17a2b8');
+    }
+
+    // Seasonal Bar Chart
+    function createSeasonalChart() {
+        const container = document.getElementById('seasonalChart');
+        if (!container) return;
+
+        console.log('Seasonal data:', seasonalData);
+
+        if (!seasonalData || seasonalData.length === 0) {
+            container.innerHTML = `
+                <div class="no-data-message">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Нет сезонных данных</span>
+                </div>
+            `;
+            return;
+        }
+
+        const data = seasonalData.map(item => ({
+            label: item.month_name.substr(0, 3),
+            value: parseFloat(item.total_revenue) || 0,
+            bookings: item.bookings || 0
+        }));
+
+        createBarChart(container, data, '#28a745');
+    }
+
+    // Generic Bar Chart Creator
+    function createBarChart(container, data, color) {
+        const maxValue = Math.max(...data.map(d => d.value), 1000);
+        const padding = 40;
+        const chartWidth = container.clientWidth - (padding * 2);
+        const chartHeight = container.clientHeight - (padding * 2);
+        const barWidth = chartWidth / data.length * 0.7;
+        const barSpacing = chartWidth / data.length * 0.3;
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+        svg.setAttribute('viewBox', `0 0 ${container.clientWidth} ${container.clientHeight}`);
+
+        // Create grid lines and Y-axis labels
+        const gridCount = 5;
+        for (let i = 0; i <= gridCount; i++) {
+            const y = padding + (i * (chartHeight / gridCount));
+            
+            // Grid line
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', padding);
+            line.setAttribute('y1', y);
+            line.setAttribute('x2', padding + chartWidth);
+            line.setAttribute('y2', y);
+            line.setAttribute('class', 'chart-grid');
+            svg.appendChild(line);
+
+            // Y-axis labels
+            const value = maxValue - (i * (maxValue / gridCount));
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', padding - 10);
+            text.setAttribute('y', y + 4);
+            text.setAttribute('text-anchor', 'end');
+            text.setAttribute('class', 'chart-label');
+            
+            if (value >= 1000000) {
+                text.textContent = '₽' + (value / 1000000).toFixed(1) + 'М';
+            } else if (value >= 1000) {
+                text.textContent = '₽' + (value / 1000).toFixed(0) + 'К';
+            } else {
+                text.textContent = '₽' + Math.round(value).toLocaleString('ru-RU');
+            }
+            
+            svg.appendChild(text);
+        }
+
+        // Create bars
+        data.forEach((item, index) => {
+            const barHeight = maxValue > 0 ? (item.value / maxValue) * chartHeight : 0;
+            const x = padding + (index * (chartWidth / data.length)) + (barSpacing / 2);
+            const y = padding + chartHeight - barHeight;
+
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', x);
+            rect.setAttribute('y', y);
+            rect.setAttribute('width', barWidth);
+            rect.setAttribute('height', barHeight);
+            rect.setAttribute('fill', color);
+            rect.setAttribute('rx', '4');
+            rect.style.cursor = 'pointer';
+            rect.style.transition = 'all 0.3s ease';
+
+            rect.addEventListener('mouseenter', function(e) {
+                rect.style.filter = 'brightness(1.2)';
+                
+                const tooltip = document.createElement('div');
+                tooltip.className = 'chart-tooltip';
+                
+                let valueText;
+                if (item.value >= 1000000) {
+                    valueText = (item.value / 1000000).toFixed(1) + 'М';
+                } else if (item.value >= 1000) {
+                    valueText = (item.value / 1000).toFixed(0) + 'К';
+                } else {
+                    valueText = item.value.toLocaleString('ru-RU');
+                }
+                
+                tooltip.innerHTML = `${item.label}<br>₽${valueText}<br>${item.bookings} бронирований`;
+                
+                const rect_container = container.getBoundingClientRect();
+                tooltip.style.position = 'absolute';
+                tooltip.style.left = (e.clientX - rect_container.left + 10) + 'px';
+                tooltip.style.top = (e.clientY - rect_container.top - 40) + 'px';
+                tooltip.style.display = 'block';
+                tooltip.style.zIndex = '1001';
+                container.style.position = 'relative';
+                container.appendChild(tooltip);
+                
+                rect._tooltip = tooltip;
+            });
+            
+            rect.addEventListener('mouseleave', function() {
+                rect.style.filter = 'none';
+                if (rect._tooltip) {
+                    rect._tooltip.remove();
+                }
+            });
+
+            svg.appendChild(rect);
+
+            // X-axis labels
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', x + barWidth / 2);
+            text.setAttribute('y', padding + chartHeight + 20);
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('class', 'chart-label');
+            text.textContent = item.label;
+            svg.appendChild(text);
+        });
+
+        container.innerHTML = '';
+        container.appendChild(svg);
+    }
+
     // Initialize charts
     setTimeout(() => {
         createRevenueChart();
         createStatusChart();
+        createQuarterlyChart();
+        createSeasonalChart();
     }, 100);
 
     // Redraw charts on window resize
@@ -1074,6 +1332,8 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             createRevenueChart();
             createStatusChart();
+            createQuarterlyChart();
+            createSeasonalChart();
         }, 100);
     });
 });

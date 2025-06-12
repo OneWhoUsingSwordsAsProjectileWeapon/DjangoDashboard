@@ -469,28 +469,76 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         monthly_revenue = []
         current_date = timezone.now().date()
         
-        for i in range(12):
-            # Go back i months from current date
+        for i in range(11, -1, -1):  # Go from 11 months ago to current month
             target_date = current_date.replace(day=1) - relativedelta(months=i)
-            
-            # Get bookings for this month
-            month_start = target_date
             month_end = target_date + relativedelta(months=1)
             
+            # Use end_date for completed bookings (when they actually finished)
             month_revenue = all_bookings.filter(
                 status='completed',
-                created_at__date__gte=month_start,
-                created_at__date__lt=month_end
+                end_date__gte=target_date,
+                end_date__lt=month_end
             ).aggregate(
                 total_revenue=Sum('total_price'),
                 total_bookings=Count('id')
             )
             
-            monthly_revenue.insert(0, {
+            monthly_revenue.append({
                 'month': target_date.strftime('%Y-%m-01'),
+                'month_name': target_date.strftime('%B %Y'),
                 'revenue': float(month_revenue['total_revenue'] or 0),
                 'bookings': month_revenue['total_bookings'] or 0
             })
+
+        # Quarterly revenue (last 8 quarters)
+        quarterly_revenue = []
+        for i in range(7, -1, -1):  # Last 8 quarters
+            quarter_start = current_date.replace(day=1) - relativedelta(months=i*3)
+            # Get quarter start (Jan, Apr, Jul, Oct)
+            quarter_month = ((quarter_start.month - 1) // 3) * 3 + 1
+            quarter_start = quarter_start.replace(month=quarter_month, day=1)
+            quarter_end = quarter_start + relativedelta(months=3)
+            
+            quarter_revenue = all_bookings.filter(
+                status='completed',
+                end_date__gte=quarter_start,
+                end_date__lt=quarter_end
+            ).aggregate(
+                total_revenue=Sum('total_price'),
+                total_bookings=Count('id')
+            )
+            
+            quarter_num = ((quarter_start.month - 1) // 3) + 1
+            quarterly_revenue.append({
+                'quarter': f"{quarter_start.year}-Q{quarter_num}",
+                'quarter_name': f"Q{quarter_num} {quarter_start.year}",
+                'revenue': float(quarter_revenue['total_revenue'] or 0),
+                'bookings': quarter_revenue['total_bookings'] or 0,
+                'start_date': quarter_start,
+                'end_date': quarter_end
+            })
+
+        # Seasonal revenue analysis (by month across all years)
+        seasonal_data = {}
+        for month in range(1, 13):
+            month_bookings = all_bookings.filter(
+                status='completed',
+                end_date__month=month
+            ).aggregate(
+                total_revenue=Sum('total_price'),
+                total_bookings=Count('id'),
+                avg_revenue=Avg('total_price')
+            )
+            
+            seasonal_data[month] = {
+                'month': month,
+                'month_name': calendar.month_name[month],
+                'total_revenue': float(month_bookings['total_revenue'] or 0),
+                'bookings': month_bookings['total_bookings'] or 0,
+                'avg_revenue': float(month_bookings['avg_revenue'] or 0)
+            }
+        
+        seasonal_revenue = list(seasonal_data.values())
 
         # Bookings by status
         status_stats_qs = all_bookings.values('status').annotate(
@@ -569,6 +617,8 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         context.update({
             'stats': stats,
             'monthly_revenue': monthly_revenue,
+            'quarterly_revenue': quarterly_revenue,
+            'seasonal_revenue': seasonal_revenue,
             'status_stats': status_stats,
             'top_listings': top_listings,
             'recent_bookings': recent_bookings,
