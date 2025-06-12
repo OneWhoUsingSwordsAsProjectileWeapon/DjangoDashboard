@@ -53,6 +53,31 @@
 <div class="container py-4">
     <div class="row">
         <div class="col-lg-8 mx-auto">
+            <!-- Subscription Limits Info -->
+            {% if subscription_limits and not form.instance.id %}
+                <div class="alert alert-info mb-4">
+                    <h6><i class="fas fa-info-circle"></i> Информация о подписке</h6>
+                    <p class="mb-2">
+                        <strong>План:</strong> {{ subscription_limits.plan_name }}
+                    </p>
+                    <p class="mb-2">
+                        <strong>Объявления:</strong> {{ subscription_limits.current }} из 
+                        {% if subscription_limits.limit == -1 %}
+                            ∞
+                        {% else %}
+                            {{ subscription_limits.limit }}
+                        {% endif %}
+                    </p>
+                    {% if subscription_limits.current >= subscription_limits.limit and subscription_limits.limit != -1 %}
+                        <div class="alert alert-warning mt-2 mb-0">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Вы достигли лимита объявлений. 
+                            <a href="{% url 'subscriptions:plan_list' %}" class="alert-link">Обновите подписку</a> для создания новых объявлений.
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
                     <h3 class="mb-0">{% if form.instance.id %}Редактировать объявление{% else %}Создать новое объявление{% endif %}</h3>

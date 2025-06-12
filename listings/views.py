@@ -680,6 +680,15 @@ class ListingCreateView(LoginRequiredMixin, CreateView):
     form_class = ListingForm
     template_name = 'listings/listing_form.html'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Add subscription limits info
+        limits = SubscriptionService.get_ads_limits(self.request.user.id)
+        context['subscription_limits'] = limits
+        
+        return context
+
     def form_valid(self, form):
         """Process the valid form."""
         # Set the host to the current user
@@ -689,8 +698,8 @@ class ListingCreateView(LoginRequiredMixin, CreateView):
         can_create, error_message = SubscriptionService.can_create_ad(self.request.user.id)
 
         if not can_create:
-            messages.error(self.request, error_message)
-            return redirect('listings:host_listings')  # Redirect to host listings or appropriate page
+            messages.warning(self.request, error_message + " Выберите подходящий план подписки для продолжения.")
+            return redirect('subscriptions:plan_list')  # Redirect to subscription plans
 
         # Automatically make user a host when they create their first listing
         if not self.request.user.is_host:
