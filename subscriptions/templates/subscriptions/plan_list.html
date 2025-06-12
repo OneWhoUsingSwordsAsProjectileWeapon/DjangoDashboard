@@ -1,18 +1,19 @@
 
+
 {% extends 'base.html' %}
 {% load i18n %}
 {% load subscription_filters %}
 
-{% block title %}{% trans "Subscription Plans" %}{% endblock %}
+{% block title %}Планы подписок{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
     <div class="row">
         <div class="col-12">
             <div class="text-center mb-5">
-                <h1 class="display-4">{% trans "Choose Your Plan" %}</h1>
+                <h1 class="display-4">Выберите ваш план</h1>
                 <p class="lead text-muted">
-                    {% trans "Select the perfect subscription plan for your needs" %}
+                    Выберите идеальный план подписки для ваших потребностей
                 </p>
             </div>
         </div>
@@ -25,7 +26,7 @@
                     {% if plan.is_popular %}
                         <div class="card-header bg-primary text-white text-center">
                             <i class="fas fa-star"></i>
-                            {% trans "Most Popular" %}
+                            Самый популярный
                         </div>
                     {% endif %}
                     
@@ -33,7 +34,7 @@
                         <h4 class="card-title">{{ plan.name }}</h4>
                         <div class="price-display mb-3">
                             <span class="h2 text-primary">${{ plan.price }}</span>
-                            <span class="text-muted">/ {% trans "month" %}</span>
+                            <span class="text-muted">/ месяц</span>
                         </div>
                         
                         <p class="text-muted">{{ plan.description }}</p>
@@ -44,18 +45,18 @@
                             <li class="mb-2">
                                 <i class="fas fa-check text-success"></i>
                                 {% blocktrans count limit=plan.ads_limit %}
-                                    {{ limit }} active listing
+                                    {{ limit }} активное объявление
                                 {% plural %}
-                                    {{ limit }} active listings
+                                    {{ limit }} активных объявлений
                                 {% endblocktrans %}
                             </li>
                             {% if plan.featured_ads_limit > 0 %}
                                 <li class="mb-2">
                                     <i class="fas fa-star text-warning"></i>
                                     {% blocktrans count limit=plan.featured_ads_limit %}
-                                        {{ limit }} featured listing
+                                        {{ limit }} рекомендуемое объявление
                                     {% plural %}
-                                        {{ limit }} featured listings
+                                        {{ limit }} рекомендуемых объявлений
                                     {% endblocktrans %}
                                 </li>
                             {% endif %}
@@ -74,12 +75,12 @@
                                     data-plan-id="{{ plan.id }}" 
                                     data-plan-name="{{ plan.name }}"
                                     data-plan-price="{{ plan.price }}">
-                                {% trans "Subscribe" %}
+                                Подписаться
                             </button>
                         {% else %}
                             <a href="{% url 'users:login' %}?next={% url 'subscriptions:plan_list' %}" 
                                class="btn btn-outline-primary btn-block">
-                                {% trans "Login to Subscribe" %}
+                                Войти для подписки
                             </a>
                         {% endif %}
                     </div>
@@ -93,11 +94,11 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h5>{% trans "Current Subscription Status" %}</h5>
+                        <h5>Текущий статус подписки</h5>
                     </div>
                     <div class="card-body">
                         <div id="subscription-status">
-                            {% trans "Loading..." %}
+                            Загрузка...
                         </div>
                     </div>
                 </div>
@@ -106,41 +107,100 @@
     {% endif %}
 </div>
 
-<!-- Subscription Modal -->
-<div class="modal fade" id="subscriptionModal" tabindex="-1">
-    <div class="modal-dialog">
+<!-- QR Payment Modal -->
+<div class="modal fade" id="qrPaymentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">{% trans "Confirm Subscription" %}</h5>
+                <h5 class="modal-title">Оплата через QR-код</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p>{% trans "You are about to subscribe to:" %}</p>
-                <div class="text-center">
-                    <h4 id="modal-plan-name"></h4>
-                    <p class="h5 text-primary">$<span id="modal-plan-price"></span> / {% trans "month" %}</p>
+            <div class="modal-body text-center">
+                <h4 id="qr-plan-name" class="mb-3"></h4>
+                <p class="h5 text-primary mb-4">Сумма к оплате: $<span id="qr-plan-price"></span></p>
+                
+                <div class="mb-4">
+                    <div id="qr-code" class="d-flex justify-content-center mb-3">
+                        <!-- QR код будет сгенерирован здесь -->
+                    </div>
+                    <p class="text-muted">Отсканируйте QR-код с помощью камеры телефона для оплаты</p>
                 </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="autoRenewCheck">
-                    <label class="form-check-label" for="autoRenewCheck">
-                        {% trans "Enable auto-renewal" %}
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Тестовый режим:</strong> После сканирования QR-кода подписка будет активирована автоматически
+                </div>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="qrAutoRenewCheck">
+                    <label class="form-check-label" for="qrAutoRenewCheck">
+                        Включить автопродление
                     </label>
                 </div>
+                
+                <button type="button" class="btn btn-success btn-lg" id="simulatePayment">
+                    <i class="fas fa-qrcode"></i>
+                    Симуляция оплаты (Тест)
+                </button>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    {% trans "Cancel" %}
-                </button>
-                <button type="button" class="btn btn-primary" id="confirmSubscription">
-                    {% trans "Subscribe Now" %}
+                    Отмена
                 </button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Subscription Modal -->
+<div class="modal fade" id="subscriptionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подтверждение подписки</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы собираетесь подписаться на:</p>
+                <div class="text-center">
+                    <h4 id="modal-plan-name"></h4>
+                    <p class="h5 text-primary">$<span id="modal-plan-price"></span> / месяц</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Выберите способ оплаты:</h6>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="paymentMethod" id="qrPayment" value="qr" checked>
+                        <label class="form-check-label" for="qrPayment">
+                            <i class="fas fa-qrcode"></i> Оплата через QR-код
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="autoRenewCheck">
+                    <label class="form-check-label" for="autoRenewCheck">
+                        Включить автопродление
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Отмена
+                </button>
+                <button type="button" class="btn btn-primary" id="proceedToPayment">
+                    Перейти к оплате
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    let currentPlanData = {};
+    
     // Load subscription status
     {% if user.is_authenticated %}
         fetch('/api/subscriptions/status/')
@@ -150,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 document.getElementById('subscription-status').innerHTML = 
-                    '<div class="alert alert-danger">{% trans "Error loading subscription status" %}</div>';
+                    '<div class="alert alert-danger">Ошибка загрузки статуса подписки</div>';
             });
     {% endif %}
     
@@ -161,18 +221,67 @@ document.addEventListener('DOMContentLoaded', function() {
             const planName = this.dataset.planName;
             const planPrice = this.dataset.planPrice;
             
+            currentPlanData = { planId, planName, planPrice };
+            
             document.getElementById('modal-plan-name').textContent = planName;
             document.getElementById('modal-plan-price').textContent = planPrice;
             
             const modal = new bootstrap.Modal(document.getElementById('subscriptionModal'));
             modal.show();
-            
-            document.getElementById('confirmSubscription').onclick = function() {
-                createSubscription(planId);
-            };
         });
     });
+    
+    // Handle proceed to payment
+    document.getElementById('proceedToPayment').addEventListener('click', function() {
+        const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+        const autoRenew = document.getElementById('autoRenewCheck').checked;
+        
+        if (paymentMethod === 'qr') {
+            showQRPayment(currentPlanData, autoRenew);
+        }
+    });
+    
+    // Handle simulate payment
+    document.getElementById('simulatePayment').addEventListener('click', function() {
+        const autoRenew = document.getElementById('qrAutoRenewCheck').checked;
+        createSubscription(currentPlanData.planId, autoRenew);
+    });
 });
+
+function showQRPayment(planData, autoRenew) {
+    // Hide subscription modal
+    bootstrap.Modal.getInstance(document.getElementById('subscriptionModal')).hide();
+    
+    // Show QR payment modal
+    document.getElementById('qr-plan-name').textContent = planData.planName;
+    document.getElementById('qr-plan-price').textContent = planData.planPrice;
+    document.getElementById('qrAutoRenewCheck').checked = autoRenew;
+    
+    // Generate QR code
+    const paymentData = {
+        plan_id: planData.planId,
+        plan_name: planData.planName,
+        amount: planData.planPrice,
+        currency: 'USD',
+        test_mode: true
+    };
+    
+    const qrCodeContainer = document.getElementById('qr-code');
+    qrCodeContainer.innerHTML = '';
+    
+    QRCode.toCanvas(qrCodeContainer, JSON.stringify(paymentData), {
+        width: 256,
+        height: 256,
+        margin: 2
+    }, function (error) {
+        if (error) {
+            qrCodeContainer.innerHTML = '<div class="alert alert-danger">Ошибка генерации QR-кода</div>';
+        }
+    });
+    
+    const qrModal = new bootstrap.Modal(document.getElementById('qrPaymentModal'));
+    qrModal.show();
+}
 
 function updateSubscriptionStatus(data) {
     const container = document.getElementById('subscription-status');
@@ -182,21 +291,21 @@ function updateSubscriptionStatus(data) {
             <div class="row">
                 <div class="col-md-4">
                     <div class="text-center">
-                        <h6>{% trans "Current Plan" %}</h6>
-                        <p class="h5 text-primary">${data.plan_name}</p>
+                        <h6>Текущий план</h6>
+                        <p class="h5 text-primary">${data.plan_name || 'Неизвестно'}</p>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="text-center">
-                        <h6>{% trans "Usage" %}</h6>
-                        <p class="h5">${data.current_ads} / ${data.ads_limit === -1 ? '∞' : data.ads_limit}</p>
+                        <h6>Использование</h6>
+                        <p class="h5">${data.current_ads || 0} / ${data.ads_limit === -1 ? '∞' : data.ads_limit || 0}</p>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="text-center">
-                        <h6>{% trans "Status" %}</h6>
-                        <p class="h5 text-success">${data.subscription_status}</p>
-                        ${data.days_remaining ? `<small class="text-muted">${data.days_remaining} {% trans "days remaining" %}</small>` : ''}
+                        <h6>Статус</h6>
+                        <p class="h5 text-success">${data.subscription_status || 'Активна'}</p>
+                        ${data.days_remaining ? `<small class="text-muted">${data.days_remaining} дней осталось</small>` : ''}
                     </div>
                 </div>
             </div>
@@ -204,14 +313,14 @@ function updateSubscriptionStatus(data) {
     } else {
         container.innerHTML = `
             <div class="alert alert-info">
-                {% trans "You don't have an active subscription. Choose a plan above to get started." %}
+                У вас нет активной подписки. Выберите план выше, чтобы начать.
             </div>
         `;
     }
 }
 
-function createSubscription(planId) {
-    const autoRenew = document.getElementById('autoRenewCheck').checked;
+function createSubscription(planId, autoRenew) {
+    const paymentReference = generatePaymentReference();
     
     fetch('/api/subscriptions/create/', {
         method: 'POST',
@@ -221,20 +330,26 @@ function createSubscription(planId) {
         },
         body: JSON.stringify({
             plan_id: parseInt(planId),
-            auto_renew: autoRenew
+            auto_renew: autoRenew,
+            payment_reference: paymentReference
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            alert('Подписка успешно оформлена!');
             location.reload();
         } else {
-            alert(data.message || 'Error creating subscription');
+            alert(data.message || 'Ошибка при оформлении подписки');
         }
     })
     .catch(error => {
-        alert('Error creating subscription');
+        alert('Ошибка при оформлении подписки');
     });
+}
+
+function generatePaymentReference() {
+    return 'qr_test_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
 }
 
 function getCookie(name) {

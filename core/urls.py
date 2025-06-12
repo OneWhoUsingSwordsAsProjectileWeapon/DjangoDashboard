@@ -17,6 +17,7 @@ urlpatterns = [
     path('notifications/', include('notifications.urls')),
     path('moderation/', include('moderation.urls')),
     path('subscriptions/', include('subscriptions.urls')),
+    path('api/subscriptions/', include('subscriptions.urls')),
 ]
 
 # Serve media files in development
