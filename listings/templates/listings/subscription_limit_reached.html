@@ -1,0 +1,92 @@
+
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Subscription Limit Reached" %}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {% trans "Subscription Limit Reached" %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h5>{% trans "Unable to Create Listing" %}</h5>
+                        <p class="mb-0">{{ error_message }}</p>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">{% trans "Current Usage" %}</h5>
+                                    <div class="display-4 text-primary">
+                                        {{ limits.current }} / {{ limits.limit|default:"∞" }}
+                                    </div>
+                                    <p class="text-muted">{% trans "Active Listings" %}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">{% trans "Current Plan" %}</h5>
+                                    <div class="h4 text-info">{{ limits.plan_name }}</div>
+                                    {% if limits.subscription_status == 'active' and limits.days_remaining %}
+                                        <p class="text-muted">
+                                            {% blocktrans count days=limits.days_remaining %}
+                                                {{ days }} day remaining
+                                            {% plural %}
+                                                {{ days }} days remaining
+                                            {% endblocktrans %}
+                                        </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <h5 class="mb-3">{% trans "What can you do?" %}</h5>
+                        
+                        {% if limits.subscription_status == 'none' %}
+                            <p class="mb-3">{% trans "Subscribe to a plan to create more listings:" %}</p>
+                            <a href="{% url 'subscriptions:plan_list' %}" class="btn btn-primary btn-lg me-2">
+                                <i class="fas fa-crown"></i>
+                                {% trans "View Subscription Plans" %}
+                            </a>
+                        {% elif limits.subscription_status == 'expired' %}
+                            <p class="mb-3">{% trans "Your subscription has expired. Renew to continue creating listings:" %}</p>
+                            <a href="{% url 'subscriptions:plan_list' %}" class="btn btn-success btn-lg me-2">
+                                <i class="fas fa-refresh"></i>
+                                {% trans "Renew Subscription" %}
+                            </a>
+                        {% else %}
+                            <p class="mb-3">{% trans "You can:" %}</p>
+                            <a href="{% url 'listings:host_listings' %}" class="btn btn-secondary me-2">
+                                <i class="fas fa-trash"></i>
+                                {% trans "Delete Some Listings" %}
+                            </a>
+                            <a href="{% url 'subscriptions:plan_list' %}" class="btn btn-primary">
+                                <i class="fas fa-arrow-up"></i>
+                                {% trans "Upgrade Plan" %}
+                            </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'listings:listing_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i>
+                            {% trans "Back to Listings" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

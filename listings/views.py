@@ -19,6 +19,7 @@ from openpyxl.utils import get_column_letter
 from .models import Listing, Booking, Review, ListingImage
 from .forms import ListingForm, BookingForm, ReviewForm, ListingSearchForm, ListingImageForm
 from notifications.tasks import send_email_notification
+from subscriptions.services import SubscriptionService
 
 class ListingListView(ListView):
     """View for displaying list of listings with search and filtering"""
@@ -115,20 +116,20 @@ class ListingListView(ListView):
         context = super().get_context_data(**kwargs)
         # Add search form to context
         context['form'] = ListingSearchForm(self.request.GET)
-        
+
         # Add popular destinations based on bookings in last month
         context['popular_destinations'] = self.get_popular_destinations()
         return context
-    
+
     def get_popular_destinations(self):
         """Get popular destinations based on booking count in last month"""
         from datetime import timedelta
         from django.utils import timezone
         from django.db.models import Count, Q
-        
+
         # Get bookings from last month
         last_month = timezone.now() - timedelta(days=30)
-        
+
         # Get cities with most bookings in last month
         popular_cities = Booking.objects.filter(
             created_at__gte=last_month,
@@ -143,7 +144,7 @@ class ListingListView(ListView):
         ).filter(
             booking_count__gt=0
         ).order_by('-booking_count')[:8]
-        
+
         # Add sample image for each destination
         destinations_with_images = []
         default_images = [
@@ -156,7 +157,7 @@ class ListingListView(ListView):
             "https://images.unsplash.com/photo-1519302959554-a75be0afc82a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
             "https://images.unsplash.com/photo-1542640244-b5d31b9c4d06?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
         ]
-        
+
         for idx, city_data in enumerate(popular_cities):
             destinations_with_images.append({
                 'city': city_data['city_name'],
@@ -165,7 +166,7 @@ class ListingListView(ListView):
                 'booking_count': city_data['booking_count'],
                 'image': default_images[idx % len(default_images)]
             })
-        
+
         # If no bookings, return default popular destinations
         if not destinations_with_images:
             destinations_with_images = [
@@ -198,7 +199,7 @@ class ListingListView(ListView):
                     'image': default_images[3]
                 }
             ]
-        
+
         return destinations_with_images
 
 class ListingDetailView(DetailView):
@@ -445,7 +446,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                     # Calculate overlap between booking and our period
                     booking_start = max(booking.start_date, listing_start)
                     booking_end = min(booking.end_date, listing_end)
-                    
+
                     # Only count if there's actual overlap
                     if booking_end > booking_start:
                         nights = (booking_end - booking_start).days
@@ -464,20 +465,20 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         # Revenue by month (last 12 months)
         from dateutil.relativedelta import relativedelta
         import calendar
-        
+
         # Generate last 12 months data
         monthly_revenue = []
         current_date = timezone.now().date()
-        
+
         month_names_ru = {
             1: 'Янв', 2: 'Фев', 3: 'Мар', 4: 'Апр', 5: 'Май', 6: 'Июн',
             7: 'Июл', 8: 'Авг', 9: 'Сен', 10: 'Окт', 11: 'Ноя', 12: 'Дек'
         }
-        
+
         for i in range(11, -1, -1):  # Go from 11 months ago to current month
             target_date = current_date.replace(day=1) - relativedelta(months=i)
             month_end = target_date + relativedelta(months=1)
-            
+
             # Use end_date for completed bookings (when they actually finished)
             month_revenue = all_bookings.filter(
                 status='completed',
@@ -487,9 +488,9 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                 total_revenue=Sum('total_price'),
                 total_bookings=Count('id')
             )
-            
+
             month_name = f"{month_names_ru[target_date.month]} {target_date.year}"
-            
+
             monthly_revenue.append({
                 'month': target_date.strftime('%Y-%m-01'),
                 'month_name': month_name,
@@ -505,7 +506,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
             quarter_month = ((quarter_start.month - 1) // 3) * 3 + 1
             quarter_start = quarter_start.replace(month=quarter_month, day=1)
             quarter_end = quarter_start + relativedelta(months=3)
-            
+
             quarter_revenue = all_bookings.filter(
                 status='completed',
                 end_date__gte=quarter_start,
@@ -514,7 +515,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                 total_revenue=Sum('total_price'),
                 total_bookings=Count('id')
             )
-            
+
             quarter_num = ((quarter_start.month - 1) // 3) + 1
             quarterly_revenue.append({
                 'quarter': f"{quarter_start.year}-Q{quarter_num}",
@@ -529,7 +530,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
             '', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
             'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
         ]
-        
+
         for month in range(1, 13):
             month_bookings = all_bookings.filter(
                 status='completed',
@@ -539,7 +540,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                 total_bookings=Count('id'),
                 avg_revenue=Avg('total_price')
             )
-            
+
             seasonal_data[month] = {
                 'month': month,
                 'month_name': month_names_ru[month],
@@ -547,7 +548,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                 'bookings': month_bookings['total_bookings'] or 0,
                 'avg_revenue': float(month_bookings['avg_revenue'] or 0)
             }
-        
+
         seasonal_revenue = list(seasonal_data.values())
 
         # Bookings by status
@@ -683,6 +684,13 @@ class ListingCreateView(LoginRequiredMixin, CreateView):
         """Process the valid form."""
         # Set the host to the current user
         form.instance.host = self.request.user
+
+        # Check if user can create a new listing
+        can_create, error_message = SubscriptionService.can_create_ad(self.request.user.id)
+
+        if not can_create:
+            messages.error(self.request, error_message)
+            return redirect('listings:host_listings')  # Redirect to host listings or appropriate page
 
         # Automatically make user a host when they create their first listing
         if not self.request.user.is_host:

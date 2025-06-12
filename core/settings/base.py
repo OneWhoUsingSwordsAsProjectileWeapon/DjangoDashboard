@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'chat.apps.ChatConfig',
     'notifications.apps.NotificationsConfig',
     'moderation.apps.ModerationConfig',
+    'subscriptions.apps.SubscriptionsConfig',
 ]
 
 MIDDLEWARE = [

@@ -1,0 +1,271 @@
+
+from rest_framework import generics, status, permissions
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from django.utils.translation import gettext as _
+from django.shortcuts import get_object_or_404, render
+from django.db import transaction
+from .models import SubscriptionPlan, UserSubscription, SubscriptionUsage
+from .serializers import (
+    SubscriptionPlanSerializer, UserSubscriptionSerializer,
+    SubscriptionUsageSerializer, SubscriptionStatusSerializer,
+    CreateSubscriptionSerializer, AdCreationCheckSerializer,
+    SubscriptionStatsSerializer
+)
+from .services import SubscriptionService
+import logging
+
+logger = logging.getLogger(__name__)
+
+def subscription_plans_view(request):
+    """Web view for subscription plans"""
+    plans = SubscriptionPlan.objects.filter(is_active=True).order_by('price')
+    return render(request, 'subscriptions/plan_list.html', {'plans': plans})
+
+class SubscriptionPlanListView(generics.ListAPIView):
+    """List all available subscription plans"""
+    queryset = SubscriptionPlan.objects.filter(is_active=True).order_by('price')
+    serializer_class = SubscriptionPlanSerializer
+    permission_classes = [permissions.AllowAny]
+
+class UserSubscriptionListView(generics.ListAPIView):
+    """List user's subscriptions"""
+    serializer_class = UserSubscriptionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        return UserSubscription.objects.filter(user=self.request.user).order_by('-created_at')
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def subscription_status(request):
+    """Get current subscription status for user"""
+    user = request.user
+    
+    # Get subscription limits
+    limits = SubscriptionService.get_ads_limits(user.id)
+    
+    # Prepare response data
+    data = {
+        'has_subscription': limits['subscription_status'] not in ['none', 'error'],
+        'plan_name': limits['plan_name'],
+        'subscription_status': limits['subscription_status'],
+        'current_ads': limits['current'],
+        'ads_limit': limits['limit'],
+        'expires_at': limits.get('expires_at'),
+        'days_remaining': limits.get('days_remaining'),
+        'usage_percentage': (limits['current'] / limits['limit'] * 100) if limits['limit'] > 0 else None
+    }
+    
+    serializer = SubscriptionStatusSerializer(data)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def create_subscription(request):
+    """Create a new subscription for user"""
+    serializer = CreateSubscriptionSerializer(data=request.data)
+    
+    if serializer.is_valid():
+        try:
+            with transaction.atomic():
+                plan = get_object_or_404(SubscriptionPlan, id=serializer.validated_data['plan_id'])
+                
+                subscription = SubscriptionService.create_subscription(
+                    user=request.user,
+                    plan=plan,
+                    payment_reference=serializer.validated_data.get('payment_reference'),
+                    auto_renew=serializer.validated_data.get('auto_renew', False)
+                )
+                
+                response_serializer = UserSubscriptionSerializer(subscription)
+                
+                logger.info(f"Created subscription {subscription.id} for user {request.user.username}")
+                
+                return Response({
+                    'success': True,
+                    'message': _('Subscription created successfully'),
+                    'subscription': response_serializer.data
+                }, status=status.HTTP_201_CREATED)
+                
+        except Exception as e:
+            logger.error(f"Error creating subscription for user {request.user.username}: {e}")
+            return Response({
+                'success': False,
+                'message': _('Error creating subscription'),
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+    
+    return Response({
+        'success': False,
+        'message': _('Invalid data'),
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def toggle_auto_renew(request):
+    """Toggle auto-renewal for user's current subscription"""
+    current_subscription = SubscriptionService.get_current_subscription(request.user)
+    
+    if not current_subscription:
+        return Response({
+            'success': False,
+            'message': _('No active subscription found')
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    current_subscription.auto_renew = not current_subscription.auto_renew
+    current_subscription.save(update_fields=['auto_renew'])
+    
+    return Response({
+        'success': True,
+        'auto_renew': current_subscription.auto_renew,
+        'message': _('Auto-renewal {} successfully').format(
+            _('enabled') if current_subscription.auto_renew else _('disabled')
+        )
+    })
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def cancel_subscription(request):
+    """Cancel user's current subscription"""
+    current_subscription = SubscriptionService.get_current_subscription(request.user)
+    
+    if not current_subscription:
+        return Response({
+            'success': False,
+            'message': _('No active subscription found')
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    current_subscription.cancel()
+    
+    logger.info(f"User {request.user.username} canceled subscription {current_subscription.id}")
+    
+    return Response({
+        'success': True,
+        'message': _('Subscription canceled successfully')
+    })
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def check_ad_creation(request):
+    """Check if user can create a new ad"""
+    can_create, error_message = SubscriptionService.can_create_ad(request.user.id)
+    limits = SubscriptionService.get_ads_limits(request.user.id)
+    
+    data = {
+        'can_create': can_create,
+        'error_message': error_message,
+        'current_ads': limits['current'],
+        'ads_limit': limits['limit'],
+        'plan_name': limits['plan_name']
+    }
+    
+    serializer = AdCreationCheckSerializer(data)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def subscription_usage(request):
+    """Get subscription usage details"""
+    current_subscription = SubscriptionService.get_current_subscription(request.user)
+    
+    if not current_subscription:
+        return Response({
+            'message': _('No active subscription found')
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    try:
+        usage = current_subscription.usage
+        serializer = SubscriptionUsageSerializer(usage)
+        return Response(serializer.data)
+    except SubscriptionUsage.DoesNotExist:
+        return Response({
+            'message': _('Usage data not found')
+        }, status=status.HTTP_404_NOT_FOUND)
+
+# Admin-only views
+@api_view(['GET'])
+@permission_classes([permissions.IsAdminUser])
+def subscription_stats(request):
+    """Get subscription statistics (admin only)"""
+    stats = SubscriptionService.get_subscription_stats()
+    serializer = SubscriptionStatsSerializer(stats)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAdminUser])
+def admin_create_subscription(request, user_id):
+    """Create subscription for any user (admin only)"""
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    
+    user = get_object_or_404(User, id=user_id)
+    serializer = CreateSubscriptionSerializer(data=request.data)
+    
+    if serializer.is_valid():
+        try:
+            with transaction.atomic():
+                plan = get_object_or_404(SubscriptionPlan, id=serializer.validated_data['plan_id'])
+                
+                subscription = SubscriptionService.create_subscription(
+                    user=user,
+                    plan=plan,
+                    payment_reference=serializer.validated_data.get('payment_reference'),
+                    auto_renew=serializer.validated_data.get('auto_renew', False)
+                )
+                
+                response_serializer = UserSubscriptionSerializer(subscription)
+                
+                logger.info(f"Admin {request.user.username} created subscription {subscription.id} for user {user.username}")
+                
+                return Response({
+                    'success': True,
+                    'message': _('Subscription created successfully'),
+                    'subscription': response_serializer.data
+                }, status=status.HTTP_201_CREATED)
+                
+        except Exception as e:
+            logger.error(f"Error creating subscription for user {user.username}: {e}")
+            return Response({
+                'success': False,
+                'message': _('Error creating subscription'),
+                'error': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+    
+    return Response({
+        'success': False,
+        'message': _('Invalid data'),
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAdminUser])
+def admin_extend_subscription(request, subscription_id):
+    """Extend subscription by specified days (admin only)"""
+    subscription = get_object_or_404(UserSubscription, id=subscription_id)
+    days = request.data.get('days', 30)
+    
+    try:
+        days = int(days)
+        if days <= 0:
+            return Response({
+                'success': False,
+                'message': _('Days must be a positive number')
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        subscription.extend(days)
+        
+        logger.info(f"Admin {request.user.username} extended subscription {subscription.id} by {days} days")
+        
+        return Response({
+            'success': True,
+            'message': _('Subscription extended by {} days').format(days),
+            'new_end_date': subscription.end_date
+        })
+        
+    except ValueError:
+        return Response({
+            'success': False,
+            'message': _('Invalid number of days')
+        }, status=status.HTTP_400_BAD_REQUEST)
