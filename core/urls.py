@@ -17,7 +17,7 @@ urlpatterns = [
     path('chat/', include('chat.urls')),
     path('notifications/', include('notifications.urls')),
     path('moderation/', include('moderation.urls')),
-    path('subscriptions/', include('subscriptions.urls')),
+    path('subscriptions/', include('subscriptions.urls', namespace='subscriptions')),
     
     # Subscription API endpoints
     path('api/subscriptions/plans/', views.SubscriptionPlanListView.as_view(), name='api_subscription_plans'),

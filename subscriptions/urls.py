@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 app_name = 'subscriptions'
@@ -12,7 +12,12 @@ urlpatterns = [
 
     # Admin endpoints
     path('admin/', views.admin_dashboard, name='admin_dashboard'),
-    path('admin/stats/', views.subscription_stats, name='admin_stats'),
-    path('admin/create/<int:user_id>/', views.admin_create_subscription, name='admin_create'),
-    path('admin/extend/<int:subscription_id>/', views.admin_extend_subscription, name='admin_extend'),
+    
+    # API endpoints
+    path('api/subscriptions/plans/', views.SubscriptionPlanListView.as_view(), name='api_plans'),
+    path('api/subscriptions/', views.UserSubscriptionListView.as_view(), name='api_subscriptions'),
+    path('api/subscriptions/status/', views.subscription_status, name='api_status'),
+    path('api/subscriptions/admin/stats/', views.subscription_stats, name='admin_stats'),
+    path('api/subscriptions/admin/create/<int:user_id>/', views.admin_create_subscription, name='admin_create'),
+    path('api/subscriptions/admin/extend/<int:subscription_id>/', views.admin_extend_subscription, name='admin_extend'),
 ]

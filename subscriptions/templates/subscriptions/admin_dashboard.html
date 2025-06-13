@@ -141,7 +141,7 @@
 <script>
 // Загрузка статистики
 function loadStats() {
-    fetch('/api/subscriptions/admin/stats/')
+    fetch('/subscriptions/api/subscriptions/admin/stats/')
         .then(response => response.json())
         .then(data => {
             document.getElementById('total-subscriptions').textContent = data.total_subscriptions || 0;
@@ -156,7 +156,7 @@ function loadStats() {
 
 // Загрузка планов для модала
 function loadPlans() {
-    fetch('/api/subscriptions/plans/')
+    fetch('/subscriptions/api/subscriptions/plans/')
         .then(response => response.json())
         .then(data => {
             const select = document.getElementById('planId');
@@ -169,7 +169,7 @@ function loadPlans() {
 
 // Загрузка последних подписок
 function loadRecentSubscriptions() {
-    fetch('/api/subscriptions/')
+    fetch('/subscriptions/api/subscriptions/')
         .then(response => response.json())
         .then(data => {
             const container = document.getElementById('recent-subscriptions');
@@ -239,7 +239,7 @@ function createSubscription() {
         return;
     }
     
-    fetch(`/api/subscriptions/admin/create/${userId}/`, {
+    fetch(`/subscriptions/api/subscriptions/admin/create/${userId}/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -272,7 +272,7 @@ function extendSubscription(subscriptionId) {
     const days = prompt('На сколько дней продлить подписку?', '30');
     if (!days || isNaN(days)) return;
     
-    fetch(`/api/subscriptions/admin/extend/${subscriptionId}/`, {
+    fetch(`/subscriptions/api/subscriptions/admin/extend/${subscriptionId}/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
