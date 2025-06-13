@@ -631,7 +631,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         last_12_months = today - timedelta(days=365)
 
         # Get user's listings for filtering
-        user_listings = request.user.hosted_listings.all()
+        user_listings = self.request.user.hosted_listings.all()
 
         context.update({
             'stats': stats,
