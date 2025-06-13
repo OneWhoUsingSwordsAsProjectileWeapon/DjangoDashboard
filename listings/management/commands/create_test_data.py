@@ -202,11 +202,11 @@ class Command(BaseCommand):
         
         today = date.today()
         
-        # Create more bookings for better statistics (100-160 bookings)
-        num_bookings = random.randint(100, 160)
+        # Create more bookings for better statistics (200-300 bookings)
+        num_bookings = random.randint(200, 300)
         successful_bookings = 0
         
-        for _ in range(num_bookings * 2):  # Try more times to ensure we get enough bookings
+        for _ in range(num_bookings * 3):  # Try more times to ensure we get enough bookings
             if not guests or not listings or successful_bookings >= num_bookings:
                 break
                 

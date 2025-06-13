@@ -625,6 +625,14 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
             avg_response=Avg('response_time')
         )
 
+        # Analytics data for charts
+        today = timezone.now().date()
+        last_30_days = today - timedelta(days=30)
+        last_12_months = today - timedelta(days=365)
+
+        # Get user's listings for filtering
+        user_listings = request.user.hosted_listings.all()
+
         context.update({
             'stats': stats,
             'monthly_revenue': monthly_revenue,
@@ -682,11 +690,11 @@ class ListingCreateView(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
+
         # Add subscription limits info
         limits = SubscriptionService.get_ads_limits(self.request.user.id)
         context['subscription_limits'] = limits
-        
+
         return context
 
     def form_valid(self, form):
@@ -761,7 +769,8 @@ def add_listing_image(request, pk):
 
             # If this is the first image or marked as main, make it main
             if form.cleaned_data.get('is_main') or not listing.images.exists():
-                # Unset other main images
+                #```python
+Unset other main images
                 listing.images.update(is_main=False)
                 image.is_main = True
 
