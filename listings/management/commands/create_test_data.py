@@ -69,6 +69,8 @@ class Command(BaseCommand):
             guest__username__startswith='guest'
         ).delete()
         
+        # Clear ListingApproval objects for test listings
+        from moderation.models import ListingApproval
         ListingApproval.objects.filter(
             listing__host__username__startswith='host'
         ).delete()
