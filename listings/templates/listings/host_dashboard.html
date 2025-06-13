@@ -339,7 +339,7 @@
     .chart-container {
         height: 350px !important;
     }
-    
+
     .line-chart, .bar-chart {
         padding: 12px !important;
     }
@@ -349,7 +349,7 @@
     .chart-container {
         height: 450px !important;
     }
-    
+
     .line-chart, .bar-chart {
         padding: 20px !important;
     }
@@ -669,33 +669,28 @@
                         <div class="card-header">
                             <h5 class="card-title mb-0">
                                 <i class="fas fa-info-circle text-info me-2"></i>
-                                Статистика эффективности
+                                График заполняемости объявлений
                             </h5>
+                            <div class="d-flex align-items-center">
+                                <select class="form-select form-select-sm me-2" id="occupancyListingSelect" style="width: auto;">
+                                    <option value="all">Все объявления</option>
+                                    {% for listing in host_listings_for_filter %}
+                                        <option value="{{ listing.id }}">{{ listing.title }}</option>
+                                    {% endfor %}
+                                </select>
+                                <select class="form-select form-select-sm" id="occupancyYearSelect" style="width: auto;">
+                                    {% for year in available_years %}
+                                        <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>{{ year }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-3 text-center">
-                                    <div class="p-3 bg-light rounded">
-                                        <h4 class="text-success mb-1">{{ stats.occupancy_rate|floatformat:1 }}%</h4>
-                                        <small class="text-muted">Заполняемость</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 text-center">
-                                    <div class="p-3 bg-light rounded">
-                                        <h4 class="text-primary mb-1">₽{{ stats.average_booking_value|floatformat:0|intcomma }}</h4>
-                                        <small class="text-muted">Средний чек</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 text-center">
-                                    <div class="p-3 bg-light rounded">
-                                        <h4 class="text-warning mb-1">{{ stats.total_booked_nights }}</h4>
-                                        <small class="text-muted">Ночей забронировано</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 text-center">
-                                    <div class="p-3 bg-light rounded">
-                                        <h4 class="text-info mb-1">{{ guest_stats.avg_guests_per_booking|floatformat:1 }}</h4>
-                                        <small class="text-muted">Средне гостей/брон</small>
+                            <div class="chart-container">
+                                <div class="bar-chart" id="occupancyChart">
+                                    <div class="no-data-message">
+                                        <i class="fas fa-chart-bar"></i>
+                                        <span>Загрузка данных...</span>
                                     </div>
                                 </div>
                             </div>
@@ -806,7 +801,7 @@
                                     </a>
                                 </div>
                             </div>
-                            
+
                             <!-- Filters Section -->
                             <div class="collapse mt-3" id="listingsFilters">
                                 <div class="row">
@@ -928,147 +923,124 @@
                                     </thead>
                                     <tbody id="listingsTableBody">
                                         {% for listing in top_listings %}
-                                        <tr data-listing-id="{{ listing.id }}" 
-                                            data-title="{{ listing.title|lower }}"
-                                            data-status="{% if listing.is_active %}active{% else %}inactive{% endif %}{% if not listing.is_approved %} pending{% endif %}"
-                                            data-rating="{{ listing.avg_rating|default:'0' }}"
-                                            data-revenue="{{ listing.total_revenue|default:'0' }}"
-                                            data-bookings="{{ listing.bookings_count }}"
-                                            data-price="{{ listing.price_per_night }}">
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <img src="{{ listing.main_image_url }}" alt="{{ listing.title }}" 
-                                                         class="rounded me-2 shadow-sm" style="width: 45px; height: 45px; object-fit: cover;">
-                                                    <div>
-                                                        <div class="fw-bold text-dark">{{ listing.title|truncatechars:30 }}</div>
-                                                        <small class="text-muted">
-                                                            <i class="fas fa-map-marker-alt me-1"></i>
+                                        
+                                            
+                                                
+                                                    
+                                                        
                                                             {{ listing.city }}, {{ listing.state }}
-                                                        </small>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="d-flex flex-column gap-1">
-                                                    <span class="badge bg-{% if listing.is_active %}success{% else %}secondary{% endif %}">
+                                                        
+                                                    
+                                                
+                                            
+                                                
+                                                    
                                                         {% if listing.is_active %}Активно{% else %}Неактивно{% endif %}
-                                                    </span>
+                                                    
                                                     {% if not listing.is_approved %}
-                                                    <span class="badge bg-warning">Ожидает</span>
+                                                    Ожидает
                                                     {% endif %}
-                                                </div>
-                                            </td>
-                                            <td>
+                                                
+                                            
                                                 {% if listing.avg_rating %}
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="text-warning me-1">
+                                                    
+                                                        
                                                             {% for i in "12345" %}
                                                                 {% if forloop.counter <= listing.avg_rating %}
-                                                                    <i class="fas fa-star"></i>
+                                                                    
                                                                 {% else %}
-                                                                    <i class="far fa-star"></i>
+                                                                    
                                                                 {% endif %}
                                                             {% endfor %}
-                                                        </div>
-                                                        <span class="fw-bold">{{ listing.avg_rating|floatformat:1 }}</span>
-                                                        <small class="text-muted ms-1">({{ listing.review_count }})</small>
-                                                    </div>
+                                                        
+                                                        {{ listing.avg_rating|floatformat:1 }}
+                                                        ({{ listing.review_count }})
+                                                    
                                                 {% else %}
-                                                    <span class="text-muted">
-                                                        <i class="fas fa-minus-circle me-1"></i>
+                                                    
+                                                        
                                                         Нет отзывов
-                                                    </span>
+                                                    
                                                 {% endif %}
-                                            </td>
-                                            <td>
-                                                <div class="text-center">
-                                                    <span class="badge bg-primary fs-6">{{ listing.bookings_count }}</span>
-                                                    {% if listing.bookings_count > 0 %}
-                                                        <div class="mt-1">
-                                                            <small class="text-success">
-                                                                <i class="fas fa-check-circle me-1"></i>
-                                                                Популярно
-                                                            </small>
-                                                        </div>
-                                                    {% endif %}
-                                                </div>
-                                            </td>
-                                            <td>
+                                            
+                                                
+                                                    {{ listing.bookings_count }}
+                                                    
+                                                        
+                                                            
+                                                            За период
+                                                        
+                                                    
+                                                
+                                            
                                                 {% if listing.occupancy_days %}
-                                                    <div class="text-center">
-                                                        <span class="fw-bold">{{ listing.occupancy_days }} дней</span>
-                                                        <div class="progress mt-1" style="height: 6px;">
-                                                            <div class="progress-bar bg-info" 
-                                                                 style="width: {% widthratio listing.occupancy_days 365 100 %}%"></div>
-                                                        </div>
-                                                    </div>
+                                                    
+                                                        {{ listing.occupancy_days }} дней
+                                                        
+                                                            
+                                                                 
+                                                        
+                                                        За период
+                                                    
                                                 {% else %}
-                                                    <span class="text-muted">0 дней</span>
+                                                    0 дней
                                                 {% endif %}
-                                            </td>
-                                            <td>
-                                                <div class="text-center">
-                                                    <div class="fw-bold text-success fs-6">₽{{ listing.total_revenue|floatformat:0|default:"0"|intcomma }}</div>
-                                                    {% if listing.total_revenue %}
-                                                        <small class="text-muted">
+                                            
+                                                
+                                                    ₽{{ listing.total_revenue|floatformat:0|default:"0"|intcomma }}
+                                                    {% if listing.total_revenue and listing.bookings_count %}
+                                                        
                                                             ₽{{ listing.total_revenue|div:listing.bookings_count|floatformat:0 }} ср/брон
-                                                        </small>
+                                                        
+                                                    {% else %}
+                                                        За период
                                                     {% endif %}
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="text-center">
-                                                    <span class="fw-bold">₽{{ listing.price_per_night|intcomma }}</span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div class="btn-group" role="group">
-                                                    <a href="{% url 'listings:listing_detail' pk=listing.pk %}" 
-                                                       class="btn btn-sm btn-outline-primary" title="Просмотр">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
-                                                    <a href="{% url 'listings:listing_update' pk=listing.pk %}" 
-                                                       class="btn btn-sm btn-outline-secondary" title="Редактировать">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                    <div class="btn-group">
-                                                        <button class="btn btn-sm btn-outline-info dropdown-toggle" 
-                                                                data-bs-toggle="dropdown" title="Еще">
-                                                            <i class="fas fa-ellipsis-v"></i>
-                                                        </button>
-                                                        <ul class="dropdown-menu">
-                                                            <li>
-                                                                <a class="dropdown-item" href="{% url 'listings:listing_images' pk=listing.pk %}">
-                                                                    <i class="fas fa-images me-2"></i>Фото
-                                                                </a>
-                                                            </li>
-                                                            <li>
-                                                                <a class="dropdown-item" href="{% url 'listings:host_bookings' %}?listing={{ listing.id }}">
-                                                                    <i class="fas fa-calendar-alt me-2"></i>Бронирования
-                                                                </a>
-                                                            </li>
-                                                            <li><hr class="dropdown-divider"></li>
-                                                            <li>
-                                                                <button class="dropdown-item" onclick="toggleListingStatus({{ listing.id }}, {{ listing.is_active|yesno:'false,true' }})">
-                                                                    <i class="fas fa-toggle-{% if listing.is_active %}off{% else %}on{% endif %} me-2"></i>
+                                                
+                                            
+                                                
+                                                    ₽{{ listing.price_per_night|intcomma }}
+                                                
+                                            
+                                                
+                                                    
+                                                        
+                                                            
+                                                        
+                                                        
+                                                            
+                                                        
+                                                    
+                                                    
+                                                        
+                                                            
+                                                                Фото
+                                                            
+                                                            
+                                                                
+                                                                    Бронирования
+                                                                
+                                                            
+                                                            
+                                                                
+                                                                    
                                                                     {% if listing.is_active %}Деактивировать{% else %}Активировать{% endif %}
-                                                                </button>
-                                                            </li>
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                                                
+                                                            
+                                                        
+                                                    
+                                                
+                                            
+                                        
                                         {% empty %}
-                                        <tr>
-                                            <td colspan="8" class="text-center text-muted py-4">
-                                                <i class="fas fa-home fa-3x mb-3 opacity-50"></i>
-                                                <div>Нет доступных объявлений</div>
-                                                <a href="{% url 'listings:listing_create' %}" class="btn btn-primary btn-sm mt-2">
-                                                    <i class="fas fa-plus me-1"></i>Создать первое объявление
-                                                </a>
-                                            </td>
-                                        </tr>
+                                        
+                                            
+                                                
+                                                    
+                                                    Нет доступных объявлений
+                                                    Создать первое объявление
+                                                
+                                            
+                                        
                                         {% endfor %}
                                     </tbody>
                                 </table>
@@ -1079,78 +1051,69 @@
             </div>
 
             <!-- Recent Activity -->
-            <div class="row">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="card-title mb-0">Недавние бронирования</h5>
-                            <a href="{% url 'listings:host_bookings' %}" class="btn btn-sm btn-outline-primary">Смотреть все</a>
-                        </div>
-                        <div class="card-body">
-                            {% if recent_bookings %}
-                                <div class="table-responsive">
-                                    <table class="table table-sm">
-                                        <thead>
-                                            <tr>
-                                                <th>Гость</th>
-                                                <th>Объявление</th>
-                                                <th>Даты</th>
-                                                <th>Статус</th>
-                                                <th>Сумма</th>
-                                                <th>Действия</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for booking in recent_bookings %}
-                                            <tr>
-                                                <td>
-                                                    <div>
-                                                        <div class="fw-bold">{{ booking.guest.get_full_name|default:booking.guest.username }}</div>
-                                                        <small class="text-muted">{{ booking.guests }} гост{{ booking.guests|pluralize:"ь,я,ей" }}</small>
-                                                    </div>
-                                                </td>
-                                                <td>{{ booking.listing.title|truncatechars:25 }}</td>
-                                                <td>
-                                                    <div>{{ booking.start_date|date:"M d" }} - {{ booking.end_date|date:"M d" }}</div>
-                                                    <small class="text-muted">{{ booking.duration_nights }} ноч{{ booking.duration_nights|pluralize:"ь,и,ей" }}</small>
-                                                </td>
-                                                <td>
-                                                    <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% elif booking.status == 'completed' %}info{% else %}secondary{% endif %}">
-                                                        {% if booking.status == 'confirmed' %}Подтверждено
-                                                        {% elif booking.status == 'pending' %}В ожидании
-                                                        {% elif booking.status == 'completed' %}Завершено
-                                                        {% else %}{{ booking.get_status_display }}
-                                                        {% endif %}
-                                                    </span>
-                                                </td>
-                                                <td class="fw-bold">₽{{ booking.total_price|intcomma }}</td>
-                                                <td>
-                                                    <div class="btn-group" role="group">
-                                                        <a href="{% url 'listings:booking_detail' reference=booking.booking_reference %}" 
-                                                           class="btn btn-sm btn-outline-primary" title="Детали">
-                                                            <i class="fas fa-eye"></i>
-                                                        </a>
-                                                        <a href="{% url 'chat:start_conversation_about_booking' booking_id=booking.id %}" 
-                                                           class="btn btn-sm btn-outline-info" title="Написать гостю">
-                                                            <i class="fas fa-comment"></i>
-                                                        </a>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            {% else %}
-                                <p class="text-muted text-center py-4">Нет недавних бронирований</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+            
+                
+                    
+                        Недавние бронирования
+                        Смотреть все
+                    
+                    
+                        {% if recent_bookings %}
+                            
+                                
+                                    
+                                        Гость
+                                        Объявление
+                                        Даты
+                                        Статус
+                                        Сумма
+                                        Действия
+                                    
+                                
+                                
+                                    {% for booking in recent_bookings %}
+                                    
+                                        
+                                            
+                                                {{ booking.guest.get_full_name|default:booking.guest.username }}
+                                                {{ booking.guests }} гость,я,ей
+                                            
+                                        
+                                        {{ booking.listing.title|truncatechars:25 }}
+                                        
+                                            {{ booking.start_date|date:"M d" }} - {{ booking.end_date|date:"M d" }}
+                                            {{ booking.duration_nights }} ночь,и,ей
+                                        
+                                        
+                                            {% if booking.status == 'confirmed' %}Подтверждено
+                                            {% elif booking.status == 'pending' %}В ожидании
+                                            {% elif booking.status == 'completed' %}Завершено
+                                            {% else %}{{ booking.get_status_display }}
+                                            {% endif %}
+                                        
+                                        ₽{{ booking.total_price|intcomma }}
+                                        
+                                            
+                                                
+                                                    
+                                                
+                                                
+                                                    
+                                                
+                                            
+                                        
+                                    
+                                    {% endfor %}
+                                
+                            
+                        {% else %}
+                            Нет недавних бронирований
+                        {% endif %}
+                    
+                
+            
+        
+    
 
 <script>
 // Native JavaScript chart implementation
@@ -1255,10 +1218,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!chartData || chartData.length === 0) {
             container.innerHTML = `
-                <div class="no-data-message">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Нет данных о доходах за выбранный период</span>
-                </div>
+                
+                    
+                    Нет данных о доходах за выбранный период
+                
             `;
             return;
         }
@@ -1297,22 +1260,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const maxValue = Math.max(...data.map(d => d.value), 1000);
         const minValue = 0;
         const padding = 50;
-        
+
         // Calculate container dimensions properly
         const containerRect = container.getBoundingClientRect();
         const containerStyle = window.getComputedStyle(container);
         const containerPadding = parseFloat(containerStyle.paddingTop) + parseFloat(containerStyle.paddingBottom);
-        
+
         const availableWidth = Math.max(containerRect.width || container.offsetWidth, 300);
         const availableHeight = Math.max((containerRect.height || container.offsetHeight) - containerPadding, 250);
-        
+
         const chartWidth = availableWidth - (padding * 2);
         const chartHeight = availableHeight - (padding * 2);
 
         // SVG dimensions should fill container completely
         const svgWidth = availableWidth;
         const svgHeight = availableHeight;
-        
+
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('width', '100%');
         svg.setAttribute('height', '100%');
@@ -1388,7 +1351,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (points.length > 1) {
             const areaPoints = points.map(p => `${p.x},${p.y}`).join(' L');
             const areaPath = `M ${padding},${padding + chartHeight} L${areaPoints} L${padding + chartWidth},${padding + chartHeight} Z`;
-            
+
             const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             area.setAttribute('d', areaPath);
             area.setAttribute('fill', 'url(#gradient)');
@@ -1397,7 +1360,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Create line path
             const linePoints = points.map(p => `${p.x},${p.y}`).join(' L');
             const linePath = `M${linePoints}`;
-            
+
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             line.setAttribute('d', linePath);
             line.setAttribute('fill', 'none');
@@ -1434,7 +1397,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     valueText = point.value.toLocaleString('ru-RU');
                 }
 
-                tooltip.innerHTML = `${point.label}<br>₽${valueText}`;
+                tooltip.innerHTML = `${point.label}
+₽${valueText}`;
 
                 const rect = container.getBoundingClientRect();
                 tooltip.style.position = 'absolute';
@@ -1487,10 +1451,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!statusStats || statusStats.length === 0) {
             container.innerHTML = `
-                <div class="no-data-message">
-                    <i class="fas fa-chart-pie"></i>
-                    <span>Нет данных о бронированиях за выбранный период</span>
-                </div>
+                
+                    
+                    Нет данных о бронированиях за выбранный период
+                
             `;
             if (legendContainer) legendContainer.innerHTML = '';
             return;
@@ -1578,7 +1542,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const tooltip = document.createElement('div');
                 tooltip.className = 'chart-tooltip';
-                tooltip.innerHTML = `${segment.label}<br><strong>${segment.value} бронирований</strong><br>(${((segment.value / total) * 100).toFixed(1)}%)`;
+                tooltip.innerHTML = `${segment.label}
+${segment.value} бронирований
+(${((segment.value / total) * 100).toFixed(1)}%)`;
 
                 const rect = container.getBoundingClientRect();
                 tooltip.style.position = 'absolute';
@@ -1675,10 +1641,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!quarterlyData || quarterlyData.length === 0) {
             container.innerHTML = `
-                <div class="no-data-message">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Нет квартальных данных</span>
-                </div>
+                
+                    
+                    Нет квартальных данных
+                
             `;
             return;
         }
@@ -1686,7 +1652,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Filter data based on selected period
         const periodSelect = document.getElementById('quarterlyPeriodSelect');
         const selectedPeriod = periodSelect ? periodSelect.value : '8';
-        
+
         let filteredData = quarterlyData;
         if (selectedPeriod !== 'all') {
             const periodQuarters = parseInt(selectedPeriod);
@@ -1711,10 +1677,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!seasonalData || seasonalData.length === 0) {
             container.innerHTML = `
-                <div class="no-data-message">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Нет сезонных данных</span>
-                </div>
+                
+                    
+                    Нет сезонных данных
+                
             `;
             return;
         }
@@ -1722,10 +1688,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Filter data based on selected period
         const periodSelect = document.getElementById('seasonalPeriodSelect');
         const selectedPeriod = periodSelect ? periodSelect.value : 'all';
-        
+
         let filteredData = seasonalData;
         let chartColor = '#28a745';
-        
+
         // Different filtering logic for seasonal data
         if (selectedPeriod === 'current') {
             // Show only current year data (would need backend support for this)
@@ -1749,15 +1715,15 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const maxValue = Math.max(...data.map(d => d.value), 1000);
             const padding = 50;
-            
+
             // Calculate container dimensions properly
             const containerRect = container.getBoundingClientRect();
             const containerStyle = window.getComputedStyle(container);
             const containerPadding = parseFloat(containerStyle.paddingTop) + parseFloat(containerStyle.paddingBottom);
-            
+
             const availableWidth = Math.max(containerRect.width || container.offsetWidth, 300);
             const availableHeight = Math.max((containerRect.height || container.offsetHeight) - containerPadding, 250);
-            
+
             const chartWidth = availableWidth - (padding * 2);
             const chartHeight = availableHeight - (padding * 2);
             const barWidth = Math.max((chartWidth / data.length) * 0.7, 15);
@@ -1766,7 +1732,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // SVG dimensions should fill container completely
             const svgWidth = availableWidth;
             const svgHeight = availableHeight;
-            
+
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('width', '100%');
             svg.setAttribute('height', '100%');
@@ -1840,7 +1806,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         valueText = item.value.toLocaleString('ru-RU');
                     }
 
-                    tooltip.innerHTML = `${item.label}<br>₽${valueText}<br>${item.bookings} бронирований`;
+                    tooltip.innerHTML = `${item.label}
+₽${valueText}
+${item.bookings} бронирований`;
 
                     const rect_container = container.getBoundingClientRect();
                     tooltip.style.position = 'absolute';
@@ -1880,10 +1848,10 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error creating bar chart:', error);
             container.innerHTML = `
-                <div class="no-data-message">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span>Ошибка создания графика</span>
-                </div>
+                
+                    
+                    Ошибка создания графика
+                
             `;
         }
     }
@@ -1896,7 +1864,63 @@ document.addEventListener('DOMContentLoaded', function() {
             createStatusChart();
             createQuarterlyChart();
             createSeasonalChart();
+            createOccupancyChart();
         }, 200);
+    }
+
+    // Occupancy Bar Chart
+    function createOccupancyChart() {
+        const container = document.getElementById('occupancyChart');
+        if (!container) return;
+
+        const listingSelect = document.getElementById('occupancyListingSelect');
+        const yearSelect = document.getElementById('occupancyYearSelect');
+
+        const listingId = listingSelect ? listingSelect.value : 'all';
+        const year = yearSelect ? yearSelect.value : new Date().getFullYear();
+
+        // Fetch occupancy data via AJAX
+        fetch(`/listings/api/occupancy-data/?listing_id=${listingId}&year=${year}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Occupancy data:', data);
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = `
+                        
+                            
+                            Нет данных о заполняемости за выбранный период
+                        
+                    `;
+                    return;
+                }
+
+                const occupancyData = data.map(item => ({
+                    label: item.month_name.substr(0, 3),
+                    value: parseFloat(item.occupancy_rate) || 0,
+                    bookings: item.bookings || 0
+                }));
+
+                createBarChart(container, occupancyData, '#ffc107');
+            })
+            .catch(error => {
+                console.error('Error fetching occupancy data:', error);
+                container.innerHTML = `
+                    
+                        
+                        Ошибка загрузки данных о заполняемости
+                    
+                `;
+            });
+    }
+
+    // Add event listeners to occupancy selects
+    const occupancyListingSelect = document.getElementById('occupancyListingSelect');
+    const occupancyYearSelect = document.getElementById('occupancyYearSelect');
+
+    if (occupancyListingSelect && occupancyYearSelect) {
+        occupancyListingSelect.addEventListener('change', createOccupancyChart);
+        occupancyYearSelect.addEventListener('change', createOccupancyChart);
     }
 
     // Initialize charts
@@ -1911,6 +1935,7 @@ document.addEventListener('DOMContentLoaded', function() {
             createStatusChart();
             createQuarterlyChart();
             createSeasonalChart();
+            createOccupancyChart();
         }, 150);
     });
 

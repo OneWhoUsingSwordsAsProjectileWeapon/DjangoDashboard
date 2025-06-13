@@ -573,27 +573,93 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                     'revenue': float(item['revenue'] or 0)
                 })
 
-        # Top performing listings with proper annotations
+        # Top performing listings with proper annotations (filtered by period)
         top_listings = host_listings.annotate(
             avg_rating=Avg('reviews__rating'),
             review_count=Count('reviews', distinct=True),
-            bookings_count=Count('bookings', distinct=True),
+            bookings_count=Count('bookings', filter=Q(
+                bookings__created_at__date__gte=start_date,
+                bookings__created_at__date__lte=end_date
+            ), distinct=True),
+            completed_bookings_count=Count('bookings', filter=Q(
+                bookings__status='completed',
+                bookings__created_at__date__gte=start_date,
+                bookings__created_at__date__lte=end_date
+            ), distinct=True),
             total_revenue=Sum(
                 Case(
-                    When(bookings__status='completed', then='bookings__total_price'),
+                    When(
+                        bookings__status='completed',
+                        bookings__created_at__date__gte=start_date,
+                        bookings__created_at__date__lte=end_date,
+                        then='bookings__total_price'
+                    ),
                     default=0,
                     output_field=DecimalField()
                 )
             )
         ).prefetch_related('bookings').order_by('-total_revenue')
 
-        # Calculate occupancy days separately to avoid aggregation issues
+        # Calculate occupancy days for the period
         for listing in top_listings:
             total_nights = 0
-            for booking in listing.bookings.filter(status__in=['completed', 'confirmed']):
+            period_bookings = listing.bookings.filter(
+                status__in=['completed', 'confirmed'],
+                created_at__date__gte=start_date,
+                created_at__date__lte=end_date
+            )
+            for booking in period_bookings:
                 nights = (booking.end_date - booking.start_date).days
                 total_nights += nights
             listing.occupancy_days = total_nights
+
+        # Generate occupancy data for chart (monthly occupancy by listing)
+        occupancy_data = {}
+        current_year = timezone.now().year
+        
+        # Get occupancy data for each listing by month for current year
+        for listing in host_listings:
+            monthly_occupancy = []
+            for month in range(1, 13):
+                month_start = date(current_year, month, 1)
+                if month == 12:
+                    month_end = date(current_year + 1, 1, 1) - timedelta(days=1)
+                else:
+                    month_end = date(current_year, month + 1, 1) - timedelta(days=1)
+                
+                # Calculate total nights booked in this month
+                month_bookings = listing.bookings.filter(
+                    status__in=['completed', 'confirmed'],
+                    start_date__lte=month_end,
+                    end_date__gte=month_start
+                )
+                
+                total_nights = 0
+                for booking in month_bookings:
+                    # Calculate overlap between booking and month
+                    booking_start = max(booking.start_date, month_start)
+                    booking_end = min(booking.end_date, month_end)
+                    if booking_end >= booking_start:
+                        nights = (booking_end - booking_start).days + 1
+                        total_nights += nights
+                
+                # Calculate days in month
+                days_in_month = (month_end - month_start).days + 1
+                occupancy_percentage = (total_nights / days_in_month * 100) if days_in_month > 0 else 0
+                
+                monthly_occupancy.append({
+                    'month': month,
+                    'month_name': ['', 'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 
+                                  'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'][month],
+                    'occupancy_percentage': round(occupancy_percentage, 1),
+                    'nights_booked': total_nights,
+                    'total_days': days_in_month
+                })
+            
+            occupancy_data[listing.id] = {
+                'listing': listing,
+                'monthly_data': monthly_occupancy
+            }
 
         # Recent activity (last 10)
         recent_bookings = all_bookings.select_related(
@@ -647,6 +713,8 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
             'daily_bookings': list(daily_bookings),
             'pending_time': pending_time,
             'host_listings_for_filter': host_listings,
+            'occupancy_data': occupancy_data,
+            'current_year': current_year,
             'current_filters': {
                 'time_filter': time_filter,
                 'listing_filter': listing_filter,
