@@ -22,6 +22,13 @@ def subscription_plans_view(request):
     plans = SubscriptionPlan.objects.filter(is_active=True).order_by('price')
     return render(request, 'subscriptions/plan_list.html', {'plans': plans})
 
+def admin_dashboard(request):
+    """Admin dashboard for subscription management"""
+    if not request.user.is_staff:
+        from django.contrib.auth.decorators import user_passes_test
+        return user_passes_test(lambda u: u.is_staff)(lambda r: None)(request)
+    return render(request, 'subscriptions/admin_dashboard.html')
+
 class SubscriptionPlanListView(generics.ListAPIView):
     """List all available subscription plans"""
     queryset = SubscriptionPlan.objects.filter(is_active=True).order_by('price')
