@@ -2,75 +2,73 @@
 {% extends 'base.html' %}
 {% load i18n %}
 
-{% block title %}Управление подписками - Администратор{% endblock %}
+{% block title %}Управление подписками{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-12">
-            <h1><i class="fas fa-chart-bar"></i> Управление подписками</h1>
-            <p class="text-muted">Административная панель для управления подписками пользователей</p>
-        </div>
-    </div>
-
-    <!-- Статистика -->
+<div class="container-fluid mt-4">
     <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Всего подписок</h5>
-                    <h2 id="total-subscriptions">-</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Активных</h5>
-                    <h2 id="active-subscriptions">-</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Истекающих</h5>
-                    <h2 id="expiring-subscriptions">-</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Доход</h5>
-                    <h2 id="total-revenue">-</h2>
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="mb-0">Управление подписками</h1>
+                <div class="btn-group" role="group">
+                    <a href="{% url 'admin:subscriptions_subscriptionplan_changelist' %}" class="btn btn-primary">
+                        <i class="fas fa-cog"></i> Планы
+                    </a>
+                    <a href="{% url 'admin:subscriptions_usersubscription_changelist' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-users"></i> Подписки
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Быстрые действия -->
+    <!-- Фильтры по периодам -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5>Быстрые действия</h5>
+                    <h5 class="mb-0">Фильтры и настройки</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-4">
-                            <a href="{% url 'admin:subscriptions_subscriptionplan_changelist' %}" class="btn btn-primary w-100">
-                                <i class="fas fa-cog"></i> Управление планами
-                            </a>
+                        <div class="col-md-3">
+                            <label for="timeFilterSelect" class="form-label">Период времени</label>
+                            <select class="form-select" id="timeFilterSelect">
+                                <option value="7">Последние 7 дней</option>
+                                <option value="30">Последние 30 дней</option>
+                                <option value="90">Последние 3 месяца</option>
+                                <option value="180">Последние 6 месяцев</option>
+                                <option value="365" selected>Последний год</option>
+                                <option value="custom">Произвольный период</option>
+                            </select>
                         </div>
-                        <div class="col-md-4">
-                            <a href="{% url 'admin:subscriptions_usersubscription_changelist' %}" class="btn btn-info w-100">
-                                <i class="fas fa-users"></i> Все подписки
-                            </a>
+                        <div class="col-md-3" id="customDateRange" style="display: none;">
+                            <label for="startDate" class="form-label">От</label>
+                            <input type="date" class="form-control" id="startDate">
                         </div>
-                        <div class="col-md-4">
-                            <button class="btn btn-success w-100" onclick="showCreateSubscriptionModal()">
-                                <i class="fas fa-plus"></i> Создать подписку
+                        <div class="col-md-3" id="customDateRangeEnd" style="display: none;">
+                            <label for="endDate" class="form-label">До</label>
+                            <input type="date" class="form-control" id="endDate">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="chartTypeSelect" class="form-label">Тип графика</label>
+                            <select class="form-select" id="chartTypeSelect">
+                                <option value="line">Линейный</option>
+                                <option value="bar">Столбчатый</option>
+                                <option value="area">Области</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <button type="button" class="btn btn-primary" id="applyFilters">
+                                <i class="fas fa-filter"></i> Применить фильтры
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="resetFilters">
+                                <i class="fas fa-undo"></i> Сбросить
+                            </button>
+                            <button type="button" class="btn btn-success" id="exportData">
+                                <i class="fas fa-download"></i> Экспорт данных
                             </button>
                         </div>
                     </div>
@@ -79,20 +77,203 @@
         </div>
     </div>
 
-    <!-- Последние подписки -->
+    <!-- Статистические карточки -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Всего подписок</h5>
+                            <h2 id="total-subscriptions" class="mb-0">-</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                    <small class="mt-2">
+                        <span id="subscriptions-change" class="badge badge-light">-</span>
+                        с прошлого месяца
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Активные</h5>
+                            <h2 id="active-subscriptions" class="mb-0">-</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                    <small class="mt-2">
+                        <span id="active-percentage" class="badge badge-light">-</span>
+                        от общего числа
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Истекшие</h5>
+                            <h2 id="expired-subscriptions" class="mb-0">-</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                    <small class="mt-2">
+                        <span id="churn-rate" class="badge badge-light">-</span>
+                        показатель оттока
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Общий доход</h5>
+                            <h2 id="total-revenue" class="mb-0">-</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-dollar-sign fa-2x"></i>
+                        </div>
+                    </div>
+                    <small class="mt-2">
+                        <span id="revenue-change" class="badge badge-light">-</span>
+                        с прошлого периода
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Графики доходов и подписок -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Динамика доходов</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary active" data-period="monthly">Месячно</button>
+                        <button type="button" class="btn btn-outline-primary" data-period="quarterly">Кварталы</button>
+                        <button type="button" class="btn btn-outline-primary" data-period="seasonal">Сезоны</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Распределение по планам</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="plansChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Дополнительная аналитика -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Конверсия и retention</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="conversionChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Средний доход на пользователя (ARPU)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="arpuChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Сезонная аналитика -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Сезонный анализ подписок</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <canvas id="seasonalChart" height="250"></canvas>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="seasonal-insights">
+                                <h6>Ключевые инсайты:</h6>
+                                <div id="seasonalInsights">
+                                    <div class="insight-item mb-2">
+                                        <small class="text-muted">Лучший месяц:</small>
+                                        <div id="bestMonth">-</div>
+                                    </div>
+                                    <div class="insight-item mb-2">
+                                        <small class="text-muted">Худший месяц:</small>
+                                        <div id="worstMonth">-</div>
+                                    </div>
+                                    <div class="insight-item mb-2">
+                                        <small class="text-muted">Сезонность:</small>
+                                        <div id="seasonality">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Таблица последних подписок -->
     <div class="row">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5>Последние подписки</h5>
+                    <h5 class="card-title mb-0">Последние подписки</h5>
                 </div>
                 <div class="card-body">
-                    <div id="recent-subscriptions">
-                        <div class="text-center">
-                            <div class="spinner-border" role="status">
-                                <span class="visually-hidden">Загрузка...</span>
-                            </div>
-                        </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Пользователь</th>
+                                    <th>План</th>
+                                    <th>Статус</th>
+                                    <th>Дата начала</th>
+                                    <th>Дата окончания</th>
+                                    <th>Сумма</th>
+                                    <th>Автопродление</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subscriptions-table">
+                                <tr>
+                                    <td colspan="7" class="text-center">Загрузка...</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -100,209 +281,487 @@
     </div>
 </div>
 
-<!-- Modal создания подписки -->
-<div class="modal fade" id="createSubscriptionModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Создать подписку для пользователя</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="createSubscriptionForm">
-                    <div class="mb-3">
-                        <label class="form-label">ID пользователя</label>
-                        <input type="number" class="form-control" id="userId" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">План подписки</label>
-                        <select class="form-control" id="planId" required>
-                            <option value="">Выберите план...</option>
-                        </select>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="autoRenew">
-                        <label class="form-check-label">
-                            Автоматическое продление
-                        </label>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-primary" onclick="createSubscription()">
-                    Создать подписку
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
 <script>
-// Загрузка статистики
-function loadStats() {
-    fetch('/subscriptions/api/subscriptions/admin/stats/')
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('total-subscriptions').textContent = data.total_subscriptions || 0;
-            document.getElementById('active-subscriptions').textContent = data.active_subscriptions || 0;
-            document.getElementById('expiring-subscriptions').textContent = data.expiring_soon || 0;
-            document.getElementById('total-revenue').textContent = '$' + (data.total_revenue || 0);
-        })
-        .catch(error => {
-            console.error('Ошибка загрузки статистики:', error);
-        });
-}
-
-// Загрузка планов для модала
-function loadPlans() {
-    fetch('/subscriptions/api/subscriptions/plans/')
-        .then(response => response.json())
-        .then(data => {
-            const select = document.getElementById('planId');
-            select.innerHTML = '<option value="">Выберите план...</option>';
-            data.forEach(plan => {
-                select.innerHTML += `<option value="${plan.id}">${plan.name} - $${plan.price}</option>`;
-            });
-        });
-}
-
-// Загрузка последних подписок
-function loadRecentSubscriptions() {
-    fetch('/subscriptions/api/subscriptions/')
-        .then(response => response.json())
-        .then(data => {
-            const container = document.getElementById('recent-subscriptions');
-            if (data.results && data.results.length > 0) {
-                container.innerHTML = data.results.slice(0, 10).map(sub => `
-                    <div class="border-bottom py-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>Пользователь ID: ${sub.user}</strong> - ${sub.plan_name}
-                                <br>
-                                <small class="text-muted">
-                                    Статус: <span class="badge ${getStatusBadgeClass(sub.status)}">${getStatusText(sub.status)}</span>
-                                    | Создано: ${new Date(sub.created_at).toLocaleDateString()}
-                                </small>
-                            </div>
-                            <div>
-                                <button class="btn btn-sm btn-outline-primary" onclick="extendSubscription(${sub.id})">
-                                    Продлить
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                container.innerHTML = '<p class="text-muted">Нет подписок для отображения</p>';
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка загрузки подписок:', error);
-            document.getElementById('recent-subscriptions').innerHTML = '<p class="text-danger">Ошибка загрузки данных</p>';
-        });
-}
-
-function getStatusBadgeClass(status) {
-    const classes = {
-        'active': 'bg-success',
-        'expired': 'bg-danger',
-        'canceled': 'bg-secondary',
-        'pending': 'bg-warning'
-    };
-    return classes[status] || 'bg-secondary';
-}
-
-function getStatusText(status) {
-    const texts = {
-        'active': 'Активная',
-        'expired': 'Истекшая',
-        'canceled': 'Отменена',
-        'pending': 'Ожидание'
-    };
-    return texts[status] || status;
-}
-
-function showCreateSubscriptionModal() {
-    loadPlans();
-    const modal = new bootstrap.Modal(document.getElementById('createSubscriptionModal'));
-    modal.show();
-}
-
-function createSubscription() {
-    const userId = document.getElementById('userId').value;
-    const planId = document.getElementById('planId').value;
-    const autoRenew = document.getElementById('autoRenew').checked;
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Analytics dashboard initializing...');
     
-    if (!userId || !planId) {
-        alert('Заполните все обязательные поля');
-        return;
+    let charts = {};
+    let currentPeriod = 'monthly';
+    let analyticsData = {};
+    
+    // Initialize dashboard
+    loadAnalyticsData();
+    
+    // Event listeners
+    document.getElementById('timeFilterSelect').addEventListener('change', function() {
+        if (this.value === 'custom') {
+            document.getElementById('customDateRange').style.display = 'block';
+            document.getElementById('customDateRangeEnd').style.display = 'block';
+        } else {
+            document.getElementById('customDateRange').style.display = 'none';
+            document.getElementById('customDateRangeEnd').style.display = 'none';
+        }
+    });
+    
+    document.getElementById('applyFilters').addEventListener('click', loadAnalyticsData);
+    document.getElementById('resetFilters').addEventListener('click', resetFilters);
+    document.getElementById('exportData').addEventListener('click', exportData);
+    
+    // Period switchers
+    document.querySelectorAll('[data-period]').forEach(button => {
+        button.addEventListener('click', function() {
+            document.querySelectorAll('[data-period]').forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            currentPeriod = this.dataset.period;
+            updateRevenueChart();
+        });
+    });
+    
+    function loadAnalyticsData() {
+        const timeFilter = document.getElementById('timeFilterSelect').value;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        
+        let params = new URLSearchParams();
+        if (timeFilter === 'custom' && startDate && endDate) {
+            params.append('start_date', startDate);
+            params.append('end_date', endDate);
+        } else {
+            params.append('days', timeFilter);
+        }
+        
+        // Load main stats
+        fetch(`/api/subscriptions/analytics/?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                analyticsData = data;
+                updateDashboard(data);
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки аналитики:', error);
+                showError('Ошибка загрузки данных аналитики');
+            });
     }
     
-    fetch(`/subscriptions/api/subscriptions/admin/create/${userId}/`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        },
-        body: JSON.stringify({
-            plan_id: planId,
-            auto_renew: autoRenew
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Подписка успешно создана!');
-            loadStats();
-            loadRecentSubscriptions();
-            const modal = bootstrap.Modal.getInstance(document.getElementById('createSubscriptionModal'));
-            modal.hide();
-        } else {
-            alert('Ошибка: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Ошибка:', error);
-        alert('Произошла ошибка при создании подписки');
-    });
-}
-
-function extendSubscription(subscriptionId) {
-    const days = prompt('На сколько дней продлить подписку?', '30');
-    if (!days || isNaN(days)) return;
+    function updateDashboard(data) {
+        // Update stats cards
+        updateStatsCards(data.summary);
+        
+        // Update charts
+        updateRevenueChart();
+        updatePlansChart(data.plans_distribution);
+        updateConversionChart(data.conversion_data);
+        updateArpuChart(data.arpu_data);
+        updateSeasonalChart(data.seasonal_data);
+        
+        // Update recent subscriptions table
+        updateSubscriptionsTable(data.recent_subscriptions);
+        
+        // Update seasonal insights
+        updateSeasonalInsights(data.seasonal_insights);
+    }
     
-    fetch(`/subscriptions/api/subscriptions/admin/extend/${subscriptionId}/`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        },
-        body: JSON.stringify({
-            days: parseInt(days)
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Подписка продлена на ' + days + ' дней');
-            loadRecentSubscriptions();
-        } else {
-            alert('Ошибка: ' + data.message);
+    function updateStatsCards(summary) {
+        document.getElementById('total-subscriptions').textContent = summary.total_subscriptions || 0;
+        document.getElementById('active-subscriptions').textContent = summary.active_subscriptions || 0;
+        document.getElementById('expired-subscriptions').textContent = summary.expired_subscriptions || 0;
+        document.getElementById('total-revenue').textContent = `$${(summary.total_revenue || 0).toFixed(2)}`;
+        
+        // Calculate percentages and changes
+        const activePercentage = summary.total_subscriptions > 0 
+            ? ((summary.active_subscriptions / summary.total_subscriptions) * 100).toFixed(1)
+            : 0;
+        document.getElementById('active-percentage').textContent = `${activePercentage}%`;
+        
+        // Show changes if available
+        if (summary.changes) {
+            updateChangeIndicator('subscriptions-change', summary.changes.subscriptions_change);
+            updateChangeIndicator('revenue-change', summary.changes.revenue_change, true);
+            updateChangeIndicator('churn-rate', summary.changes.churn_rate, false, true);
         }
-    })
-    .catch(error => {
-        console.error('Ошибка:', error);
-        alert('Произошла ошибка при продлении подписки');
-    });
-}
-
-// Инициализация
-document.addEventListener('DOMContentLoaded', function() {
-    loadStats();
-    loadRecentSubscriptions();
+    }
+    
+    function updateChangeIndicator(elementId, change, isCurrency = false, isChurn = false) {
+        const element = document.getElementById(elementId);
+        if (!element || change === undefined) return;
+        
+        const isPositive = change > 0;
+        const isNegative = change < 0;
+        
+        // For churn rate, positive is bad
+        const className = isChurn 
+            ? (isPositive ? 'badge-danger' : 'badge-success')
+            : (isPositive ? 'badge-success' : 'badge-danger');
+        
+        element.className = `badge ${className}`;
+        
+        const prefix = isPositive ? '+' : '';
+        const suffix = isCurrency ? '$' : '%';
+        element.textContent = `${prefix}${change.toFixed(1)}${suffix}`;
+    }
+    
+    function updateRevenueChart() {
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        
+        if (charts.revenue) {
+            charts.revenue.destroy();
+        }
+        
+        const data = analyticsData[`${currentPeriod}_revenue`] || [];
+        const chartType = document.getElementById('chartTypeSelect').value;
+        
+        const chartData = {
+            labels: data.map(item => item.label),
+            datasets: [{
+                label: 'Доход',
+                data: data.map(item => item.revenue),
+                backgroundColor: chartType === 'area' ? 'rgba(54, 162, 235, 0.2)' : 'rgba(54, 162, 235, 0.8)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2,
+                fill: chartType === 'area',
+                tension: 0.4
+            }, {
+                label: 'Количество подписок',
+                data: data.map(item => item.subscriptions),
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 2,
+                yAxisID: 'y1',
+                type: 'line'
+            }]
+        };
+        
+        charts.revenue = new Chart(ctx, {
+            type: chartType === 'area' ? 'line' : chartType,
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Доход ($)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Количество подписок'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            }
+        });
+    }
+    
+    function updatePlansChart(plansData) {
+        const ctx = document.getElementById('plansChart').getContext('2d');
+        
+        if (charts.plans) {
+            charts.plans.destroy();
+        }
+        
+        const labels = Object.keys(plansData || {});
+        const data = Object.values(plansData || {});
+        
+        charts.plans = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: [
+                        '#FF6384',
+                        '#36A2EB',
+                        '#FFCE56',
+                        '#4BC0C0',
+                        '#9966FF',
+                        '#FF9F40'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    function updateConversionChart(conversionData) {
+        const ctx = document.getElementById('conversionChart').getContext('2d');
+        
+        if (charts.conversion) {
+            charts.conversion.destroy();
+        }
+        
+        charts.conversion = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: conversionData?.labels || [],
+                datasets: [{
+                    label: 'Конверсия (%)',
+                    data: conversionData?.conversion || [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.4
+                }, {
+                    label: 'Retention (%)',
+                    data: conversionData?.retention || [],
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+    }
+    
+    function updateArpuChart(arpuData) {
+        const ctx = document.getElementById('arpuChart').getContext('2d');
+        
+        if (charts.arpu) {
+            charts.arpu.destroy();
+        }
+        
+        charts.arpu = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: arpuData?.labels || [],
+                datasets: [{
+                    label: 'ARPU ($)',
+                    data: arpuData?.values || [],
+                    backgroundColor: 'rgba(153, 102, 255, 0.8)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+    
+    function updateSeasonalChart(seasonalData) {
+        const ctx = document.getElementById('seasonalChart').getContext('2d');
+        
+        if (charts.seasonal) {
+            charts.seasonal.destroy();
+        }
+        
+        charts.seasonal = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+                        'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
+                datasets: [{
+                    label: 'Доход по месяцам',
+                    data: seasonalData?.monthly_revenue || Array(12).fill(0),
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(54, 162, 235, 1)'
+                }, {
+                    label: 'Количество подписок',
+                    data: seasonalData?.monthly_subscriptions || Array(12).fill(0),
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(255, 99, 132, 1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+    
+    function updateSubscriptionsTable(subscriptions) {
+        const tbody = document.getElementById('subscriptions-table');
+        
+        if (!subscriptions || subscriptions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">Нет данных</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = subscriptions.map(sub => `
+            <tr>
+                <td>${sub.user}</td>
+                <td><span class="badge bg-primary">${sub.plan}</span></td>
+                <td><span class="badge bg-${getStatusColor(sub.status)}">${getStatusText(sub.status)}</span></td>
+                <td>${formatDate(sub.start_date)}</td>
+                <td>${formatDate(sub.end_date)}</td>
+                <td>$${sub.amount_paid}</td>
+                <td>${sub.auto_renew ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>'}</td>
+            </tr>
+        `).join('');
+    }
+    
+    function updateSeasonalInsights(insights) {
+        if (!insights) return;
+        
+        document.getElementById('bestMonth').textContent = insights.best_month || '-';
+        document.getElementById('worstMonth').textContent = insights.worst_month || '-';
+        document.getElementById('seasonality').textContent = insights.seasonality_index ? 
+            `${insights.seasonality_index.toFixed(2)}%` : '-';
+    }
+    
+    function getStatusColor(status) {
+        switch (status) {
+            case 'active': return 'success';
+            case 'expired': return 'danger';
+            case 'canceled': return 'warning';
+            default: return 'secondary';
+        }
+    }
+    
+    function getStatusText(status) {
+        switch (status) {
+            case 'active': return 'Активна';
+            case 'expired': return 'Истекла';
+            case 'canceled': return 'Отменена';
+            default: return status;
+        }
+    }
+    
+    function formatDate(dateString) {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('ru-RU');
+    }
+    
+    function resetFilters() {
+        document.getElementById('timeFilterSelect').value = '365';
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
+        document.getElementById('chartTypeSelect').value = 'line';
+        document.getElementById('customDateRange').style.display = 'none';
+        document.getElementById('customDateRangeEnd').style.display = 'none';
+        loadAnalyticsData();
+    }
+    
+    function exportData() {
+        const timeFilter = document.getElementById('timeFilterSelect').value;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        
+        let params = new URLSearchParams();
+        params.append('export', 'true');
+        
+        if (timeFilter === 'custom' && startDate && endDate) {
+            params.append('start_date', startDate);
+            params.append('end_date', endDate);
+        } else {
+            params.append('days', timeFilter);
+        }
+        
+        window.location.href = `/api/subscriptions/analytics/export/?${params.toString()}`;
+    }
+    
+    function showError(message) {
+        // Simple error display - could be replaced with a more sophisticated notification system
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.row'));
+    }
 });
 </script>
 
-{% csrf_token %}
+<style>
+.insight-item {
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #007bff;
+}
+
+.seasonal-insights h6 {
+    color: #495057;
+    font-weight: 600;
+}
+
+.card .card-header h5 {
+    font-weight: 600;
+    color: #495057;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+canvas {
+    max-height: 400px;
+}
+
+.btn-group .btn {
+    font-size: 0.875rem;
+}
+
+.stats-card {
+    transition: transform 0.2s;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+</style>
 {% endblock %}

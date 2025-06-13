@@ -29,6 +29,7 @@ urlpatterns = [
     path('api/subscriptions/usage/', views.subscription_usage, name='api_subscription_usage'),
     path('api/subscriptions/check-ad-creation/', views.check_ad_creation, name='api_subscription_check_ad_creation'),
     path('api/subscriptions/', include('subscriptions.urls')),
+    path('api/', include('subscriptions.urls')),
 ]
 
 # Serve media files in development

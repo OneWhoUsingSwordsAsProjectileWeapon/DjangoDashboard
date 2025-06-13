@@ -388,3 +388,112 @@ def admin_extend_subscription(request, subscription_id):
             'success': False,
             'message': _('Invalid number of days')
         }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAdminUser])
+def subscription_analytics(request):
+    """Get comprehensive subscription analytics"""
+    try:
+        # Get parameters
+        days = request.GET.get('days')
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        
+        # Parse dates if provided
+        if start_date and end_date:
+            from datetime import datetime
+            start_date = datetime.fromisoformat(start_date)
+            end_date = datetime.fromisoformat(end_date)
+        
+        # Get analytics data
+        analytics_data = SubscriptionService.get_analytics_data(
+            start_date=start_date,
+            end_date=end_date,
+            days=days
+        )
+        
+        return Response(analytics_data)
+        
+    except Exception as e:
+        logger.error(f"Error getting subscription analytics: {e}")
+        return Response({
+            'error': 'Failed to load analytics data'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAdminUser])
+def export_analytics(request):
+    """Export analytics data to CSV"""
+    import csv
+    from django.http import HttpResponse
+    from datetime import datetime
+    
+    try:
+        # Get parameters
+        days = request.GET.get('days')
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        
+        # Parse dates if provided
+        if start_date and end_date:
+            start_date = datetime.fromisoformat(start_date)
+            end_date = datetime.fromisoformat(end_date)
+        
+        # Get analytics data
+        analytics_data = SubscriptionService.get_analytics_data(
+            start_date=start_date,
+            end_date=end_date,
+            days=days
+        )
+        
+        # Create CSV response
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="subscription_analytics_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+        
+        writer = csv.writer(response)
+        
+        # Write summary data
+        writer.writerow(['Subscription Analytics Export'])
+        writer.writerow(['Generated:', datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
+        writer.writerow([])
+        
+        # Summary statistics
+        writer.writerow(['Summary Statistics'])
+        summary = analytics_data['summary']
+        writer.writerow(['Total Subscriptions', summary['total_subscriptions']])
+        writer.writerow(['Active Subscriptions', summary['active_subscriptions']])
+        writer.writerow(['Expired Subscriptions', summary['expired_subscriptions']])
+        writer.writerow(['Total Revenue', f"${summary['total_revenue']:.2f}"])
+        writer.writerow([])
+        
+        # Monthly revenue data
+        writer.writerow(['Monthly Revenue'])
+        writer.writerow(['Month', 'Revenue', 'Subscriptions'])
+        for item in analytics_data['monthly_revenue']:
+            writer.writerow([item['label'], f"${item['revenue']:.2f}", item['subscriptions']])
+        writer.writerow([])
+        
+        # Plans distribution
+        writer.writerow(['Plans Distribution'])
+        writer.writerow(['Plan', 'Count'])
+        for plan, count in analytics_data['plans_distribution'].items():
+            writer.writerow([plan, count])
+        writer.writerow([])
+        
+        # Recent subscriptions
+        writer.writerow(['Recent Subscriptions'])
+        writer.writerow(['User', 'Plan', 'Status', 'Start Date', 'End Date', 'Amount', 'Auto Renew'])
+        for sub in analytics_data['recent_subscriptions']:
+            writer.writerow([
+                sub['user'], sub['plan'], sub['status'],
+                sub['start_date'][:10], sub['end_date'][:10],
+                f"${sub['amount_paid']:.2f}", 'Yes' if sub['auto_renew'] else 'No'
+            ])
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error exporting analytics: {e}")
+        return Response({
+            'error': 'Failed to export analytics data'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
