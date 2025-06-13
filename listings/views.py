@@ -769,8 +769,7 @@ def add_listing_image(request, pk):
 
             # If this is the first image or marked as main, make it main
             if form.cleaned_data.get('is_main') or not listing.images.exists():
-                #```python
-Unset other main images
+                # Unset other main images
                 listing.images.update(is_main=False)
                 image.is_main = True
 
