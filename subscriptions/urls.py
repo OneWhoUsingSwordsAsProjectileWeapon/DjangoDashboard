@@ -21,7 +21,6 @@ urlpatterns = [
     path('api/subscriptions/admin/create/<int:user_id>/', views.admin_create_subscription, name='admin_create'),
     path('api/subscriptions/admin/extend/<int:subscription_id>/', views.admin_extend_subscription, name='admin_extend'),
 
-    # Analytics endpoints
-    path('api/subscriptions/analytics/', views.subscription_analytics, name='analytics'),
-    path('api/subscriptions/analytics/export/', views.export_analytics, name='export_analytics'),
+    # Analytics endpoints (accessed via main URLs)
+    # Analytics URLs are handled in core/urls.py to avoid namespace conflicts
 ]

@@ -28,8 +28,8 @@ urlpatterns = [
     path('api/subscriptions/toggle-auto-renew/', views.toggle_auto_renew, name='api_subscription_toggle_auto_renew'),
     path('api/subscriptions/usage/', views.subscription_usage, name='api_subscription_usage'),
     path('api/subscriptions/check-ad-creation/', views.check_ad_creation, name='api_subscription_check_ad_creation'),
-    path('api/subscriptions/', include('subscriptions.urls')),
-    path('api/', include('subscriptions.urls')),
+    path('api/subscriptions/analytics/', views.subscription_analytics, name='api_subscription_analytics'),
+    path('api/subscriptions/analytics/export/', views.export_analytics, name='api_subscription_export_analytics'),
 ]
 
 # Serve media files in development
