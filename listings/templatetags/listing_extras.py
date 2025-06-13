@@ -159,19 +159,39 @@ def display_amenities(amenities, max_display=6):
 
 @register.filter
 def get_item(dictionary, key):
-    """Get an item from a dictionary or queryset by key"""
+    """Get item from dictionary by key"""
+    return dictionary.get(key)
+
+@register.filter
+def to_json(value):
+    """Convert value to JSON string"""
+    return mark_safe(json.dumps(value))
+
+@register.filter
+def multiply(value, arg):
+    """Multiply value by argument"""
     try:
-        if hasattr(dictionary, 'filter'):
-            # It's a QuerySet or Manager
-            return dictionary.filter(listing_id=key).exists()
-        elif hasattr(dictionary, 'get'):
-            # It's a dictionary-like object
-            return dictionary.get(key)
-        else:
-            # Try to access it like a list/tuple
-            return dictionary[key]
-    except (KeyError, IndexError, TypeError, AttributeError):
-        return None
+        return float(value) * float(arg)
+    except (ValueError, TypeError):
+        return 0
+
+@register.filter
+def subtract(value, arg):
+    """Subtract argument from value"""
+    try:
+        return float(value) - float(arg)
+    except (ValueError, TypeError):
+        return 0
+
+@register.filter
+def div(value, arg):
+    """Divide value by argument"""
+    try:
+        if float(arg) == 0:
+            return 0
+        return float(value) / float(arg)
+    except (ValueError, TypeError):
+        return 0
 
 @register.filter
 def star_rating(rating):
