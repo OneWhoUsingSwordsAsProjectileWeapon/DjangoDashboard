@@ -1,7 +1,10 @@
 
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from listings.models import Listing, Booking, Review
+from moderation.models import UserComplaint
+from chat.models import Conversation, Message
 from datetime import date, timedelta
 import random
 from decimal import Decimal
@@ -9,230 +12,231 @@ from decimal import Decimal
 User = get_user_model()
 
 class Command(BaseCommand):
-    help = 'Create test data for the dashboard'
+    help = 'Create comprehensive test data with hosts, clients, listings, bookings, complaints, chats and reviews'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--hosts',
+            type=int,
+            default=10,
+            help='Number of hosts to create (default: 10)'
+        )
+        parser.add_argument(
+            '--clients',
+            type=int,
+            default=20,
+            help='Number of clients to create (default: 20)'
+        )
+        parser.add_argument(
+            '--listings',
+            type=int,
+            default=50,
+            help='Number of listings to create (default: 50)'
+        )
+        parser.add_argument(
+            '--bookings',
+            type=int,
+            default=4000,
+            help='Number of bookings to create (default: 4000)'
+        )
+        parser.add_argument(
+            '--complaints',
+            type=int,
+            default=20,
+            help='Number of complaints to create (default: 20)'
+        )
 
     def handle(self, *args, **options):
-        self.stdout.write('Creating test data...')
+        self.stdout.write('Creating comprehensive test data...')
         
-        # Create 5 test users (hosts and guests)
-        hosts = []
-        guests = []
+        num_hosts = options['hosts']
+        num_clients = options['clients']
+        num_listings = options['listings']
+        num_bookings = options['bookings']
+        num_complaints = options['complaints']
         
         # Create hosts
-        for i in range(3):
-            email = f'host{i+1}@example.com'
+        hosts = []
+        host_names = [
+            'Александр', 'Елена', 'Дмитрий', 'Анна', 'Михаил', 'Ольга', 'Сергей', 'Мария',
+            'Андрей', 'Татьяна', 'Владимир', 'Наталья', 'Николай', 'Екатерина', 'Алексей'
+        ]
+        host_surnames = [
+            'Петров', 'Иванов', 'Сидоров', 'Смирнов', 'Кузнецов', 'Попов', 'Волков', 'Соколов',
+            'Лебедев', 'Козлов', 'Новиков', 'Морозов', 'Петухов', 'Волошин', 'Белов'
+        ]
+        
+        for i in range(num_hosts):
+            first_name = random.choice(host_names)
+            last_name = random.choice(host_surnames)
+            username = f'host_{i+1}_{first_name.lower()}'
+            email = f'{username}@example.com'
+            
             if not User.objects.filter(email=email).exists():
                 host = User.objects.create_user(
-                    username=f'host{i+1}',
+                    username=username,
                     email=email,
                     password='testpass123',
-                    first_name=f'Host{i+1}',
-                    last_name='User',
+                    first_name=first_name,
+                    last_name=last_name,
                     is_host=True,
-                    is_guest=False
+                    is_guest=False,
+                    role='host',
+                    phone_number=f'+7{random.randint(9000000000, 9999999999)}',
+                    is_phone_verified=random.choice([True, False]),
+                    is_id_verified=random.choice([True, False])
                 )
                 hosts.append(host)
                 self.stdout.write(f'Created host: {host.username}')
+
+        # Create clients (guests)
+        clients = []
+        client_names = [
+            'Иван', 'Светлана', 'Павел', 'Юлия', 'Константин', 'Валентина', 'Роман', 'Людмила',
+            'Артем', 'Галина', 'Максим', 'Вера', 'Игорь', 'Марина', 'Денис', 'Ирина', 'Федор',
+            'Лариса', 'Кирилл', 'Зинаида', 'Георгий', 'Нина', 'Станислав', 'Любовь', 'Виктор'
+        ]
         
-        # Create guests
-        for i in range(5):
-            email = f'guest{i+1}@example.com'
+        for i in range(num_clients):
+            first_name = random.choice(client_names)
+            last_name = random.choice(host_surnames)
+            username = f'client_{i+1}_{first_name.lower()}'
+            email = f'{username}@example.com'
+            
             if not User.objects.filter(email=email).exists():
-                guest = User.objects.create_user(
-                    username=f'guest{i+1}',
+                client = User.objects.create_user(
+                    username=username,
                     email=email,
                     password='testpass123',
-                    first_name=f'Guest{i+1}',
-                    last_name='User',
+                    first_name=first_name,
+                    last_name=last_name,
                     is_host=False,
-                    is_guest=True
+                    is_guest=True,
+                    role='user',
+                    phone_number=f'+7{random.randint(9000000000, 9999999999)}',
+                    is_phone_verified=random.choice([True, False]),
+                    is_id_verified=random.choice([True, False])
                 )
-                guests.append(guest)
-                self.stdout.write(f'Created guest: {guest.username}')
-        
-        # Get existing hosts if any
-        if not hosts:
-            hosts = list(User.objects.filter(is_host=True)[:3])
-        
-        if not guests:
-            guests = list(User.objects.filter(is_guest=True)[:5])
-        
-        if not hosts:
-            self.stdout.write(self.style.ERROR('No hosts available. Please create some hosts first.'))
-            return
-        
-        # Create listings for hosts
+                clients.append(client)
+                self.stdout.write(f'Created client: {client.username}')
+
+        # Create listings
         listings = []
-        property_types = ['Квартира', 'Дом', 'Студия', 'Лофт', 'Комната', 'Апартаменты', 'Пентхаус', 'Таунхаус']
-        cities = ['Москва', 'Санкт-Петербург', 'Казань', 'Нижний Новгород', 'Екатеринбург', 'Новосибирск', 'Сочи', 'Калининград', 'Ростов-на-Дону', 'Уфа', 'Чита']
+        property_types = ['Квартира', 'Дом', 'Студия', 'Лофт', 'Комната', 'Апартаменты', 'Пентхаус', 'Таунхаус', 'Коттедж', 'Гостевой дом']
+        cities = [
+            'Москва', 'Санкт-Петербург', 'Казань', 'Нижний Новгород', 'Екатеринбург', 
+            'Новосибирск', 'Сочи', 'Калининград', 'Ростов-на-Дону', 'Уфа', 'Чита',
+            'Краснодар', 'Владивосток', 'Иркутск', 'Томск', 'Тюмень', 'Архангельск'
+        ]
         
         descriptions = [
-            'Уютная {} в центре города {}. Прекрасное место для отдыха.',
-            'Современная {} в престижном районе {}. Идеально для командировок.',
-            'Просторная {} с отличным видом в {}. Все удобства включены.',
-            'Стильная {} в тихом районе {}. Рядом парк и транспорт.',
+            'Уютная {} в центре города {}. Прекрасное место для отдыха с семьей.',
+            'Современная {} в престижном районе {}. Идеально для командировок и деловых поездок.',
+            'Просторная {} с отличным видом в {}. Все удобства включены, парковка бесплатная.',
+            'Стильная {} в тихом районе {}. Рядом парк и удобный транспорт.',
             'Комфортная {} для семейного отдыха в {}. Детская площадка во дворе.',
-            'Элегантная {} в историческом центре {}. Множество достопримечательностей.',
-            'Светлая {} с балконом в {}. Прекрасный вид на город.',
-            'Дизайнерская {} в новостройке {}. Современный ремонт.',
+            'Элегантная {} в историческом центре {}. Множество достопримечательностей рядом.',
+            'Светлая {} с балконом в {}. Прекрасный вид на город и реку.',
+            'Дизайнерская {} в новостройке {}. Современный ремонт и техника.',
+            'Домашняя {} в спокойном месте {}. Отличное место для восстановления сил.',
+            'Роскошная {} с террасой в {}. VIP уровень комфорта и сервиса.'
         ]
         
         amenities_list = [
-            ['Wi-Fi', 'Кухня', 'Стиральная машина'],
-            ['Wi-Fi', 'Кухня', 'Кондиционер', 'Парковка'],
-            ['Wi-Fi', 'Кухня', 'Джакузи', 'Балкон'],
             ['Wi-Fi', 'Кухня', 'Стиральная машина', 'Телевизор'],
-            ['Wi-Fi', 'Кухня', 'Посудомоечная машина', 'Лифт'],
-            ['Wi-Fi', 'Мини-кухня', 'Кондиционер'],
-            ['Wi-Fi', 'Полная кухня', 'Стиральная машина', 'Сушилка', 'Парковка'],
+            ['Wi-Fi', 'Кухня', 'Кондиционер', 'Парковка', 'Балкон'],
+            ['Wi-Fi', 'Кухня', 'Джакузи', 'Балкон', 'Сауна'],
+            ['Wi-Fi', 'Кухня', 'Стиральная машина', 'Телевизор', 'Микроволновка'],
+            ['Wi-Fi', 'Кухня', 'Посудомоечная машина', 'Лифт', 'Консьерж'],
+            ['Wi-Fi', 'Мини-кухня', 'Кондиционер', 'Сейф'],
+            ['Wi-Fi', 'Полная кухня', 'Стиральная машина', 'Сушилка', 'Парковка', 'Терраса'],
+            ['Wi-Fi', 'Кухня', 'Камин', 'Барбекю', 'Сад'],
+            ['Wi-Fi', 'Кухня', 'Бассейн', 'Спортзал', 'Охрана'],
+            ['Wi-Fi', 'Кухня', 'Кондиционер', 'Отопление', 'Интернет']
         ]
         
-        # Create more listings per host to reach ~40 total
-        total_listings_needed = 40
-        listings_per_host = total_listings_needed // len(hosts) if hosts else 0
-        extra_listings = total_listings_needed % len(hosts) if hosts else 0
-        
-        for i, host in enumerate(hosts):
-            num_listings = listings_per_host
-            if i < extra_listings:
-                num_listings += 1
-                
-            for j in range(num_listings):
-                city = random.choice(cities)
-                property_type = random.choice(property_types)
-                description_template = random.choice(descriptions)
-                
-                # Generate more varied data
-                bedrooms = random.randint(1, 4)
-                bathrooms = random.choice([1, 1.5, 2, 2.5, 3])
-                accommodates = random.randint(bedrooms, bedrooms * 2 + 2)
-                
-                listing = Listing.objects.create(
-                    title=f'{property_type} в {city} - {bedrooms} комн.',
-                    description=description_template.format(property_type.lower(), city),
-                    address=f'ул. {random.choice(["Центральная", "Ленина", "Пушкина", "Гагарина", "Мира", "Советская"])}, {random.randint(1, 200)}',
-                    city=city,
-                    state=f'{city} область',
-                    country='Россия',
-                    zip_code=f'{random.randint(100000, 999999)}',
-                    price_per_night=Decimal(str(random.randint(1500, 12000))),
-                    cleaning_fee=Decimal(str(random.randint(300, 2000))),
-                    service_fee=Decimal(str(random.randint(200, 1000))),
-                    bedrooms=bedrooms,
-                    bathrooms=Decimal(str(bathrooms)),
-                    accommodates=accommodates,
-                    property_type=property_type,
-                    amenities=random.choice(amenities_list),
-                    minimum_nights=random.choice([1, 2, 3]),
-                    maximum_nights=random.choice([7, 14, 30]),
-                    host=host,
-                    is_active=random.choice([True, True, True, False]),  # 75% active
-                    is_approved=random.choice([True, True, False])  # 66% approved
-                )
-                listings.append(listing)
-                self.stdout.write(f'Created listing: {listing.title}')
-        
-        # Create ListingApproval records with different statuses
-        from moderation.models import ListingApproval
-        
-        approval_statuses = ['pending', 'approved', 'rejected', 'requires_changes']
-        approval_weights = [0.2, 0.5, 0.2, 0.1]  # 50% approved, 20% pending, 20% rejected, 10% requires changes
-        
-        for listing in listings:
-            # Skip if approval record already exists
-            if hasattr(listing, 'approval_record'):
-                continue
-                
-            status = random.choices(approval_statuses, weights=approval_weights)[0]
-            
-            approval = ListingApproval.objects.create(
-                listing=listing,
-                status=status,
-                has_valid_title=random.choice([True, True, False]),  # 66% valid
-                has_valid_description=random.choice([True, True, False]),
-                has_valid_images=random.choice([True, False]),  # 50% valid
-                has_valid_address=random.choice([True, True, True, False]),  # 75% valid
-                has_appropriate_pricing=random.choice([True, True, False]),
-                follows_content_policy=random.choice([True, True, True, False]),  # 75% valid
-                has_verification_video=random.choice([True, False, False])  # 33% have video
-            )
-            
-            # Add moderator notes based on status
-            if status == 'approved':
-                approval.moderator_notes = random.choice([
-                    'Отличное объявление, все требования соблюдены.',
-                    'Хорошее качество фотографий и описание.',
-                    'Соответствует всем стандартам платформы.'
-                ])
-                # Update listing status for approved listings
-                listing.is_approved = True
-                listing.is_active = True
-                listing.save(update_fields=['is_approved', 'is_active'])
-                
-            elif status == 'rejected':
-                approval.rejection_reason = random.choice([
-                    'Низкое качество фотографий.',
-                    'Неполное описание объекта.',
-                    'Нарушение правил платформы.',
-                    'Неточная информация об адресе.'
-                ])
-                listing.is_approved = False
-                listing.save(update_fields=['is_approved'])
-                
-            elif status == 'requires_changes':
-                approval.required_changes = random.choice([
-                    'Необходимо добавить больше фотографий.',
-                    'Уточните описание удобств.',
-                    'Проверьте правильность адреса.',
-                    'Добавьте информацию о правилах дома.'
-                ])
-                listing.is_approved = False
-                listing.save(update_fields=['is_approved'])
-                
-            elif status == 'pending':
-                listing.is_approved = False
-                listing.save(update_fields=['is_approved'])
-            
-            approval.save()
-            self.stdout.write(f'Created approval record for {listing.title}: {status}')
-        
-        # Create bookings with non-conflicting dates
-        statuses = ['pending', 'confirmed', 'completed', 'canceled']
-        status_weights = [0.15, 0.25, 0.5, 0.1]  # More completed bookings for better stats
-        
-        today = date.today()
-        
-        # Create more bookings for better statistics (200-300 bookings)
-        num_bookings = random.randint(200, 300)
-        successful_bookings = 0
-        
-        for _ in range(num_bookings * 3):  # Try more times to ensure we get enough bookings
-            if not guests or not listings or successful_bookings >= num_bookings:
+        for i in range(num_listings):
+            if not hosts:
                 break
                 
-            listing = random.choice([l for l in listings if l.is_active and l.is_approved])
-            if not listing:
+            host = random.choice(hosts)
+            city = random.choice(cities)
+            property_type = random.choice(property_types)
+            description_template = random.choice(descriptions)
+            
+            bedrooms = random.randint(1, 5)
+            bathrooms = random.choice([1, 1.5, 2, 2.5, 3, 3.5, 4])
+            accommodates = random.randint(bedrooms, bedrooms * 3 + 2)
+            
+            listing = Listing.objects.create(
+                title=f'{property_type} "{random.choice(["Уют", "Комфорт", "Люкс", "Стандарт", "Премиум", "Эконом", "Бизнес", "Семейный", "VIP", "Классик"])}" в {city}',
+                description=description_template.format(property_type.lower(), city),
+                address=f'ул. {random.choice(["Центральная", "Ленина", "Пушкина", "Гагарина", "Мира", "Советская", "Новая", "Садовая", "Парковая", "Речная"])}, {random.randint(1, 300)}',
+                city=city,
+                state=f'{city} область',
+                country='Россия',
+                zip_code=f'{random.randint(100000, 999999)}',
+                latitude=Decimal(str(random.uniform(55.0, 60.0))),
+                longitude=Decimal(str(random.uniform(30.0, 40.0))),
+                price_per_night=Decimal(str(random.randint(1000, 25000))),
+                cleaning_fee=Decimal(str(random.randint(200, 3000))),
+                service_fee=Decimal(str(random.randint(100, 1500))),
+                bedrooms=bedrooms,
+                bathrooms=Decimal(str(bathrooms)),
+                accommodates=accommodates,
+                property_type=property_type,
+                amenities=random.choice(amenities_list),
+                house_rules=random.choice([
+                    'Не курить в помещении. Тихие часы после 22:00.',
+                    'Запрещены вечеринки. Уборка обязательна.',
+                    'Домашние животные не допускаются.',
+                    'Максимум 2 гостя сверх заявленного.',
+                    'Заезд строго по времени. Выезд до 12:00.'
+                ]),
+                minimum_nights=random.choice([1, 2, 3, 7]),
+                maximum_nights=random.choice([7, 14, 30, 90]),
+                host=host,
+                is_active=random.choice([True, True, True, False]),
+                is_approved=random.choice([True, True, True, False])
+            )
+            listings.append(listing)
+            self.stdout.write(f'Created listing: {listing.title}')
+
+        # Create bookings with realistic distribution over the year
+        bookings = []
+        statuses = ['pending', 'confirmed', 'completed', 'canceled']
+        status_weights = [0.1, 0.2, 0.6, 0.1]  # 60% completed for good statistics
+        
+        today = date.today()
+        start_of_year = today - timedelta(days=365)
+        
+        successful_bookings = 0
+        max_attempts = num_bookings * 5  # Try more times to ensure we get enough bookings
+        
+        for attempt in range(max_attempts):
+            if successful_bookings >= num_bookings or not clients or not listings:
+                break
+                
+            # Select available listing
+            available_listings = [l for l in listings if l.is_active and l.is_approved]
+            if not available_listings:
                 continue
                 
-            guest = random.choice(guests)
+            listing = random.choice(available_listings)
+            client = random.choice(clients)
             
-            # Generate random dates with better distribution
-            if random.random() > 0.7:  # 30% future bookings
-                days_ahead = random.randint(1, 60)
-                start_date = today + timedelta(days=days_ahead)
-            else:  # 70% past bookings
-                days_ago = random.randint(1, 365)  # Within last year
-                start_date = today - timedelta(days=days_ago)
-                
-            duration = random.randint(1, 14)  # 1-14 nights
+            # Generate dates more evenly distributed throughout the year
+            days_from_start = random.randint(0, 365)
+            start_date = start_of_year + timedelta(days=days_from_start)
+            duration = random.randint(1, 21)  # 1-21 nights
             end_date = start_date + timedelta(days=duration)
             
-            # Check if dates are available
+            # Check availability
             if listing.is_available(start_date, end_date):
                 # Calculate pricing
                 price_data = listing.calculate_price(start_date, end_date)
                 
-                # Adjust status based on dates
+                # Determine status based on dates
                 if start_date > today:
                     status = random.choices(['pending', 'confirmed'], weights=[0.3, 0.7])[0]
                 elif end_date < today:
@@ -242,51 +246,212 @@ class Command(BaseCommand):
                 
                 booking = Booking.objects.create(
                     listing=listing,
-                    guest=guest,
+                    guest=client,
                     start_date=start_date,
                     end_date=end_date,
-                    guests=random.randint(1, min(listing.accommodates, 6)),
+                    guests=random.randint(1, min(listing.accommodates, 8)),
                     status=status,
                     base_price=price_data['base_price'],
                     cleaning_fee=price_data['cleaning_fee'],
                     service_fee=price_data['service_fee'],
                     total_price=price_data['total_price'],
                     special_requests=random.choice([
-                        '', 'Поздний заезд', 'Раннее заселение', 
+                        '', 'Поздний заезд после 20:00', 'Раннее заселение до 12:00', 
                         'Дополнительные полотенца', 'Детская кроватка',
-                        'Тихий номер', 'Высокий этаж', 'Парковочное место'
+                        'Тихий номер', 'Высокий этаж', 'Парковочное место',
+                        'Встреча в аэропорту', 'Дополнительные подушки',
+                        'Гипоаллергенное белье', 'Трансфер от метро'
                     ])
                 )
                 
+                bookings.append(booking)
                 successful_bookings += 1
                 
-                # Create reviews for completed bookings
-                if status == 'completed' and random.random() > 0.25:  # 75% chance of review
-                    rating = random.choices([3, 4, 5], weights=[0.1, 0.3, 0.6])[0]  # Mostly good ratings
-                    comments = {
-                        3: ['Неплохо, но есть недочеты.', 'Средний уровень сервиса.', 'Ожидал большего.'],
-                        4: ['Хорошее место, рекомендую!', 'Все понравилось, чисто и уютно.', 'Хорошее расположение, удобно добираться.'],
-                        5: ['Отличное место, превзошло ожидания!', 'Идеально для отдыха!', 'Приятный хозяин, все как на фото.', 'Отдохнули прекрасно, спасибо!', 'Обязательно приедем еще!']
-                    }
-                    
-                    Review.objects.create(
-                        listing=listing,
-                        reviewer=guest,
-                        booking=booking,
-                        rating=rating,
-                        comment=random.choice(comments[rating])
-                    )
+                if successful_bookings % 500 == 0:
+                    self.stdout.write(f'Created {successful_bookings} bookings...')
+
+        self.stdout.write(f'Created {len(bookings)} bookings total')
+
+        # Create reviews for completed bookings
+        reviews_created = 0
+        for booking in bookings:
+            if booking.status == 'completed' and random.random() > 0.2:  # 80% chance of review
+                rating = random.choices([1, 2, 3, 4, 5], weights=[0.05, 0.05, 0.15, 0.35, 0.4])[0]
                 
-                self.stdout.write(f'Created booking: {booking.booking_reference} ({status})')
+                comments = {
+                    1: ['Очень плохо, не рекомендую.', 'Ужасные условия.', 'Полное разочарование.'],
+                    2: ['Не очень, есть проблемы.', 'Много недостатков.', 'Ожидал лучшего.'],
+                    3: ['Средне, есть недочеты.', 'Неплохо, но можно лучше.', 'Удовлетворительно.'],
+                    4: ['Хорошо, рекомендую!', 'Приятное место.', 'Хороший уровень сервиса.'],
+                    5: ['Отлично! Превзошло ожидания!', 'Идеальное место!', 'Всё было perfect!']
+                }
+                
+                Review.objects.create(
+                    listing=booking.listing,
+                    reviewer=booking.guest,
+                    booking=booking,
+                    rating=rating,
+                    comment=random.choice(comments[rating]),
+                    is_approved=random.choice([True, True, True, False])  # 75% approved
+                )
+                reviews_created += 1
+
+        self.stdout.write(f'Created {reviews_created} reviews')
+
+        # Create conversations and messages for bookings
+        conversations_created = 0
+        messages_created = 0
         
+        for booking in random.sample(bookings, min(len(bookings), num_bookings // 2)):  # 50% of bookings have chats
+            # Create conversation between guest and host
+            conversation, created = Conversation.objects.get_or_create(
+                booking=booking,
+                defaults={
+                    'participant1': booking.guest,
+                    'participant2': booking.listing.host
+                }
+            )
+            
+            if created:
+                conversations_created += 1
+                
+                # Create messages
+                num_messages = random.randint(2, 15)
+                current_time = booking.created_at
+                
+                messages = [
+                    # Guest messages
+                    f"Здравствуйте! Интересует ваше жилье на {booking.start_date.strftime('%d.%m.%Y')}",
+                    "Можно ли заехать немного позже указанного времени?",
+                    "Есть ли рядом продуктовые магазины?",
+                    "Спасибо за быстрый ответ!",
+                    "Как добраться от аэропорта?",
+                    "Можно ли оставить багаж до заселения?",
+                    "Отличное место, спасибо!",
+                    
+                    # Host messages  
+                    "Здравствуйте! Конечно, жилье свободно в эти даты.",
+                    "Да, заезд возможен до 21:00.",
+                    "Рядом есть супермаркет, 5 минут пешком.",
+                    "Пожалуйста! Всегда готов помочь.",
+                    "Лучше всего на такси, примерно 30 минут.",
+                    "Да, можете оставить в камере хранения у консьержа.",
+                    "Спасибо за отзыв! Рады были вас видеть!",
+                ]
+                
+                for i in range(num_messages):
+                    is_from_guest = i % 2 == 0
+                    sender = booking.guest if is_from_guest else booking.listing.host
+                    
+                    Message.objects.create(
+                        conversation=conversation,
+                        sender=sender,
+                        content=random.choice(messages),
+                        timestamp=current_time + timedelta(minutes=random.randint(30, 1440))
+                    )
+                    messages_created += 1
+                    current_time += timedelta(minutes=random.randint(30, 1440))
+
+        self.stdout.write(f'Created {conversations_created} conversations with {messages_created} messages')
+
+        # Create complaints with different statuses
+        complaints_created = 0
+        complaint_types = [
+            'booking_issue', 'listing_issue', 'host_behavior', 'guest_behavior',
+            'safety_concern', 'false_listing', 'discrimination', 'payment_issue',
+            'cleanliness', 'other'
+        ]
+        
+        complaint_statuses = ['pending', 'in_progress', 'investigating', 'awaiting_response', 'resolved', 'dismissed', 'escalated']
+        status_weights = [0.2, 0.15, 0.1, 0.1, 0.3, 0.1, 0.05]
+        
+        priorities = ['low', 'medium', 'high', 'urgent']
+        priority_weights = [0.3, 0.5, 0.15, 0.05]
+        
+        complaint_descriptions = {
+            'booking_issue': [
+                'Проблемы с подтверждением бронирования',
+                'Хост отменил бронирование в последний момент',
+                'Даты бронирования не соответствуют заявленным'
+            ],
+            'listing_issue': [
+                'Объявление не соответствует действительности',
+                'Фотографии не отражают реальное состояние',
+                'Указаны неверные удобства'
+            ],
+            'host_behavior': [
+                'Хост ведет себя неподобающе',
+                'Грубое обращение со стороны хоста',
+                'Хост требует дополнительную плату'
+            ],
+            'guest_behavior': [
+                'Гость нарушает правила дома',
+                'Неуважительное поведение гостя',
+                'Гость причинил ущерб имуществу'
+            ],
+            'safety_concern': [
+                'Проблемы с безопасностью в жилье',
+                'Неработающие замки или сигнализация',
+                'Подозрительная активность в районе'
+            ],
+            'cleanliness': [
+                'Жилье было грязным при заселении',
+                'Проблемы с уборкой',
+                'Неприятные запахи в помещении'
+            ]
+        }
+        
+        # Get moderators for assignment
+        moderators = list(User.objects.filter(role__in=['moderator', 'admin']))
+        
+        for i in range(num_complaints):
+            if not bookings:
+                break
+                
+            booking = random.choice(bookings)
+            complaint_type = random.choice(complaint_types)
+            status = random.choices(complaint_statuses, weights=status_weights)[0]
+            priority = random.choices(priorities, weights=priority_weights)[0]
+            
+            # Determine complainant (guest or host)
+            complainant = random.choice([booking.guest, booking.listing.host])
+            
+            UserComplaint.objects.create(
+                complainant=complainant,
+                booking=booking,
+                listing=booking.listing,
+                complaint_type=complaint_type,
+                description=random.choice(complaint_descriptions.get(complaint_type, ['Общая жалоба'])),
+                priority=priority,
+                status=status,
+                assigned_moderator=random.choice(moderators) if moderators and random.random() > 0.3 else None,
+                moderator_response=random.choice([
+                    'Жалоба принята в работу',
+                    'Требуется дополнительная информация',
+                    'Проблема решена',
+                    'Жалоба необоснована'
+                ]) if status in ['resolved', 'dismissed'] else '',
+                contact_email=complainant.email,
+                created_at=timezone.now() - timedelta(days=random.randint(1, 365))
+            )
+            complaints_created += 1
+
+        self.stdout.write(f'Created {complaints_created} complaints')
+
+        # Final summary
         self.stdout.write(
             self.style.SUCCESS(
-                f'Test data created successfully!\n'
+                f'\n=== Comprehensive test data created successfully! ===\n'
                 f'Hosts: {len(hosts)}\n'
-                f'Guests: {len(guests)}\n'
+                f'Clients: {len(clients)}\n'
                 f'Listings: {len(listings)}\n'
-                f'Bookings: {Booking.objects.count()}\n'
-                f'Reviews: {Review.objects.count()}\n'
-                f'Listing Approvals: {ListingApproval.objects.count()}'
+                f'Bookings: {len(bookings)}\n'
+                f'Reviews: {reviews_created}\n'
+                f'Conversations: {conversations_created}\n'
+                f'Messages: {messages_created}\n'
+                f'Complaints: {complaints_created}\n'
+                f'\nTotal users in system: {User.objects.count()}\n'
+                f'Active listings: {Listing.objects.filter(is_active=True).count()}\n'
+                f'Completed bookings: {Booking.objects.filter(status="completed").count()}'
             )
         )
