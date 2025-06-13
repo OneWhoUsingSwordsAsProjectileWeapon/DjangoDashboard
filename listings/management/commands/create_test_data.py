@@ -347,17 +347,19 @@ class Command(BaseCommand):
                     'rejected', 'requires_changes'
                 ])
                 
-                approval = ListingApproval.objects.create(
+                approval, created = ListingApproval.objects.get_or_create(
                     listing=listing,
-                    status=approval_status,
-                    moderator=moderator if approval_status != 'pending' else None,
-                    has_valid_title=True,
-                    has_valid_description=True,
-                    has_valid_images=random.choice([True, False]),
-                    has_valid_address=True,
-                    has_appropriate_pricing=True,
-                    follows_content_policy=approval_status != 'rejected',
-                    has_verification_video=random.choice([True, False])
+                    defaults={
+                        'status': approval_status,
+                        'moderator': moderator if approval_status != 'pending' else None,
+                        'has_valid_title': True,
+                        'has_valid_description': True,
+                        'has_valid_images': random.choice([True, False]),
+                        'has_valid_address': True,
+                        'has_appropriate_pricing': True,
+                        'follows_content_policy': approval_status != 'rejected',
+                        'has_verification_video': random.choice([True, False])
+                    }
                 )
                 
                 # Set listing approval status
