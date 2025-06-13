@@ -244,6 +244,11 @@ class ModerationLog(models.Model):
         ('listing_rejected', _('Listing Rejected')),
         ('content_removed', _('Content Removed')),
         ('content_edited', _('Content Edited')),
+        ('subscription_created', _('Subscription Created')),
+        ('subscription_renewed', _('Subscription Renewed')),
+        ('subscription_canceled', _('Subscription Canceled')),
+        ('subscription_expired', _('Subscription Expired')),
+        ('complaint_handled', _('Complaint Handled')),
     ]
 
     moderator = models.ForeignKey(

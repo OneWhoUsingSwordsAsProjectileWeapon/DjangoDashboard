@@ -88,19 +88,20 @@ class SubscriptionService:
         return True, ""
 
     @staticmethod
-    def create_subscription(user, plan, payment_reference=None, auto_renew=False):
-        """Create a new subscription for user"""
-        import uuid
+    def create_subscription(user, plan, payment_reference=None, amount_paid=None):
+        """Create a new subscription for a user"""
+        from django.utils import timezone
         from datetime import timedelta
+        from moderation.models import ModerationLog
 
-        if not payment_reference:
-            payment_reference = str(uuid.uuid4())
-
-        # Cancel any existing active subscriptions
-        UserSubscription.objects.filter(
+        # End current active subscriptions
+        current_subscriptions = UserSubscription.objects.filter(
             user=user,
             status='active'
-        ).update(status='canceled')
+        )
+        for sub in current_subscriptions:
+            sub.status = 'canceled'
+            sub.save()
 
         # Create new subscription
         start_date = timezone.now()
@@ -112,18 +113,31 @@ class SubscriptionService:
             status='active',
             start_date=start_date,
             end_date=end_date,
-            auto_renew=auto_renew,
-            payment_reference=payment_reference,
-            amount_paid=plan.price
+            amount_paid=amount_paid or plan.price,
+            payment_reference=payment_reference
         )
 
         # Create usage tracking
-        SubscriptionUsage.objects.create(
+        SubscriptionUsage.objects.create(subscription=subscription)
+
+        # Log the action
+        SubscriptionLog.objects.create(
             subscription=subscription,
-            ads_count=0,
-            featured_ads_count=0,
-            total_ads_created=0
+            action='created',
+            description=f'Subscription created for plan {plan.name}'
         )
+
+        # Log in moderation system
+        try:
+            ModerationLog.objects.create(
+                moderator=user,  # User who created subscription
+                action_type='subscription_created',
+                target_user=user,
+                description=f'User {user.username} subscribed to {plan.name} plan',
+                notes=f'Amount paid: ${amount_paid or plan.price}, Duration: {plan.duration_days} days'
+            )
+        except Exception:
+            pass  # Don't fail subscription creation if logging fails
 
         return subscription
 
@@ -611,6 +625,73 @@ class SubscriptionService:
             'worst_month': month_names[worst_month_num],
             'seasonality_index': seasonality_index
         }
+
+    @staticmethod
+    def renew_subscription(subscription):
+        """Renew an existing subscription"""
+        from django.utils import timezone
+        from datetime import timedelta
+        from moderation.models import ModerationLog
+
+        if not subscription.auto_renew or not subscription.plan.is_active:
+            return False
+
+        # Extend subscription
+        subscription.start_date = subscription.end_date
+        subscription.end_date = subscription.start_date + timedelta(days=subscription.plan.duration_days)
+        subscription.status = 'active'
+        subscription.save()
+
+        # Log the renewal
+        SubscriptionLog.objects.create(
+            subscription=subscription,
+            action='renewed',
+            description=f'Subscription renewed for plan {subscription.plan.name}'
+        )
+
+        # Log in moderation system
+        try:
+            ModerationLog.objects.create(
+                moderator=subscription.user,  # User whose subscription was renewed
+                action_type='subscription_renewed',
+                target_user=subscription.user,
+                description=f'Subscription renewed for user {subscription.user.username} - {subscription.plan.name}',
+                notes=f'Auto-renewal, Duration: {subscription.plan.duration_days} days'
+            )
+        except Exception:
+            pass
+
+        return True
+
+    @staticmethod
+    def cancel_subscription(subscription, reason=''):
+        """Cancel a subscription"""
+        from moderation.models import ModerationLog
+
+        subscription.status = 'canceled'
+        subscription.auto_renew = False
+        subscription.save()
+
+        # Log the cancellation
+        SubscriptionLog.objects.create(
+            subscription=subscription,
+            action='canceled',
+            description=f'Subscription canceled: {reason}' if reason else 'Subscription canceled'
+        )
+
+        # Log in moderation system
+        try:
+            ModerationLog.objects.create(
+                moderator=subscription.user,
+                action_type='subscription_canceled',
+                target_user=subscription.user,
+                description=f'Subscription canceled for user {subscription.user.username} - {subscription.plan.name}',
+                notes=f'Reason: {reason}' if reason else 'No reason provided'
+            )
+        except Exception:
+            pass
+
+        return True
 
 class NotificationService:
     """

@@ -769,7 +769,8 @@ def add_listing_image(request, pk):
             image = form.save(commit=False)
             image.listing = listing
 
-            # If this is the first image or marked as main, make it main
+            # If this is the first image or marked as main```python
+, make it main
             if form.cleaned_data.get('is_main') or not listing.images.exists():
                 # Unset other main images
                 listing.images.update(is_main=False)
@@ -1444,21 +1445,21 @@ def export_dashboard_excel(request):
     for row_idx, booking in enumerate(bookings.order_by('-created_at'), 2):
         data = [
             str(booking.booking_reference),
-            booking.booking_reference,
-            booking.listing.title,
-            booking.guest.get_full_name() or booking.guest.username,
-            booking.guest.email,
-            booking.start_date,
-            booking.end_date,
-            booking.duration_nights,
-            booking.guests,
-            booking.get_status_display(),
+            str(booking.booking_reference),
+            str(booking.listing.title),
+            str(booking.guest.get_full_name() or booking.guest.username),
+            str(booking.guest.email),
+            booking.start_date.strftime('%Y-%m-%d') if booking.start_date else '',
+            booking.end_date.strftime('%Y-%m-%d') if booking.end_date else '',
+            int(booking.duration_nights),
+            int(booking.guests),
+            str(booking.get_status_display()),
             float(booking.base_price),
             float(booking.cleaning_fee),
             float(booking.service_fee),
             float(booking.total_price),
             booking.created_at.strftime('%Y-%m-%d %H:%M'),
-            booking.special_requests or ""
+            str(booking.special_requests or "")
         ]
 
         for col_idx, value in enumerate(data, 1):

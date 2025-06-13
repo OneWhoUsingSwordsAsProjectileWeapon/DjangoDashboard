@@ -272,11 +272,18 @@ class Command(BaseCommand):
 
         self.stdout.write(f'Created {len(bookings)} bookings total')
 
-        # Create reviews for completed bookings
+        # Create reviews for completed bookings (5-7 per listing max)
         reviews_created = 0
+        listing_review_counts = {}
+        
         for booking in bookings:
-            if booking.status == 'completed' and random.random() > 0.2:  # 80% chance of review
-                rating = random.choices([1, 2, 3, 4, 5], weights=[0.05, 0.05, 0.15, 0.35, 0.4])[0]
+            if booking.status == 'completed':
+                listing_id = booking.listing.id
+                current_count = listing_review_counts.get(listing_id, 0)
+                
+                # Only create review if listing has less than 7 reviews and random chance
+                if current_count < 7 and random.random() > 0.3:  # 70% chance of review
+                    rating = random.choices([1, 2, 3, 4, 5], weights=[0.05, 0.05, 0.15, 0.35, 0.4])[0]
                 
                 comments = {
                     1: ['Очень плохо, не рекомендую.', 'Ужасные условия.', 'Полное разочарование.'],
@@ -287,14 +294,15 @@ class Command(BaseCommand):
                 }
                 
                 Review.objects.create(
-                    listing=booking.listing,
-                    reviewer=booking.guest,
-                    booking=booking,
-                    rating=rating,
-                    comment=random.choice(comments[rating]),
-                    is_approved=random.choice([True, True, True, False])  # 75% approved
-                )
-                reviews_created += 1
+                        listing=booking.listing,
+                        reviewer=booking.guest,
+                        booking=booking,
+                        rating=rating,
+                        comment=random.choice(comments[rating]),
+                        is_approved=random.choice([True, True, True, False])  # 75% approved
+                    )
+                    reviews_created += 1
+                    listing_review_counts[listing_id] = current_count + 1
 
         self.stdout.write(f'Created {reviews_created} reviews')
 
@@ -438,6 +446,133 @@ class Command(BaseCommand):
 
         self.stdout.write(f'Created {complaints_created} complaints')
 
+        # Create subscription plans
+        from subscriptions.models import SubscriptionPlan, UserSubscription, SubscriptionUsage
+        from decimal import Decimal
+        
+        plans_created = 0
+        subscriptions_created = 0
+        
+        # Create subscription plans if they don't exist
+        plans_data = [
+            {
+                'name': 'Базовый',
+                'slug': 'basic',
+                'plan_type': 'basic',
+                'description': 'Базовый план для новых пользователей',
+                'price': Decimal('999.00'),
+                'duration_days': 30,
+                'ads_limit': 3,
+                'featured_ads_limit': 0,
+                'premium_features': ['basic_support'],
+                'is_popular': False
+            },
+            {
+                'name': 'Премиум',
+                'slug': 'premium',
+                'plan_type': 'premium',
+                'description': 'Премиум план с расширенными возможностями',
+                'price': Decimal('1999.00'),
+                'duration_days': 30,
+                'ads_limit': 10,
+                'featured_ads_limit': 2,
+                'premium_features': ['priority_support', 'analytics', 'featured_listings'],
+                'is_popular': True
+            },
+            {
+                'name': 'Бизнес',
+                'slug': 'business',
+                'plan_type': 'business',
+                'description': 'Бизнес план для профессиональных хостов',
+                'price': Decimal('4999.00'),
+                'duration_days': 30,
+                'ads_limit': 50,
+                'featured_ads_limit': 10,
+                'premium_features': ['priority_support', 'analytics', 'featured_listings', 'api_access'],
+                'is_popular': False
+            },
+            {
+                'name': 'Корпоративный',
+                'slug': 'enterprise',
+                'plan_type': 'enterprise',
+                'description': 'Корпоративный план без ограничений',
+                'price': Decimal('9999.00'),
+                'duration_days': 30,
+                'ads_limit': 999,
+                'featured_ads_limit': 50,
+                'premium_features': ['priority_support', 'analytics', 'featured_listings', 'api_access', 'white_label'],
+                'is_popular': False
+            }
+        ]
+        
+        created_plans = []
+        for plan_data in plans_data:
+            plan, created = SubscriptionPlan.objects.get_or_create(
+                slug=plan_data['slug'],
+                defaults=plan_data
+            )
+            if created:
+                plans_created += 1
+            created_plans.append(plan)
+        
+        # Create subscription history for 2 years
+        from dateutil.relativedelta import relativedelta
+        
+        all_users = hosts + clients
+        today = timezone.now().date()
+        start_date = today - timedelta(days=730)  # 2 years ago
+        
+        # Create subscriptions for users over 2 years
+        for user in random.sample(all_users, min(len(all_users), 80)):  # 80% of users have subscriptions
+            # Each user can have multiple subscriptions over 2 years
+            num_subscriptions = random.randint(1, 6)  # 1-6 subscriptions per user
+            
+            for i in range(num_subscriptions):
+                plan = random.choice(created_plans)
+                
+                # Random start date within 2 years
+                days_from_start = random.randint(0, 700)  # Leave some space for subscription duration
+                sub_start = start_date + timedelta(days=days_from_start)
+                sub_end = sub_start + timedelta(days=plan.duration_days)
+                
+                # Determine status based on end date
+                if sub_end < today:
+                    if random.random() < 0.8:  # 80% completed naturally
+                        status = 'expired'
+                    else:
+                        status = 'canceled'
+                elif sub_start <= today <= sub_end:
+                    status = 'active'
+                else:
+                    status = 'pending'
+                
+                # Create subscription
+                subscription = UserSubscription.objects.create(
+                    user=user,
+                    plan=plan,
+                    status=status,
+                    start_date=timezone.make_aware(datetime.combine(sub_start, timezone.now().time())),
+                    end_date=timezone.make_aware(datetime.combine(sub_end, timezone.now().time())),
+                    auto_renew=random.choice([True, False]),
+                    amount_paid=plan.price * Decimal(random.uniform(0.8, 1.2)),  # Some variation in pricing
+                    created_at=timezone.make_aware(datetime.combine(sub_start, timezone.now().time())),
+                )
+                
+                # Create usage tracking
+                ads_count = random.randint(0, min(plan.ads_limit, len([l for l in listings if l.host == user])))
+                SubscriptionUsage.objects.create(
+                    subscription=subscription,
+                    ads_count=ads_count,
+                    featured_ads_count=random.randint(0, min(plan.featured_ads_limit, ads_count)),
+                    total_ads_created=random.randint(ads_count, ads_count + 5),
+                    last_ad_created=timezone.now() - timedelta(days=random.randint(1, 30)) if ads_count > 0 else None
+                )
+                
+                subscriptions_created += 1
+        
+        self.stdout.write(f'Created {plans_created} subscription plans')
+        self.stdout.write(f'Created {subscriptions_created} user subscriptions')
+
         # Final summary
         self.stdout.write(
             self.style.SUCCESS(
@@ -450,8 +585,11 @@ class Command(BaseCommand):
                 f'Conversations: {conversations_created}\n'
                 f'Messages: {messages_created}\n'
                 f'Complaints: {complaints_created}\n'
+                f'Subscription Plans: {plans_created}\n'
+                f'User Subscriptions: {subscriptions_created}\n'
                 f'\nTotal users in system: {User.objects.count()}\n'
                 f'Active listings: {Listing.objects.filter(is_active=True).count()}\n'
-                f'Completed bookings: {Booking.objects.filter(status="completed").count()}'
+                f'Completed bookings: {Booking.objects.filter(status="completed").count()}\n'
+                f'Active subscriptions: {UserSubscription.objects.filter(status="active").count() if "UserSubscription" in locals() else 0}'
             )
         )
