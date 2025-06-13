@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load humanize %}
 {% load listing_extras %}
+{% load humanize %}
 
 {% block title %}Панель владельца недвижимости - Агрегатор Аренды{% endblock %}
 
@@ -22,6 +22,20 @@
 }
 
 .line-chart, .bar-chart {
+    width: 100% !important;
+    height: 100% !important;
+    position: relative !important;
+    border-radius: 12px !important;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 50%, #f8f9fa 100%) !important;
+    padding: 15px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    flex: 1 !important;
+    display: flex !important;
+    align-items: stretch !important;
+}
+
+.line-chart svg, .bar-chart svg {
     width: 100% !important;
     height: 100% !important;
     position: relative !important;
@@ -339,7 +353,7 @@
     .chart-container {
         height: 350px !important;
     }
-    
+
     .line-chart, .bar-chart {
         padding: 12px !important;
     }
@@ -349,7 +363,7 @@
     .chart-container {
         height: 450px !important;
     }
-    
+
     .line-chart, .bar-chart {
         padding: 20px !important;
     }
@@ -395,7 +409,7 @@
                 {% endif %}
                 {% if current_filters.status_filter != 'all' %}
                     <span class="badge bg-warning ms-1">
-                        Статус: {% for value, label in status_filter_options %}{% if value == current_filters.status_filter %}{{ label }}{% endif %}{% endfor %}
+                        Статус: {% for value, label in status_filter_options %}{% if value == current_filters.status_filter %}{{ label }}{% endif %}
                     </span>
                 {% endif %}
                 <a href="{% url 'listings:host_dashboard' %}" class="btn btn-sm btn-outline-secondary ms-2">
@@ -668,37 +682,132 @@
                     <div class="card h-100">
                         <div class="card-header">
                             <h5 class="card-title mb-0">
-                                <i class="fas fa-info-circle text-info me-2"></i>
-                                Статистика эффективности
+                                <i class="fas fa-chart-line text-info me-2"></i>
+                                Детальная статистика объявления
                             </h5>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-3 text-center">
-                                    <div class="p-3 bg-light rounded">
-                                        <h4 class="text-success mb-1">{{ stats.occupancy_rate|floatformat:1 }}%</h4>
-                                        <small class="text-muted">Заполняемость</small>
+                            <!-- Filters for detailed statistics -->
+                            <form method="get" class="mb-4">
+                                <!-- Preserve existing filters -->
+                                <input type="hidden" name="time_filter" value="{{ current_filters.time_filter }}">
+                                <input type="hidden" name="listing_filter" value="{{ current_filters.listing_filter }}">
+                                <input type="hidden" name="status_filter" value="{{ current_filters.status_filter }}">
+
+                                <div class="row">
+                                    <div class="col-md-4 mb-2">
+                                        <label class="form-label">Объявление:</label>
+                                        <select class="form-select form-select-sm" name="detail_listing_id">
+                                            <option value="">Выберите объявление</option>
+                                            {% for listing in host_listings_for_filter %}
+                                                <option value="{{ listing.id }}" {% if listing.id|stringformat:"s" == selected_listing_id %}selected{% endif %}>
+                                                    {{ listing.title|truncatechars:40 }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label class="form-label">Год:</label>
+                                        <select class="form-select form-select-sm" name="detail_year">
+                                            {% for year in available_years %}
+                                                <option value="{{ year }}" {% if year|stringformat:"s" == selected_year %}selected{% endif %}>
+                                                    {{ year }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label class="form-label">С даты:</label>
+                                        <input type="date" class="form-control form-control-sm" name="custom_detail_start" value="{{ custom_detail_start }}">
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <label class="form-label">По дату:</label>
+                                        <input type="date" class="form-control form-control-sm" name="custom_detail_end" value="{{ custom_detail_end }}">
+                                    </div>
+                                    <div class="col-md-2 mb-2 d-flex align-items-end">
+                                        <button type="submit" class="btn btn-primary btn-sm w-100">
+                                            <i class="fas fa-search"></i> Показать
+                                        </button>
                                     </div>
                                 </div>
-                                <div class="col-md-3 text-center">
-                                    <div class="p-3 bg-light rounded">
-                                        <h4 class="text-primary mb-1">₽{{ stats.average_booking_value|floatformat:0|intcomma }}</h4>
-                                        <small class="text-muted">Средний чек</small>
+                            </form>
+
+                            {% if listing_detail_stats %}
+                                {% if listing_detail_stats.error %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        {{ listing_detail_stats.error }}
                                     </div>
-                                </div>
-                                <div class="col-md-3 text-center">
-                                    <div class="p-3 bg-light rounded">
-                                        <h4 class="text-warning mb-1">{{ stats.total_booked_nights }}</h4>
-                                        <small class="text-muted">Ночей забронировано</small>
+                                {% else %}
+                                    <!-- Summary statistics -->
+                                    <div class="row mb-4">
+                                        <div class="col-md-3 text-center">
+                                            <div class="p-3 bg-success bg-opacity-10 rounded">
+                                                <h4 class="text-success mb-1">{{ listing_detail_stats.occupancy_rate }}%</h4>
+                                                <small class="text-muted">Заполняемость</small>
+                                                <div class="small text-muted mt-1">{{ listing_detail_stats.occupied_days }} из {{ listing_detail_stats.total_possible_days }} дней</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 text-center">
+                                            <div class="p-3 bg-primary bg-opacity-10 rounded">
+                                                <h4 class="text-primary mb-1">₽{{ listing_detail_stats.total_revenue|floatformat:0|intcomma }}</h4>
+                                                <small class="text-muted">Общий доход</small>
+                                                <div class="small text-muted mt-1">{{ listing_detail_stats.period_start }} - {{ listing_detail_stats.period_end }}</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 text-center">
+                                            <div class="p-3 bg-warning bg-opacity-10 rounded">
+                                                <h4 class="text-warning mb-1">{{ listing_detail_stats.total_bookings }}</h4>
+                                                <small class="text-muted">Всего бронирований</small>
+                                                <div class="small text-muted mt-1">{{ listing_detail_stats.completed_bookings }} завершено</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 text-center">
+                                            <div class="p-3 bg-info bg-opacity-10 rounded">
+                                                <h4 class="text-info mb-1">₽{{ listing_detail_stats.avg_booking_value|floatformat:0 }}</h4>
+                                                <small class="text-muted">Средний чек</small>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="col-md-3 text-center">
-                                    <div class="p-3 bg-light rounded">
-                                        <h4 class="text-info mb-1">{{ guest_stats.avg_guests_per_booking|floatformat:1 }}</h4>
-                                        <small class="text-muted">Средне гостей/брон</small>
+
+                                    <!-- Monthly breakdown -->
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Месяц</th>
+                                                    <th>Дни в периоде</th>
+                                                    <th>Занято дней</th>
+                                                    <th>Заполняемость</th>
+                                                    <th>Бронирований</th>
+                                                    <th>Доход</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for month in listing_detail_stats.monthly_breakdown %}
+                                                <tr>
+                                                    <td>{{ month.month_name }}</td>
+                                                    <td>{{ month.days }}</td>
+                                                    <td>{{ month.occupied_days }}</td>
+                                                    <td>
+                                                        <span class="badge {% if month.occupancy_rate >= 70 %}bg-success{% elif month.occupancy_rate >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                            {{ month.occupancy_rate }}%
+                                                        </span>
+                                                    </td>
+                                                    <td>{{ month.bookings }}</td>
+                                                    <td>₽{{ month.revenue|floatformat:0|intcomma }}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
                                     </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="text-center py-4 text-muted">
+                                    <i class="fas fa-chart-line fa-3x mb-3"></i>
+                                    <p>Выберите объявление и период для просмотра детальной статистики</p>
                                 </div>
-                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -806,7 +915,7 @@
                                     </a>
                                 </div>
                             </div>
-                            
+
                             <!-- Filters Section -->
                             <div class="collapse mt-3" id="listingsFilters">
                                 <div class="row">
@@ -1297,22 +1406,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const maxValue = Math.max(...data.map(d => d.value), 1000);
         const minValue = 0;
         const padding = 50;
-        
+
         // Calculate container dimensions properly
         const containerRect = container.getBoundingClientRect();
         const containerStyle = window.getComputedStyle(container);
         const containerPadding = parseFloat(containerStyle.paddingTop) + parseFloat(containerStyle.paddingBottom);
-        
+
         const availableWidth = Math.max(containerRect.width || container.offsetWidth, 300);
         const availableHeight = Math.max((containerRect.height || container.offsetHeight) - containerPadding, 250);
-        
+
         const chartWidth = availableWidth - (padding * 2);
         const chartHeight = availableHeight - (padding * 2);
 
         // SVG dimensions should fill container completely
         const svgWidth = availableWidth;
         const svgHeight = availableHeight;
-        
+
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('width', '100%');
         svg.setAttribute('height', '100%');
@@ -1388,7 +1497,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (points.length > 1) {
             const areaPoints = points.map(p => `${p.x},${p.y}`).join(' L');
             const areaPath = `M ${padding},${padding + chartHeight} L${areaPoints} L${padding + chartWidth},${padding + chartHeight} Z`;
-            
+
             const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             area.setAttribute('d', areaPath);
             area.setAttribute('fill', 'url(#gradient)');
@@ -1397,12 +1506,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Create line path
             const linePoints = points.map(p => `${p.x},${p.y}`).join(' L');
             const linePath = `M${linePoints}`;
-            
+
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             line.setAttribute('d', linePath);
             line.setAttribute('fill', 'none');
-            line.setAttribute('stroke', '#28a745');
-            line.setAttribute('stroke-width', '3');
+            line.setAttribute('stroke', '#28a745');            line.setAttribute('stroke-width', '3');
             line.setAttribute('stroke-linecap', 'round');
             line.setAttribute('stroke-linejoin', 'round');
             svg.appendChild(line);
@@ -1686,7 +1794,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Filter data based on selected period
         const periodSelect = document.getElementById('quarterlyPeriodSelect');
         const selectedPeriod = periodSelect ? periodSelect.value : '8';
-        
+
         let filteredData = quarterlyData;
         if (selectedPeriod !== 'all') {
             const periodQuarters = parseInt(selectedPeriod);
@@ -1722,10 +1830,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Filter data based on selected period
         const periodSelect = document.getElementById('seasonalPeriodSelect');
         const selectedPeriod = periodSelect ? periodSelect.value : 'all';
-        
+
         let filteredData = seasonalData;
         let chartColor = '#28a745';
-        
+
         // Different filtering logic for seasonal data
         if (selectedPeriod === 'current') {
             // Show only current year data (would need backend support for this)
@@ -1749,15 +1857,15 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const maxValue = Math.max(...data.map(d => d.value), 1000);
             const padding = 50;
-            
+
             // Calculate container dimensions properly
             const containerRect = container.getBoundingClientRect();
             const containerStyle = window.getComputedStyle(container);
             const containerPadding = parseFloat(containerStyle.paddingTop) + parseFloat(containerStyle.paddingBottom);
-            
+
             const availableWidth = Math.max(containerRect.width || container.offsetWidth, 300);
             const availableHeight = Math.max((containerRect.height || container.offsetHeight) - containerPadding, 250);
-            
+
             const chartWidth = availableWidth - (padding * 2);
             const chartHeight = availableHeight - (padding * 2);
             const barWidth = Math.max((chartWidth / data.length) * 0.7, 15);
@@ -1766,7 +1874,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // SVG dimensions should fill container completely
             const svgWidth = availableWidth;
             const svgHeight = availableHeight;
-            
+
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('width', '100%');
             svg.setAttribute('height', '100%');
