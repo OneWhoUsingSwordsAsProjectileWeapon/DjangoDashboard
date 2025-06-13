@@ -414,10 +414,13 @@ class Command(BaseCommand):
             end_date = date(end_year, 12, 31)
             
             while current_date <= end_date:
-                # Create 5-6 bookings per month
-                bookings_this_month = random.randint(5, 6)
+                # Create 2-3 bookings per month to reduce conflicts
+                bookings_this_month = random.randint(2, 3)
                 
-                for _ in range(bookings_this_month):
+                attempts = 0
+                successful_bookings = 0
+                
+                while successful_bookings < bookings_this_month and attempts < 10:
                     listing = random.choice(self.listings)
                     
                     # Random start date within the month
@@ -428,12 +431,27 @@ class Command(BaseCommand):
                     nights = random.randint(1, 7)
                     booking_end = booking_start + timedelta(days=nights)
                     
+                    attempts += 1
+                    
                     # Skip if booking overlaps with existing bookings for this listing
                     if not self.check_availability(listing, booking_start, booking_end):
                         continue
                     
-                    # Calculate pricing
-                    price_calculation = listing.calculate_price(booking_start, booking_end)
+                    successful_bookings += 1
+                    
+                    # Calculate pricing manually since calculate_price method might not exist
+                    nights = (booking_end - booking_start).days
+                    base_price = listing.price_per_night * nights
+                    cleaning_fee = listing.cleaning_fee or Decimal('0')
+                    service_fee = listing.service_fee or Decimal('0')
+                    total_price = base_price + cleaning_fee + service_fee
+                    
+                    price_calculation = {
+                        'base_price': base_price,
+                        'cleaning_fee': cleaning_fee,
+                        'service_fee': service_fee,
+                        'total_price': total_price
+                    }
                     
                     # Random status based on dates
                     now = timezone.now().date()
