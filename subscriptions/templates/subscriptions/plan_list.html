@@ -1,1 +1,506 @@
-` and `
+{% extends 'base.html' %} {% load i18n %} {% load subscription_filters %} {%
+block title %}Планы подписок{% endblock %} {% block content %}
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="text-center mb-5">
+        <h1 class="display-4">Выберите ваш план</h1>
+        <p class="lead text-muted">
+          Выберите идеальный план подписки для ваших потребностей
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    {% for plan in plans %}
+    <div class="col-lg-3 col-md-6 mb-4">
+      <div class="card h-100 {% if plan.is_popular %}border-primary{% endif %}">
+        {% if plan.is_popular %}
+        <div class="card-header bg-primary text-white text-center">
+          <i class="fas fa-star"></i>
+          Самый популярный
+        </div>
+        {% endif %}
+
+        <div class="card-body text-center">
+          <h4 class="card-title">{{ plan.name }}</h4>
+          <div class="price-display mb-3">
+            <span class="h2 text-primary">${{ plan.price }}</span>
+            <span class="text-muted">/ месяц</span>
+          </div>
+
+          <p class="text-muted">{{ plan.description }}</p>
+
+          <hr />
+
+          <ul class="list-unstyled">
+            <li class="mb-2">
+              <i class="fas fa-check text-success"></i>
+              {% blocktrans count limit=plan.ads_limit %} {{ limit }} активное
+              объявление {% plural %} {{ limit }} активных объявлений {%
+              endblocktrans %}
+            </li>
+            {% if plan.featured_ads_limit > 0 %}
+            <li class="mb-2">
+              <i class="fas fa-star text-warning"></i>
+              {% blocktrans count limit=plan.featured_ads_limit %} {{ limit }}
+              рекомендуемое объявление {% plural %} {{ limit }} рекомендуемых
+              объявлений {% endblocktrans %}
+            </li>
+            {% endif %} {% for feature in plan.premium_features %}
+            <li class="mb-2">
+              <i class="fas fa-check text-success"></i>
+              {{ feature|underscore_to_space }}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <div class="card-footer">
+          {% if user.is_authenticated %}
+          <button
+            class="btn btn-primary btn-block subscribe-btn"
+            data-plan-id="{{ plan.id }}"
+            data-plan-name="{{ plan.name }}"
+            data-plan-price="{{ plan.price }}"
+          >
+            Подписаться
+          </button>
+          {% else %}
+          <a
+            href="{% url 'users:login' %}?next={% url 'subscriptions:plan_list' %}"
+            class="btn btn-outline-primary btn-block"
+          >
+            Войти для подписки
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if user.is_authenticated %}
+  <div class="row mt-5">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5>Текущий статус подписки</h5>
+        </div>
+        <div class="card-body">
+          <div id="subscription-status">Загрузка...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- QR Payment Modal -->
+<div class="modal fade" id="qrPaymentModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Оплата через QR-код</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body text-center">
+        <h4 id="qr-plan-name" class="mb-3"></h4>
+        <p class="h5 text-primary mb-4">
+          Сумма к оплате: $<span id="qr-plan-price"></span>
+        </p>
+
+        <div class="mb-4">
+          <div id="qr-code" class="d-flex justify-content-center mb-3">
+            <!-- QR код будет сгенерирован здесь -->
+          </div>
+          <p class="text-muted">
+            Отсканируйте QR-код с помощью камеры телефона для оплаты
+          </p>
+        </div>
+
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i>
+          <strong>Тестовый режим:</strong> После сканирования QR-кода подписка
+          будет активирована автоматически
+        </div>
+
+        <div class="form-check mb-3">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            id="qrAutoRenewCheck"
+          />
+          <label class="form-check-label" for="qrAutoRenewCheck">
+            Включить автопродление
+          </label>
+        </div>
+
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-primary btn-lg" id="scanQRCode">
+            <i class="fas fa-camera"></i>
+            Сканировать QR-код
+          </button>
+          <button
+            type="button"
+            class="btn btn-success btn-lg"
+            id="simulatePayment"
+          >
+            <i class="fas fa-qrcode"></i>
+            Симуляция оплаты (Тест)
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Отмена
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Subscription Modal -->
+<div class="modal fade" id="subscriptionModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Подтверждение подписки</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <p>Вы собираетесь подписаться на:</p>
+        <div class="text-center">
+          <h4 id="modal-plan-name"></h4>
+          <p class="h5 text-primary">
+            $<span id="modal-plan-price"></span> / месяц
+          </p>
+        </div>
+
+        <div class="mb-3">
+          <h6>Выберите способ оплаты:</h6>
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="radio"
+              name="paymentMethod"
+              id="qrPayment"
+              value="qr"
+              checked
+            />
+            <label class="form-check-label" for="qrPayment">
+              <i class="fas fa-qrcode"></i> Оплата через QR-код
+            </label>
+          </div>
+        </div>
+
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="autoRenewCheck" />
+          <label class="form-check-label" for="autoRenewCheck">
+            Включить автопродление
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Отмена
+        </button>
+        <button type="button" class="btn btn-primary" id="proceedToPayment">
+          Перейти к оплате
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      let currentPlanData = {};
+
+      // Load subscription status
+      {% if user.is_authenticated %}
+          fetch('/api/subscriptions/status/')
+              .then(response => response.json())
+              .then(data => {
+                  updateSubscriptionStatus(data);
+              })
+              .catch(error => {
+                  document.getElementById('subscription-status').innerHTML =
+                      '<div class="alert alert-danger">Ошибка загрузки статуса подписки</div>';
+              });
+      {% endif %}
+
+      // Handle subscription buttons
+      document.querySelectorAll('.subscribe-btn').forEach(button => {
+          button.addEventListener('click', function() {
+              const planId = this.dataset.planId;
+              const planName = this.dataset.planName;
+              const planPrice = this.dataset.planPrice;
+
+              currentPlanData = { planId, planName, planPrice };
+
+              document.getElementById('modal-plan-name').textContent = planName;
+              document.getElementById('modal-plan-price').textContent = planPrice;
+
+              const modal = new bootstrap.Modal(document.getElementById('subscriptionModal'));
+              modal.show();
+          });
+      });
+
+      // Handle proceed to payment
+      document.getElementById('proceedToPayment').addEventListener('click', function() {
+          const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+          const autoRenew = document.getElementById('autoRenewCheck').checked;
+
+          if (paymentMethod === 'qr') {
+              showQRPayment(currentPlanData, autoRenew);
+          }
+      });
+
+      // Handle simulate payment (simulate QR scan)
+      document.getElementById('simulatePayment').addEventListener('click', function() {
+          const autoRenew = document.getElementById('qrAutoRenewCheck').checked;
+
+          // Create payment data that would be in QR code
+          const paymentData = {
+              action: 'subscription_payment',
+              plan_id: currentPlanData.planId,
+              plan_name: currentPlanData.planName,
+              amount: currentPlanData.planPrice,
+              currency: 'USD',
+              auto_renew: autoRenew,
+              test_mode: true,
+              payment_reference: generatePaymentReference(),
+              timestamp: Date.now()
+          };
+
+          // Simulate QR scan
+          simulateQRScan(paymentData);
+      });
+
+      // Handle real QR scan button
+      document.getElementById('scanQRCode').addEventListener('click', function() {
+          // In a real app, this would open camera for QR scanning
+          // For now, we'll provide instructions
+          alert('Для сканирования QR-кода:\n\n' +
+                '1. Откройте камеру на телефоне\n' +
+                '2. Наведите на QR-код выше\n' +
+                '3. Или используйте кнопку "Симуляция оплаты" для тестирования\n\n' +
+                'В тестовом режиме подписка активируется автоматически.');
+      });
+  });
+
+  function showQRPayment(planData, autoRenew) {
+      // Hide subscription modal first
+      const subscriptionModal = bootstrap.Modal.getInstance(document.getElementById('subscriptionModal'));
+      if (subscriptionModal) {
+          subscriptionModal.hide();
+      }
+
+      // Wait for modal to hide, then show QR modal
+      setTimeout(function() {
+          // Show QR payment modal
+          document.getElementById('qr-plan-name').textContent = planData.planName;
+          document.getElementById('qr-plan-price').textContent = planData.planPrice;
+          document.getElementById('qrAutoRenewCheck').checked = autoRenew;
+
+          // Generate QR code with payment data
+          const paymentData = {
+              action: 'subscription_payment',
+              plan_id: planData.planId,
+              plan_name: planData.planName,
+              amount: planData.planPrice,
+              currency: 'USD',
+              auto_renew: autoRenew,
+              test_mode: true,
+              payment_reference: generatePaymentReference(),
+              timestamp: Date.now()
+          };
+
+          const qrCodeContainer = document.getElementById('qr-code');
+          qrCodeContainer.innerHTML = '';
+
+          try {
+              // Generate QR code using qrcode-generator library
+              const qr = qrcode(0, 'M');
+              qr.addData(JSON.stringify(paymentData));
+              qr.make();
+
+              // Create QR code as SVG
+              const qrSvg = qr.createSvgTag(4, 0);
+              qrCodeContainer.innerHTML = qrSvg;
+
+              // Style the SVG
+              const svg = qrCodeContainer.querySelector('svg');
+              if (svg) {
+                  svg.style.width = '256px';
+                  svg.style.height = '256px';
+                  svg.style.border = '1px solid #ddd';
+              }
+
+              // Show the QR modal
+              const qrModal = new bootstrap.Modal(document.getElementById('qrPaymentModal'));
+              qrModal.show();
+
+          } catch (error) {
+              console.error('QR Code generation error:', error);
+              qrCodeContainer.innerHTML = '<div class="alert alert-danger">Ошибка генерации QR-кода</div>';
+
+              // Still show the modal even if QR generation failed
+              const qrModal = new bootstrap.Modal(document.getElementById('qrPaymentModal'));
+              qrModal.show();
+          }
+      }, 300);
+  }
+
+  function updateSubscriptionStatus(data) {
+      const container = document.getElementById('subscription-status');
+
+      if (data.has_subscription) {
+          container.innerHTML = `
+              <div class="row">
+                  <div class="col-md-4">
+                      <div class="text-center">
+                          <h6>Текущий план</h6>
+                          <p class="h5 text-primary">${data.plan_name || 'Неизвестно'}</p>
+                      </div>
+                  </div>
+                  <div class="col-md-4">
+                      <div class="text-center">
+                          <h6>Использование</h6>
+                          <p class="h5">${data.current_ads || 0} / ${data.ads_limit === -1 ? '∞' : data.ads_limit || 0}</p>
+                      </div>
+                  </div>
+                  <div class="col-md-4">
+                      <div class="text-center">
+                          <h6>Статус</h6>
+                          <p class="h5 text-success">${data.subscription_status || 'Активна'}</p>
+                          ${data.days_remaining ? `<small class="text-muted">${data.days_remaining} дней осталось</small>` : ''}
+                      </div>
+                  </div>
+              </div>
+          `;
+      } else {
+          container.innerHTML = `
+              <div class="alert alert-info">
+                  У вас нет активной подписки. Выберите план выше, чтобы начать.
+              </div>
+          `;
+      }
+  }
+
+  function createSubscription(planId, autoRenew) {
+      const paymentReference = generatePaymentReference();
+
+      fetch('/api/subscriptions/create/', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({
+              plan_id: parseInt(planId),
+              auto_renew: autoRenew,
+              payment_reference: paymentReference
+          })
+      })
+      .then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              // Hide QR modal
+              const qrModal = bootstrap.Modal.getInstance(document.getElementById('qrPaymentModal'));
+              if (qrModal) {
+                  qrModal.hide();
+              }
+
+              // Show success message
+              alert('Подписка успешно оформлена через QR-код!');
+              location.reload();
+          } else {
+              alert(data.message || 'Ошибка при оформлении подписки');
+          }
+      })
+      .catch(error => {
+          console.error('Subscription creation error:', error);
+          alert('Ошибка при оформлении подписки');
+      });
+  }
+
+  // Simulate QR code scanning (for testing)
+  function simulateQRScan(paymentData) {
+      console.log('Simulating QR payment with data:', paymentData);
+
+      return fetch('/api/subscriptions/qr-payment/', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({
+              qr_data: paymentData,
+              user_id: {% if user.is_authenticated %}{{ user.id }}{% else %}null{% endif %}
+          })
+      })
+      .then(response => {
+          console.log('QR payment response status:', response.status);
+          if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+      })
+      .then(data => {
+          console.log('QR payment response data:', data);
+          if (data.success) {
+              // Hide QR modal
+              const qrModal = bootstrap.Modal.getInstance(document.getElementById('qrPaymentModal'));
+              if (qrModal) {
+                  qrModal.hide();
+              }
+
+              alert('QR-код успешно отсканирован! Подписка активирована.');
+              location.reload();
+          } else {
+              alert(data.message || 'Ошибка при обработке QR-кода');
+          }
+      })
+      .catch(error => {
+          console.error('QR payment error:', error);
+          alert('Ошибка при обработке QR-платежа: ' + error.message);
+      });
+  }
+
+  function generatePaymentReference() {
+      // Generate UUID-like string
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          const r = Math.random() * 16 | 0;
+          const v = c == 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+      });
+  }
+
+  function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+  }
+</script>
+{% endblock %}
