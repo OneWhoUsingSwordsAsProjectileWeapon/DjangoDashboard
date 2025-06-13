@@ -696,12 +696,36 @@
           outline: 2px solid var(--primary-color);
           outline-offset: 2px;
         }
+
+        /* Sticky footer styles */
+        html, body {
+            height: 100%;
+        }
+
+        .wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        main {
+            flex: 1 0 auto;
+        }
+
+        footer {
+            flex-shrink: 0;
+            margin-top: auto;
+        }
+
+        .content-wrapper {
+            flex: 1;
+        }
     </style>
 
     <!-- Page-specific CSS -->
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="wrapper">
     <!-- Navbar -->
     {% include 'includes/navbar.html' %}
 
@@ -718,7 +742,7 @@
     {% endif %}
 
     <!-- Main content -->
-    <main class="py-4">
+    <main class="content-wrapper py-4">
         {% block content %}{% endblock %}
     </main>
 
