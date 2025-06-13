@@ -99,6 +99,50 @@
     .similar-listing-item:hover .card {
         border-color: #007bff;
     }
+
+        /* Reviews scrolling styles */
+        .reviews-container {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #f8f9fa;
+        }
+
+        .reviews-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .reviews-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .reviews-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .reviews-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .modal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .modal-body::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
 </style>
 {% endblock %}
 
@@ -393,60 +437,62 @@
                     </div>
 
                     {% if reviews %}
-                        {% for review in reviews %}
-                            <div class="border-bottom pb-3 mb-3">
-                                <div class="d-flex mb-2">
-                                {% if review.reviewer.profile_picture %}
-                                    <img src="{{ review.reviewer.profile_picture.url }}" alt="{{ review.reviewer.get_full_name|default:review.reviewer.username }}" class="rounded-circle me-3" width="50" height="50">
-                                {% else %}
-                                    <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                                        <i class="fas fa-user text-white"></i>
-                                    </div>
-                                {% endif %}
-                                <div class="flex-grow-1">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <h6 class="mb-0">{{ review.reviewer.get_full_name|default:review.reviewer.username }}</h6>
-                                            <div class="text-warning mb-1">
-                                                {% for i in '12345' %}
-                                                    {% if forloop.counter <= review.rating %}
-                                                    <i class="fas fa-star"></i>
-                                                    {% else %}
-                                                    <i class="far fa-star"></i>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </div>
-                                            <small class="text-muted">
-                                                {{ review.created_at|date:"d.m.Y" }}
-                                                {% if review.is_edited %}
-                                                    <span class="badge bg-info ms-1">Редактирован</span>
-                                                {% endif %}
-                                            </small>
+                        <div class="reviews-container" style="max-height: 600px; overflow-y: auto;">
+                            {% for review in reviews|slice:":6" %}
+                                <div class="border-bottom pb-3 mb-3">
+                                    <div class="d-flex mb-2">
+                                    {% if review.reviewer.profile_picture %}
+                                        <img src="{{ review.reviewer.profile_picture.url }}" alt="{{ review.reviewer.get_full_name|default:review.reviewer.username }}" class="rounded-circle me-3" width="50" height="50">
+                                    {% else %}
+                                        <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center text-white" style="width: 50px; height: 50px;">
+                                            {{ review.reviewer.first_name|first|default:review.reviewer.username|first|upper }}
                                         </div>
-                                        {% if user.is_authenticated %}
-                                            <div class="btn-group-sm">
-                                                {% if user == review.reviewer %}
-                                                    <a href="{% url 'listings:edit_review' review.id %}" class="btn btn-sm btn-outline-primary">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                    <a href="{% url 'listings:delete_review' review.id %}" class="btn btn-sm btn-outline-danger">
-                                                        <i class="fas fa-trash"></i>
-                                                    </a>
-                                                {% elif user.is_staff or user.is_superuser or user.role == 'admin' or user.role == 'moderator' %}
-                                                    <a href="{% url 'listings:admin_delete_review' review.id %}" class="btn btn-sm btn-outline-danger" title="Удалить как администратор">
-                                                        <i class="fas fa-shield-alt"></i> <i class="fas fa-trash"></i>
-                                                    </a>
-                                                {% endif %}
+                                    {% endif %}
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="mb-1">{{ review.reviewer.get_full_name|default:review.reviewer.username }}</h6>
+                                                    <div class="text-warning mb-2">
+                                                        {% for i in '12345' %}
+                                                            {% if forloop.counter <= review.rating %}
+                                                            <i class="fas fa-star"></i>
+                                                            {% else %}
+                                                            <i class="far fa-star"></i>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">
+                                                   {{ review.created_at|date:"d.m.Y" }}
+                                                    {% if review.is_edited %}
+                                                        <span class="badge bg-info ms-1">Редактирован</span>
+                                                    {% endif %}
+                                                </small>
                                             </div>
-                                        {% endif %}
+                                            {% if user.is_authenticated %}
+                                                <div class="btn-group-sm">
+                                                    {% if user == review.reviewer %}
+                                                        <a href="{% url 'listings:edit_review' review.id %}" class="btn btn-sm btn-outline-primary">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        <a href="{% url 'listings:delete_review' review.id %}" class="btn btn-sm btn-outline-danger">
+                                                            <i class="fas fa-trash"></i>
+                                                        </a>
+                                                    {% elif user.is_staff or user.is_superuser or user.role == 'admin' or user.role == 'moderator' %}
+                                                        <a href="{% url 'listings:admin_delete_review' review.id %}" class="btn btn-sm btn-outline-danger" title="Удалить как администратор">
+                                                            <i class="fas fa-shield-alt"></i> <i class="fas fa-trash"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
                                     </div>
+                                    <p class="mb-0">{{ review.comment }}</p>
                                 </div>
-                            </div>
-                                <p class="mb-0">{{ review.comment }}</p>
-                            </div>
-                        {% endfor %}
+                            {% endfor %}
+                        </div>
 
-                        {% if reviews.count > 3 %}
+                        {% if reviews.count > 6 %}
                             <div class="text-center mt-3">
                                 <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#allReviewsModal">
                                     Смотреть все {{ reviews.count }} отзывов
@@ -611,7 +657,7 @@
                                     {% elif forloop.counter == 3 %}
                                     <img src="https://pixabay.com/get/gdbdd76969985cdff44ad3f53db6426342aaf0ca3eafc0b7e0c299f84bd59b51d0e6dccb56a20b1c9648bbd1265d8cc0e55bf22001ba2e91f5223fb926125c2d1_1280.jpg" class="card-img-top" alt="Недвижимость" style="height: 180px; object-fit: cover;">
                                     {% elif forloop.counter == 4 %}
-                                    <img src="https://pixabay.com/get/g4ed469d7dbe2db950e47562a11382208f65bc24b98e0236e4c22086f45a20dcbff2d7dd151b1952bce89ea4fd0706cd5ebc8038505313f6438954d36f230790d_1280.jpg" class="card-img-top" alt="Недвижимость" style="height: 180px; object-fit: cover;">
+                                    <img src="https://pixabay.com/get/g4ed469d7dbe2db950e47562a11382208f65bc24b98e0236e4c22086f45a20dcbff2d7dd151b1952bce89ea4fd0706cd5ebc8038505313f6438954d36f230790d_1280.jpg" class="card-img-top"alt="Недвижимость" style="height: 180px; object-fit: cover;">
                                     {% endif %}
                                     <div class="card-body p-3">
                                         <h6 class="card-title mb-2" style="font-size: 0.9rem;">Похожая недвижимость {{ forloop.counter }}</h6>
@@ -651,33 +697,76 @@
     <div class="modal-dialog modal-dialog-scrollable modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="allReviewsModalLabel">Все отзывы</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-            </div>
-            <div class="modal-body">
-                {% if reviews %}
-                    {% for review in reviews %}
-                        <div class="border-bottom pb-3 mb-3">
-                            <div class="d-flex mb-2">
-                                {% if review.reviewer.profile_picture %}
-                                    <img src="{{ review.reviewer.profile_picture }}" class="rounded-circle me-2" width="40" height="40" alt="{{ review.reviewer.username }}">
+                <h5 class="modal-title" id="allReviewsModalLabel">
+                    Все отзывы ({{ reviews.count }})
+                    {% if listing.average_rating %}
+                        <span class="text-warning ms-2">
+                            {% for i in '12345' %}
+                                {% if forloop.counter <= listing.average_rating %}
+                                <i class="fas fa-star"></i>
                                 {% else %}
-                                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
-                                        <i class="fas fa-user-circle text-secondary"></i>
+                                <i class="far fa-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                            {{ listing.average_rating|floatformat:1 }}
+                        </span>
+                    {% endif %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                {% for review in reviews %}
+                    <div class="border-bottom pb-3 mb-3{% if forloop.last %} border-0{% endif %}">
+                        <div class="d-flex mb-2">
+                        {% if review.reviewer.profile_picture %}
+                            <img src="{{ review.reviewer.profile_picture.url }}" alt="{{ review.reviewer.get_full_name|default:review.reviewer.username }}" class="rounded-circle me-3" width="50" height="50">
+                        {% else %}
+                            <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center text-white" style="width: 50px; height: 50px;">
+                                {{ review.reviewer.first_name|first|default:review.reviewer.username|first|upper }}
+                            </div>
+                        {% endif %}
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">{{ review.reviewer.get_full_name|default:review.reviewer.username }}</h6>
+                                        <div class="text-warning mb-2">
+                                            {% for i in '12345' %}
+                                                {% if forloop.counter <= review.rating %}
+                                                <i class="fas fa-star"></i>
+                                                {% else %}
+                                                <i class="far fa-star"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">
+                                        {{ review.created_at|date:"d.m.Y" }}
+                                        {% if review.is_edited %}
+                                            <span class="badge bg-info ms-1">Редактирован</span>
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                {% if user.is_authenticated %}
+                                    <div class="btn-group-sm">
+                                        {% if user == review.reviewer %}
+                                            <a href="{% url 'listings:edit_review' review.id %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'listings:delete_review' review.id %}" class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        {% elif user.is_staff or user.is_superuser or user.role == 'admin' or user.role == 'moderator' %}
+                                            <a href="{% url 'listings:admin_delete_review' review.id %}" class="btn btn-sm btn-outline-danger" title="Удалить как администратор">
+                                                <i class="fas fa-shield-alt"></i> <i class="fas fa-trash"></i>
+                                            </a>
+                                        {% endif %}
                                     </div>
                                 {% endif %}
-                                <div>
-                                    <h6 class="mb-0">{{ review.reviewer.first_name|default:review.reviewer.username }}</h6>
-                                    <small class="text-muted">{{ review.created_at|date:"F Y" }}</small>
-                                </div>
                             </div>
-                            <div class="mb-1">
-                                {{ review.rating|star_rating }}
-                            </div>
-                            <p class="mb-0">{{ review.comment }}</p>
                         </div>
-                    {% endfor %}
-                {% endif %}
+                        <p class="mb-0">{{ review.comment }}</p>
+                    </div>
+                {% endfor %}
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
@@ -924,7 +1013,7 @@
             const track = similarListingsContainer.querySelector('.similar-listings-track');
             let currentScroll = 0;
             const scrollStep = 280; // Width of one card plus gap
-            
+
             // Calculate max scroll based on content width and container width
             function getMaxScroll() {
                 const trackWidth = track.scrollWidth;
@@ -937,7 +1026,7 @@
                 const maxScroll = getMaxScroll();
                 const leftBtn = document.getElementById('scrollLeft');
                 const rightBtn = document.getElementById('scrollRight');
-                
+
                 if (leftBtn && rightBtn) {
                     leftBtn.style.display = currentScroll > 0 ? 'block' : 'none';
                     rightBtn.style.display = currentScroll < maxScroll ? 'block' : 'none';
