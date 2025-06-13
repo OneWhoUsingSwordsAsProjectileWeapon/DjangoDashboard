@@ -642,7 +642,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
 
         # Detailed listing statistics
         selected_listing_id = self.request.GET.get('detail_listing_id')
-        selected_year = self.request.GET.get('detail_year')
+        selected_year = self.request.GET.get('detail_year', str(timezone.now().year))
         custom_detail_start = self.request.GET.get('custom_detail_start')
         custom_detail_end = self.request.GET.get('custom_detail_end')
 
@@ -658,27 +658,20 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                         detail_start_date = datetime.strptime(custom_detail_start, '%Y-%m-%d').date()
                         detail_end_date = datetime.strptime(custom_detail_end, '%Y-%m-%d').date()
                     except ValueError:
-                        # Fallback to last year if custom dates are invalid
-                        detail_end_date = timezone.now().date()
-                        detail_start_date = detail_end_date - timedelta(days=365)
-                elif selected_year and selected_year.isdigit():
-                    # Use selected year
+                        detail_start_date = date(int(selected_year), 1, 1)
+                        detail_end_date = date(int(selected_year), 12, 31)
+                else:
                     detail_start_date = date(int(selected_year), 1, 1)
                     detail_end_date = date(int(selected_year), 12, 31)
-                else:
-                    # Default: show last 12 months
-                    detail_end_date = timezone.now().date()
-                    detail_start_date = detail_end_date - timedelta(days=365)
 
-                # Get listing creation date but allow statistics even if listing is new
+                # Get listing creation date to avoid calculating before it existed
                 listing_created = selected_listing.created_at.date() if selected_listing.created_at else detail_start_date
-                
-                # Use actual start date but don't restrict too much
                 actual_start_date = max(detail_start_date, listing_created)
                 actual_end_date = min(detail_end_date, timezone.now().date())
 
-                # Always calculate stats, even if period is short
-                total_possible_days = max((actual_end_date - actual_start_date).days, 1)
+                # Calculate total possible days
+                if actual_end_date > actual_start_date:
+                    total_possible_days = (actual_end_date - actual_start_date).days
                     
                     # Get bookings for this listing in the period
                     period_bookings = selected_listing.bookings.filter(
@@ -776,18 +769,22 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                             current_month = current_month.replace(month=current_month.month + 1)
 
                     listing_detail_stats = {
-                    'listing': selected_listing,
-                    'period_start': actual_start_date,
-                    'period_end': actual_end_date,
-                    'total_possible_days': total_possible_days,
-                    'occupied_days': occupied_days,
-                    'occupancy_rate': round(occupancy_rate, 1),
-                    'total_revenue': float(period_revenue),
-                    'total_bookings': period_booking_count,
-                    'completed_bookings': completed_bookings,
-                    'avg_booking_value': round(float(avg_booking_value), 2),
-                    'monthly_breakdown': monthly_breakdown
-                }
+                        'listing': selected_listing,
+                        'period_start': actual_start_date,
+                        'period_end': actual_end_date,
+                        'total_possible_days': total_possible_days,
+                        'occupied_days': occupied_days,
+                        'occupancy_rate': round(occupancy_rate, 1),
+                        'total_revenue': float(period_revenue),
+                        'total_bookings': period_booking_count,
+                        'completed_bookings': completed_bookings,
+                        'avg_booking_value': round(float(avg_booking_value), 2),
+                        'monthly_breakdown': monthly_breakdown
+                    }
+                else:
+                    listing_detail_stats = {
+                        'error': 'Выбранный период некорректен или объявление еще не существовало в этот период'
+                    }
                     
             except Listing.DoesNotExist:
                 listing_detail_stats = {

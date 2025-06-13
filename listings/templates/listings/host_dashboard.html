@@ -698,7 +698,7 @@
                                     <div class="col-md-4 mb-2">
                                         <label class="form-label">Объявление:</label>
                                         <select class="form-select form-select-sm" name="detail_listing_id">
-                                            <option value="">Выберите объявление для детальной статистики</option>
+                                            <option value="">Выберите объявление</option>
                                             {% for listing in host_listings_for_filter %}
                                                 <option value="{{ listing.id }}" {% if listing.id|stringformat:"s" == selected_listing_id %}selected{% endif %}>
                                                     {{ listing.title|truncatechars:40 }}
@@ -707,23 +707,22 @@
                                         </select>
                                     </div>
                                     <div class="col-md-2 mb-2">
-                                        <label class="form-label">Период:</label>
-                                        <select class="form-select form-select-sm" name="detail_year" id="detailPeriodSelect">
-                                            <option value="">Последний год</option>
+                                        <label class="form-label">Год:</label>
+                                        <select class="form-select form-select-sm" name="detail_year">
                                             {% for year in available_years %}
                                                 <option value="{{ year }}" {% if year|stringformat:"s" == selected_year %}selected{% endif %}>
-                                                    {{ year }} год
+                                                    {{ year }}
                                                 </option>
                                             {% endfor %}
                                         </select>
                                     </div>
                                     <div class="col-md-2 mb-2">
-                                        <label class="form-label">Или с даты:</label>
-                                        <input type="date" class="form-control form-control-sm" name="custom_detail_start" value="{{ custom_detail_start }}" placeholder="Выберите дату">
+                                        <label class="form-label">С даты:</label>
+                                        <input type="date" class="form-control form-control-sm" name="custom_detail_start" value="{{ custom_detail_start }}">
                                     </div>
                                     <div class="col-md-2 mb-2">
                                         <label class="form-label">По дату:</label>
-                                        <input type="date" class="form-control form-control-sm" name="custom_detail_end" value="{{ custom_detail_end }}" placeholder="Выберите дату">
+                                        <input type="date" class="form-control form-control-sm" name="custom_detail_end" value="{{ custom_detail_end }}">
                                     </div>
                                     <div class="col-md-2 mb-2 d-flex align-items-end">
                                         <button type="submit" class="btn btn-primary btn-sm w-100">
@@ -734,6 +733,12 @@
                             </form>
 
                             {% if listing_detail_stats %}
+                                {% if listing_detail_stats.error %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        {{ listing_detail_stats.error }}
+                                    </div>
+                                {% else %}
                                     <!-- Summary statistics -->
                                     <div class="row mb-4">
                                         <div class="col-md-3 text-center">
@@ -796,11 +801,11 @@
                                             </tbody>
                                         </table>
                                     </div>
+                                {% endif %}
                             {% else %}
                                 <div class="text-center py-4 text-muted">
                                     <i class="fas fa-chart-line fa-3x mb-3"></i>
-                                    <p>Выберите объявление для просмотра детальной статистики за последний год</p>
-                                    <small class="text-muted">Период можно изменить, выбрав конкретный год или указав произвольные даты</small>
+                                    <p>Выберите объявление и период для просмотра детальной статистики</p>
                                 </div>
                             {% endif %}
                         </div>
