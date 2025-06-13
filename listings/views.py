@@ -502,11 +502,12 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
 
         # Quarterly revenue (last 8 quarters)
         quarterly_revenue = []
+        # Start from current quarter and go back 8 quarters
+        today = timezone.now().date()
+        current_quarter_start = date(today.year, ((today.month - 1) // 3) * 3 + 1, 1)
+        
         for i in range(7, -1, -1):  # Last 8 quarters
-            quarter_start = current_date.replace(day=1) - relativedelta(months=i*3)
-            # Get quarter start (Jan, Apr, Jul, Oct)
-            quarter_month = ((quarter_start.month - 1) // 3) * 3 + 1
-            quarter_start = quarter_start.replace(month=quarter_month, day=1)
+            quarter_start = current_quarter_start - relativedelta(months=i*3)
             quarter_end = quarter_start + relativedelta(months=3)
 
             quarter_revenue = all_bookings.filter(
@@ -533,10 +534,14 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
             'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
         ]
 
+        # Get data for last 2 years to have meaningful seasonal analysis
+        two_years_ago = timezone.now().date() - timedelta(days=730)
+        
         for month in range(1, 13):
             month_bookings = all_bookings.filter(
                 status='completed',
-                end_date__month=month
+                end_date__month=month,
+                end_date__gte=two_years_ago  # Only last 2 years for better seasonal patterns
             ).aggregate(
                 total_revenue=Sum('total_price'),
                 total_bookings=Count('id'),

@@ -409,7 +409,7 @@
                 {% endif %}
                 {% if current_filters.status_filter != 'all' %}
                     <span class="badge bg-warning ms-1">
-                        Статус: {% for value, label in status_filter_options %}{% if value == current_filters.status_filter %}{{ label }}{% endif %}
+                        Статус: {% for value, label in status_filter_options %}{% if value == current_filters.status_filter %}{{ label }}{% endif %}{% endfor %}
                     </span>
                 {% endif %}
                 <a href="{% url 'listings:host_dashboard' %}" class="btn btn-sm btn-outline-secondary ms-2">
