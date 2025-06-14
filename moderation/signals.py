@@ -65,7 +65,28 @@ def store_original_complaint_status(sender, instance, **kwargs):
 def create_listing_approval(sender, instance, created, **kwargs):
     """Create a listing approval record when a new listing is created"""
     if created:
-        ListingApproval.objects.get_or_create(listing=instance)
+        approval, was_created = ListingApproval.objects.get_or_create(listing=instance)
+        if not was_created:
+            # Запись уже существует, можно логировать или отправить уведомление
+            from django.contrib import messages
+            from django.contrib.auth import get_user_model
+            
+            # Уведомляем администраторов о попытке создания дубликата
+            try:
+                from notifications.models import Notification
+                User = get_user_model()
+                admins = User.objects.filter(is_staff=True, is_superuser=True)
+                
+                for admin in admins:
+                    Notification.objects.create(
+                        user=admin,
+                        notification_type='system',
+                        title='Предупреждение: попытка создания дубликата',
+                        message=f'Попытка создать дублирующую запись модерации для объявления "{instance.title}" (ID: {instance.id}). Запись уже существует.'
+                    )
+            except ImportError:
+                # notifications app недоступно
+                pass
 
 
 @receiver(post_save, sender=BannedUser)
