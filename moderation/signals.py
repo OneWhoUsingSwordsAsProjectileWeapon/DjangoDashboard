@@ -65,7 +65,7 @@ def store_original_complaint_status(sender, instance, **kwargs):
 def create_listing_approval(sender, instance, created, **kwargs):
     """Create a listing approval record when a new listing is created"""
     if created:
-        ListingApproval.objects.create(listing=instance)
+        ListingApproval.objects.get_or_create(listing=instance)
 
 
 @receiver(post_save, sender=BannedUser)
