@@ -50,16 +50,12 @@ def notification_icon(notification_type):
 @register.filter
 def notification_target_url(notification):
     """Return URL to redirect to when notification is clicked"""
-    from django.urls import reverse
-    try:
-        if notification.booking:
-            return reverse('listings:booking_detail', kwargs={'reference': notification.booking.booking_reference})
-        elif notification.conversation:
-            return reverse('chat:conversation_detail', kwargs={'pk': notification.conversation.id})
-        elif notification.listing:
-            return reverse('listings:listing_detail', kwargs={'pk': notification.listing.id})
-        elif notification.review:
-            return reverse('listings:listing_detail', kwargs={'pk': notification.review.listing.id})
-    except:
-        pass
-    return reverse('notifications:notification_list')
+    if notification.booking:
+        return f"/listings/bookings/{notification.booking.booking_reference}/"
+    elif notification.conversation:
+        return f"/chat/{notification.conversation.id}/"
+    elif notification.listing:
+        return f"/listings/{notification.listing.id}/"
+    elif notification.review:
+        return f"/listings/{notification.review.listing.id}/"
+    return "/notifications/"
