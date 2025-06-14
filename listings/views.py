@@ -642,7 +642,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
 
         # Detailed listing statistics
         selected_listing_id = self.request.GET.get('detail_listing_id')
-        selected_year = self.request.GET.get('detail_year', str(timezone.now().year))
+        selected_year = self.request.GET.get('detail_year')
         custom_detail_start = self.request.GET.get('custom_detail_start')
         custom_detail_end = self.request.GET.get('custom_detail_end')
 
@@ -653,24 +653,161 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                 selected_listing = host_listings.get(id=selected_listing_id)
                 
                 # Calculate date range for detailed stats
+                current_date = timezone.now().date()
+                
                 if custom_detail_start and custom_detail_end:
                     try:
                         detail_start_date = datetime.strptime(custom_detail_start, '%Y-%m-%d').date()
                         detail_end_date = datetime.strptime(custom_detail_end, '%Y-%m-%d').date()
                     except ValueError:
-                        detail_start_date = date(int(selected_year), 1, 1)
-                        detail_end_date = date(int(selected_year), 12, 31)
+                        # Fallback to last year if dates are invalid
+                        detail_start_date = current_date.replace(year=current_date.year - 1, month=1, day=1)
+                        detail_end_date = current_date
+                elif selected_year and selected_year.isdigit():
+                    try:
+                        year = int(selected_year)
+                        detail_start_date = date(year, 1, 1)
+                        detail_end_date = date(year, 12, 31)
+                        # Don't go beyond current date
+                        if detail_end_date > current_date:
+                            detail_end_date = current_date
+                    except ValueError:
+                        # Fallback to last year
+                        detail_start_date = current_date.replace(year=current_date.year - 1, month=1, day=1)
+                        detail_end_date = current_date
                 else:
-                    detail_start_date = date(int(selected_year), 1, 1)
-                    detail_end_date = date(int(selected_year), 12, 31)
+                    # Default: last 12 months from current date
+                    detail_start_date = current_date.replace(year=current_date.year - 1, month=current_date.month, day=1)
+                    detail_end_date = current_date
 
-                # Get listing creation date to avoid calculating before it existed
+                # Get listing creation date - use listing start if it's later
                 listing_created = selected_listing.created_at.date() if selected_listing.created_at else detail_start_date
                 actual_start_date = max(detail_start_date, listing_created)
-                actual_end_date = min(detail_end_date, timezone.now().date())
+                actual_end_date = min(detail_end_date, current_date)
 
-                # Calculate total possible days
-                if actual_end_date > actual_start_date:
+                # Always calculate stats even if period seems short
+                total_possible_days = max(1, (actual_end_date - actual_start_date).days)
+                
+                # Get bookings for this listing in the period
+                period_bookings = selected_listing.bookings.filter(
+                    status__in=['completed', 'confirmed'],
+                    start_date__lt=actual_end_date + timedelta(days=1),
+                    end_date__gt=actual_start_date
+                )
+
+                # Calculate occupied days
+                occupied_days = 0
+                for booking in period_bookings:
+                    # Calculate overlap between booking and our period
+                    booking_start = max(booking.start_date, actual_start_date)
+                    booking_end = min(booking.end_date, actual_end_date)
+                    
+                    if booking_end >= booking_start:
+                        nights = (booking_end - booking_start).days
+                        occupied_days += max(0, nights)
+
+                # Calculate occupancy rate
+                occupancy_rate = (occupied_days / total_possible_days * 100) if total_possible_days > 0 else 0
+
+                # Get revenue for the period
+                period_revenue = period_bookings.filter(status='completed').aggregate(
+                    total_revenue=Sum('total_price')
+                )['total_revenue'] or 0
+
+                # Get booking stats
+                period_booking_count = period_bookings.count()
+                completed_bookings = period_bookings.filter(status='completed').count()
+                
+                # Calculate average booking value
+                avg_booking_value = (period_revenue / completed_bookings) if completed_bookings > 0 else 0
+
+                # Get monthly breakdown
+                monthly_breakdown = []
+                current_month = actual_start_date.replace(day=1)
+                
+                month_names_ru = {
+                    1: 'Янв', 2: 'Фев', 3: 'Мар', 4: 'Апр', 5: 'Май', 6: 'Июн',
+                    7: 'Июл', 8: 'Авг', 9: 'Сен', 10: 'Окт', 11: 'Ноя', 12: 'Дек'
+                }
+
+                while current_month <= actual_end_date:
+                    # Calculate month end
+                    if current_month.month == 12:
+                        month_end = current_month.replace(year=current_month.year + 1, month=1)
+                    else:
+                        month_end = current_month.replace(month=current_month.month + 1)
+                    
+                    month_end = min(month_end, actual_end_date + timedelta(days=1))
+                    month_actual_end = min(month_end - timedelta(days=1), actual_end_date)
+
+                    # Days in month within our period
+                    month_days = max(0, (month_actual_end - max(current_month, actual_start_date)).days + 1) if month_actual_end >= max(current_month, actual_start_date) else 0
+
+                    # Get bookings for this month
+                    month_bookings = selected_listing.bookings.filter(
+                        status__in=['completed', 'confirmed'],
+                        start_date__lt=month_end,
+                        end_date__gt=current_month
+                    )
+
+                    # Calculate occupied days for this month
+                    month_occupied = 0
+                    for booking in month_bookings:
+                        booking_start = max(booking.start_date, max(current_month, actual_start_date))
+                        booking_end = min(booking.end_date, month_actual_end)
+                        
+                        if booking_end >= booking_start:
+                            nights = (booking_end - booking_start).days + 1
+                            month_occupied += min(nights, month_days)
+
+                    month_occupancy = (month_occupied / month_days * 100) if month_days > 0 else 0
+
+                    # Revenue for this month
+                    month_revenue = month_bookings.filter(
+                        status='completed'
+                    ).aggregate(total=Sum('total_price'))['total'] or 0
+
+                    monthly_breakdown.append({
+                        'month': current_month.strftime('%Y-%m'),
+                        'month_name': f"{month_names_ru[current_month.month]} {current_month.year}",
+                        'days': month_days,
+                        'occupied_days': month_occupied,
+                        'occupancy_rate': round(month_occupancy, 1),
+                        'revenue': float(month_revenue),
+                        'bookings': month_bookings.count()
+                    })
+
+                    # Move to next month
+                    if current_month.month == 12:
+                        current_month = current_month.replace(year=current_month.year + 1, month=1)
+                    else:
+                        current_month = current_month.replace(month=current_month.month + 1)
+
+                listing_detail_stats = {
+                    'listing': selected_listing,
+                    'period_start': actual_start_date,
+                    'period_end': actual_end_date,
+                    'total_possible_days': total_possible_days,
+                    'occupied_days': occupied_days,
+                    'occupancy_rate': round(occupancy_rate, 1),
+                    'total_revenue': float(period_revenue),
+                    'total_bookings': period_booking_count,
+                    'completed_bookings': completed_bookings,
+                    'avg_booking_value': round(float(avg_booking_value), 2),
+                    'monthly_breakdown': monthly_breakdown
+                }
+
+            except Listing.DoesNotExist:
+                listing_detail_stats = {
+                    'error': 'Выбранное объявление не найдено'
+                }
+        elif selected_listing_id:
+            # Show error only if listing_id was provided but invalid
+            listing_detail_stats = {
+                'error': 'Неверный ID объявления'
+            }
+
+        context.update({
                     total_possible_days = (actual_end_date - actual_start_date).days
                     
                     # Get bookings for this listing in the period
@@ -768,28 +905,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                         else:
                             current_month = current_month.replace(month=current_month.month + 1)
 
-                    listing_detail_stats = {
-                        'listing': selected_listing,
-                        'period_start': actual_start_date,
-                        'period_end': actual_end_date,
-                        'total_possible_days': total_possible_days,
-                        'occupied_days': occupied_days,
-                        'occupancy_rate': round(occupancy_rate, 1),
-                        'total_revenue': float(period_revenue),
-                        'total_bookings': period_booking_count,
-                        'completed_bookings': completed_bookings,
-                        'avg_booking_value': round(float(avg_booking_value), 2),
-                        'monthly_breakdown': monthly_breakdown
-                    }
-                else:
-                    listing_detail_stats = {
-                        'error': 'Выбранный период некорректен или объявление еще не существовало в этот период'
-                    }
                     
-            except Listing.DoesNotExist:
-                listing_detail_stats = {
-                    'error': 'Выбранное объявление не найдено'
-                }
 
         context.update({
             'stats': stats,
