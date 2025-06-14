@@ -36,26 +36,26 @@ class SubscriptionService:
         """Get ad limits for user"""
         try:
             from django.contrib.auth import get_user_model
+            from listings.models import Listing
             User = get_user_model()
             user = User.objects.get(id=user_id)
+
+            # Count actual active listings from database
+            current_ads = Listing.objects.filter(
+                host=user,
+                is_active=True
+            ).count()
 
             current_subscription = SubscriptionService.get_current_subscription(user)
 
             if not current_subscription:
                 # Return free tier limits
                 return {
-                    'current': 0,  # Count user's current ads
+                    'current': current_ads,
                     'limit': 2,    # Free tier limit
                     'plan_name': 'Free',
                     'subscription_status': 'none'
                 }
-
-            # Get usage
-            try:
-                usage = current_subscription.usage
-                current_ads = usage.ads_count
-            except SubscriptionUsage.DoesNotExist:
-                current_ads = 0
 
             return {
                 'current': current_ads,
@@ -194,10 +194,21 @@ class SubscriptionService:
         """Update subscription usage when ad is created"""
         current_subscription = SubscriptionService.get_current_subscription(user)
         if current_subscription:
+            from listings.models import Listing
+            # Get actual count of active listings
+            actual_count = Listing.objects.filter(
+                host=user,
+                is_active=True
+            ).count()
+            
             usage, created = SubscriptionUsage.objects.get_or_create(
                 subscription=current_subscription
             )
-            usage.increment_ads_count()
+            # Sync with actual count
+            usage.ads_count = actual_count
+            usage.total_ads_created += 1
+            usage.last_ad_created = timezone.now()
+            usage.save()
 
     @staticmethod
     def update_usage_on_ad_deleted(user):
@@ -205,8 +216,17 @@ class SubscriptionService:
         current_subscription = SubscriptionService.get_current_subscription(user)
         if current_subscription:
             try:
+                from listings.models import Listing
+                # Get actual count of active listings
+                actual_count = Listing.objects.filter(
+                    host=user,
+                    is_active=True
+                ).count()
+                
                 usage = current_subscription.usage
-                usage.decrement_ads_count()
+                # Sync with actual count
+                usage.ads_count = actual_count
+                usage.save()
             except SubscriptionUsage.DoesNotExist:
                 pass
 
