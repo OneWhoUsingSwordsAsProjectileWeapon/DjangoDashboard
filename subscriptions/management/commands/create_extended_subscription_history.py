@@ -7,6 +7,7 @@ from subscriptions.services import SubscriptionService
 from datetime import datetime, timedelta
 from decimal import Decimal
 import random
+import uuid
 
 User = get_user_model()
 
@@ -236,7 +237,7 @@ class Command(BaseCommand):
                 start_date=sub_start,
                 end_date=sub_end,
                 auto_renew=random.choice([True, False]) if profile != 'churner' else False,
-                payment_reference=f'{profile}_{user.id}_{i}_{random.randint(100000, 999999)}',
+                payment_reference=uuid.uuid4(),
                 amount_paid=plan.price
             )
             subscriptions.append(subscription)
@@ -345,7 +346,7 @@ class Command(BaseCommand):
                             start_date=period_start,
                             end_date=period_start + timedelta(days=plan.duration_days),
                             auto_renew=False,
-                            payment_reference=f'holiday_{month}_{year}_{random.randint(100000, 999999)}',
+                            payment_reference=uuid.uuid4(),
                             amount_paid=plan.price * discount
                         )
                         
@@ -385,7 +386,7 @@ class Command(BaseCommand):
                         start_date=renewal_start,
                         end_date=renewal_start + timedelta(days=new_plan.duration_days),
                         auto_renew=random.choice([True, False]),
-                        payment_reference=f'renewal_{expired_sub.id}_{random.randint(100000, 999999)}',
+                        payment_reference=uuid.uuid4(),
                         amount_paid=new_plan.price
                     )
                     
@@ -445,7 +446,7 @@ class Command(BaseCommand):
                     start_date=current_date,
                     end_date=sub_end,
                     auto_renew=random.choice([True, False]),
-                    payment_reference=f'chain_{user.id}_{i}_{random.randint(100000, 999999)}',
+                    payment_reference=uuid.uuid4(),
                     amount_paid=current_plan.price
                 )
                 
