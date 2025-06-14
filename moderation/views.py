@@ -770,7 +770,27 @@ def complaint_detail(request, pk):
 
                 elif action_type == 'deactivate_listing' and complaint.listing:
                     complaint.listing.is_active = False
-                    complaint.listing.save(update_fields=['is_active'])
+                    complaint.listing.is_approved = False
+                    complaint.listing.save(update_fields=['is_active', 'is_approved'])
+                    
+                    # Обновляем статус модерации объявления на "отклонено" вместо "требует изменений"
+                    try:
+                        approval_record = complaint.listing.approval_record
+                        approval_record.status = 'rejected'
+                        approval_record.moderator = request.user
+                        approval_record.rejection_reason = f"Деактивировано по жалобе #{complaint.id}: {complaint.description[:100]}"
+                        approval_record.reviewed_at = timezone.now()
+                        approval_record.save()
+                    except:
+                        # Если записи модерации нет, создаем новую
+                        from .models import ListingApproval
+                        ListingApproval.objects.create(
+                            listing=complaint.listing,
+                            status='rejected',
+                            moderator=request.user,
+                            rejection_reason=f"Деактивировано по жалобе #{complaint.id}: {complaint.description[:100]}"
+                        )
+                    
                     messages.success(request, f"Объявление '{complaint.listing.title}' было деактивировано.")
 
                 elif action_type == 'cancel_booking' and complaint.booking:
