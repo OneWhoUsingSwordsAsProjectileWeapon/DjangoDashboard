@@ -628,41 +628,147 @@ class SubscriptionService:
         }
 
     @staticmethod
-    def sync_all_usage_counts():
-        """Sync usage counts for all active subscriptions with real data"""
-        from listings.models import Listing
+    def renew_subscription(subscription):
+        """Renew an existing subscription"""
+        from django.utils import timezone
+        from datetime import timedelta
+        from moderation.models import ModerationLog
 
-        active_subscriptions = UserSubscription.objects.filter(
+        if not subscription.auto_renew or not subscription.plan.is_active:
+            return False
+
+        # Extend subscription
+        subscription.start_date = subscription.end_date
+        subscription.end_date = subscription.start_date + timedelta(days=subscription.plan.duration_days)
+        subscription.status = 'active'
+        subscription.save()
+
+        # Log the renewal
+        SubscriptionLog.objects.create(
+            subscription=subscription,
+            action='renewed',
+            description=f'Subscription renewed for plan {subscription.plan.name}'
+        )
+
+        # Log in moderation system
+        try:
+            ModerationLog.objects.create(
+                moderator=subscription.user,  # User whose subscription was renewed
+                action_type='subscription_renewed',
+                target_user=subscription.user,
+                description=f'Subscription renewed for user {subscription.user.username} - {subscription.plan.name}',
+                notes=f'Auto-renewal, Duration: {subscription.plan.duration_days} days'
+            )
+        except Exception:
+            pass
+
+        return True
+
+    @staticmethod
+    def cancel_subscription(subscription, reason=''):
+        """Cancel a subscription"""
+        from moderation.models import ModerationLog
+
+        subscription.status = 'canceled'
+        subscription.auto_renew = False
+        subscription.save()
+
+        # Log the cancellation
+        SubscriptionLog.objects.create(
+            subscription=subscription,
+            action='canceled',
+            description=f'Subscription canceled: {reason}' if reason else 'Subscription canceled'
+        )
+
+        # Log in moderation system
+        try:
+            ModerationLog.objects.create(
+                moderator=subscription.user,
+                action_type='subscription_canceled',
+                target_user=subscription.user,
+                description=f'Subscription canceled for user {subscription.user.username} - {subscription.plan.name}',
+                notes=f'Reason: {reason}' if reason else 'No reason provided'
+            )
+        except Exception:
+            pass
+
+        return True
+
+class NotificationService:
+    """
+    Service for subscription-related notifications
+    """
+
+    @staticmethod
+    def notify_expiring_subscriptions():
+        """Send notifications for expiring subscriptions"""
+        expiring_subscriptions = UserSubscription.objects.filter(
             status='active',
-            start_date__lte=timezone.now(),
+            end_date__lte=timezone.now() + timedelta(days=3),
             end_date__gte=timezone.now()
         )
 
-        synced_count = 0
-        for subscription in active_subscriptions:
-            try:
-                # Get real count of active listings
-                real_count = Listing.objects.filter(
-                    host=subscription.user,
-                    is_active=True
-                ).count()
-
-                # Get or create usage record
-                usage, created = SubscriptionUsage.objects.get_or_create(
-                    subscription=subscription
-                )
-
-                # Update if different
-                if usage.ads_count != real_count:
-                    usage.ads_count = real_count
-                    usage.save()
-                    synced_count += 1
-
-            except Exception as e:
-                logger.error(f"Failed to sync usage for subscription {subscription.id}: {e}")
-
-        logger.info(f"Synced {synced_count} subscription usage records")
-        return synced_count
+        for subscription in expiring_subscriptions:
+            NotificationService.send_expiration_warning(subscription)
 
     @staticmethod
-    def renew_subscription(subscription):
+    def send_expiration_warning(subscription):
+        """Send expiration warning notification"""
+        from notifications.models import Notification
+
+        Notification.objects.create(
+            user=subscription.user,
+            notification_type='subscription_expiring',
+            title=_("Subscription Expiring Soon"),
+            message=_(
+                "Your {} subscription will expire in {} days. "
+                "Renew now to continue enjoying premium features."
+            ).format(subscription.plan.name, subscription.days_remaining),
+            metadata={
+                'subscription_id': subscription.id,
+                'plan_name': subscription.plan.name,
+                'days_remaining': subscription.days_remaining
+            }
+        )
+
+        logger.info(f"Sent expiration warning to user {subscription.user.username}")
+
+    @staticmethod
+    def send_renewal_success(subscription):
+        """Send successful renewal notification"""
+        from notifications.models import Notification
+
+        Notification.objects.create(
+            user=subscription.user,
+            notification_type='subscription_renewed',
+            title=_("Subscription Renewed Successfully"),
+            message=_(
+                "Your {} subscription has been renewed successfully. "
+                "It will expire on {}."
+            ).format(subscription.plan.name, subscription.end_date.strftime('%B %d, %Y')),
+            metadata={
+                'subscription_id': subscription.id,
+                'plan_name': subscription.plan.name,
+                'end_date': subscription.end_date.isoformat()
+            }
+        )
+
+    @staticmethod
+    def send_renewal_failed(subscription, error_message):
+        """Send failed renewal notification"""
+        from notifications.models import Notification
+
+        Notification.objects.create(
+            user=subscription.user,
+            notification_type='subscription_renewal_failed',
+            title=_("Subscription Renewal Failed"),
+            message=_(
+                "We couldn't renew your {} subscription automatically. "
+                "Please update your payment method or renew manually. Error: {}"
+            ).format(subscription.plan.name, error_message),
+            metadata={
+                'subscription_id': subscription.id,
+                'plan_name': subscription.plan.name,
+                'error_message': error_message
+            }
+        )
