@@ -642,7 +642,6 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
 
         # Detailed listing statistics
         selected_listing_id = self.request.GET.get('detail_listing_id')
-        selected_year = self.request.GET.get('detail_year')
         custom_detail_start = self.request.GET.get('custom_detail_start')
         custom_detail_end = self.request.GET.get('custom_detail_end')
 
@@ -661,18 +660,6 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                         detail_end_date = datetime.strptime(custom_detail_end, '%Y-%m-%d').date()
                     except ValueError:
                         # Fallback to last year if dates are invalid
-                        detail_start_date = current_date.replace(year=current_date.year - 1, month=1, day=1)
-                        detail_end_date = current_date
-                elif selected_year and selected_year.isdigit():
-                    try:
-                        year = int(selected_year)
-                        detail_start_date = date(year, 1, 1)
-                        detail_end_date = date(year, 12, 31)
-                        # Don't go beyond current date
-                        if detail_end_date > current_date:
-                            detail_end_date = current_date
-                    except ValueError:
-                        # Fallback to last year
                         detail_start_date = current_date.replace(year=current_date.year - 1, month=1, day=1)
                         detail_end_date = current_date
                 else:
@@ -844,10 +831,8 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
             'end_date': end_date,
             'listing_detail_stats': listing_detail_stats,
             'selected_listing_id': selected_listing_id,
-            'selected_year': selected_year,
             'custom_detail_start': custom_detail_start,
-            'custom_detail_end': custom_detail_end,
-            'available_years': list(range(2020, timezone.now().year + 2)),  # 2020 to next year
+            'custom_detail_end': custom_detail_end
         })
 
         return context

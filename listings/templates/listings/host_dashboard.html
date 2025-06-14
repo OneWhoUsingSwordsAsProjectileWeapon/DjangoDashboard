@@ -695,40 +695,29 @@
                                 <input type="hidden" name="status_filter" value="{{ current_filters.status_filter }}">
 
                                 <div class="row">
-                                    <div class="col-md-4 mb-2">
+                                    <div class="col-md-6 mb-2">
                                         <label class="form-label">Объявление:</label>
                                         <select class="form-select form-select-sm" name="detail_listing_id">
                                             <option value="">Выберите объявление</option>
                                             {% for listing in host_listings_for_filter %}
-                                                <option value="{{ listing.id }}" {% if listing.id|stringformat:"s" == selected_listing_id %}selected{% endif %}>
-                                                    {{ listing.title|truncatechars:40 }}
-                                                </option>
+                                            <option value="{{ listing.id }}" {% if selected_listing_id == listing.id|stringformat:"s" %}selected{% endif %}>
+                                                {{ listing.title|truncatechars:40 }}
+                                            </option>
                                             {% endfor %}
                                         </select>
                                     </div>
-                                    <div class="col-md-2 mb-2">
-                                        <label class="form-label">Год (опционально):</label>
-                                        <select class="form-select form-select-sm" name="detail_year">
-                                            <option value="">Последний год</option>
-                                            {% for year in available_years %}
-                                                <option value="{{ year }}" {% if year|stringformat:"s" == selected_year %}selected{% endif %}>
-                                                    {{ year }}
-                                                </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-md-2 mb-2">
-                                        <label class="form-label">С даты (опционально):</label>
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label">Начальная дата:</label>
                                         <input type="date" class="form-control form-control-sm" name="custom_detail_start" value="{{ custom_detail_start }}" placeholder="Начало периода">
                                     </div>
-                                    <div class="col-md-2 mb-2">
-                                        <label class="form-label">По дату (опционально):</label>
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label">Конечная дата:</label>
                                         <input type="date" class="form-control form-control-sm" name="custom_detail_end" value="{{ custom_detail_end }}" placeholder="Конец периода">
                                     </div>
-                                    <div class="col-md-2 mb-2 d-flex align-items-end">
-                                        <button type="submit" class="btn btn-primary btn-sm w-100">
-                                            <i class="fas fa-search"></i> Показать
-                                        </button>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12 d-flex justify-content-end">
+                                        <button type="submit" class="btn btn-primary btn-sm">Показать статистику</button>
                                     </div>
                                 </div>
                             </form>
@@ -777,6 +766,8 @@
                                             <thead>
                                                 <tr>
                                                     <th>Месяц</th>
+                                                    ```
+Анализ: The code changes remove the year selection from the detailed statistics form and adjust the layout.
                                                     <th>Дни в периоде</th>
                                                     <th>Занято дней</th>
                                                     <th>Заполняемость</th>
