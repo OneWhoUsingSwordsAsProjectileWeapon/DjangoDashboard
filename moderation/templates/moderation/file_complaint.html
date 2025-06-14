@@ -1,4 +1,3 @@
-
 {% extends 'base.html' %}
 {% load static %}
 
@@ -25,7 +24,7 @@
                         {% endif %}
                     </h4>
                 </div>
-                
+
                 <div class="card-body">
                     <!-- Related Object Info -->
                     <div class="alert alert-info mb-4">
@@ -51,9 +50,9 @@
                     </div>
 
                     <!-- Complaint Form -->
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
                         {% csrf_token %}
-                        
+
                         <div class="mb-3">
                             <label for="{{ form.complaint_type.id_for_label }}" class="form-label">
                                 {{ form.complaint_type.label }} <span class="text-danger">*</span>
@@ -111,6 +110,23 @@
                                 {% if form.contact_email.errors %}
                                     <div class="text-danger small">{{ form.contact_email.errors }}</div>
                                 {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.evidence_video.id_for_label }}" class="form-label">{{ form.evidence_video.label }}</label>
+                            {{ form.evidence_video }}
+                            {% if form.evidence_video.errors %}
+                                <div class="text-danger">{{ form.evidence_video.errors }}</div>
+                            {% endif %}
+                            {% if form.evidence_video.help_text %}
+                                <div class="form-text">{{ form.evidence_video.help_text }}</div>
+                            {% endif %}
+                            <div class="form-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    Поддерживаемые форматы: MP4, AVI, MOV, WMV, FLV, WebM, MKV
+                                </small>
                             </div>
                         </div>
 

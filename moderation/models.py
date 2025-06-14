@@ -423,6 +423,15 @@ class UserComplaint(models.Model):
         help_text='Альтернативный email для связи'
     )
 
+    # Evidence video
+    evidence_video = models.FileField(
+        'Видео-доказательство',
+        upload_to='complaint_videos/',
+        null=True,
+        blank=True,
+        help_text='Загрузите видео в качестве доказательства (макс. 100МБ)'
+    )
+
     # Timestamps
     created_at = models.DateTimeField('Создано', auto_now_add=True)
     updated_at = models.DateTimeField('Обновлено', auto_now=True)

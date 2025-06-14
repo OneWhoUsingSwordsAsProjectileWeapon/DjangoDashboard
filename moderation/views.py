@@ -587,7 +587,7 @@ def file_complaint(request, listing_id):
     listing = get_object_or_404(Listing, id=listing_id)
 
     if request.method == 'POST':
-        form = ListingComplaintForm(request.POST)
+        form = ListingComplaintForm(request.POST, request.FILES)
         if form.is_valid():
             # Create complaint from form data
             complaint = UserComplaint.objects.create(
@@ -597,7 +597,8 @@ def file_complaint(request, listing_id):
                 subject=form.cleaned_data.get('subject') or f"Жалоба на объявление: {listing.title}",
                 description=form.cleaned_data['description'],
                 priority=form.cleaned_data['priority'],
-                contact_email=form.cleaned_data.get('contact_email', '')
+                contact_email=form.cleaned_data.get('contact_email', ''),
+                evidence_video=form.cleaned_data.get('evidence_video')
             )
 
             messages.success(request, 'Ваша жалоба была отправлена и будет рассмотрена.')
@@ -622,7 +623,7 @@ def file_booking_complaint(request, booking_id):
         return redirect('listings:booking_detail', reference=booking.booking_reference)
 
     if request.method == 'POST':
-        form = BookingComplaintForm(request.POST)
+        form = BookingComplaintForm(request.POST, request.FILES)
         if form.is_valid():
             # Create complaint from form data
             complaint = UserComplaint.objects.create(
@@ -633,7 +634,8 @@ def file_booking_complaint(request, booking_id):
                 subject=form.cleaned_data.get('subject') or f"Жалоба на бронирование {booking.booking_reference}",
                 description=form.cleaned_data['description'],
                 priority=form.cleaned_data['priority'],
-                contact_email=form.cleaned_data.get('contact_email', '')
+                contact_email=form.cleaned_data.get('contact_email', ''),
+                evidence_video=form.cleaned_data.get('evidence_video')
             )
 
             messages.success(request, 'Ваша жалоба была отправлена и будет рассмотрена.')

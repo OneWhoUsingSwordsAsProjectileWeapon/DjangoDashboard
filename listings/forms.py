@@ -25,7 +25,8 @@ class ListingForm(forms.ModelForm):
             'verification_video': forms.FileInput(attrs={
                 'class': 'form-control',
                 'accept': 'video/*',
-                'data-max-size': '262144000'  # 250MB in bytes
+                'data-max-size': '262144000',  # 250MB in bytes
+                'help_text': _("Please provide a continuous video from the street address to entering the apartment, showcasing all mentioned amenities and rooms.")
             }),
         }
 
@@ -69,7 +70,7 @@ class ListingForm(forms.ModelForm):
                     _("Video file size cannot exceed 250MB. Current size: %(size).1fMB"),
                     params={'size': video.size / (1024 * 1024)}
                 )
-            
+
             # Check file extension
             allowed_extensions = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv']
             file_extension = video.name.lower().split('.')[-1]
@@ -78,7 +79,7 @@ class ListingForm(forms.ModelForm):
                     _("Invalid video format. Allowed formats: %(formats)s"),
                     params={'formats': ', '.join(allowed_extensions)}
                 )
-        
+
         return video
 
 class ListingImageForm(forms.ModelForm):

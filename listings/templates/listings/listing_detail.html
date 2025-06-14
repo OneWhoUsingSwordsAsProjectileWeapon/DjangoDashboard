@@ -606,6 +606,23 @@
                             <button type="submit" class="btn btn-primary btn-lg">Забронировать</button>
                             <p class="text-center text-muted small mt-2">Оплата пока не требуется</p>
                         </div>
+
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'listings:create_booking' pk=listing.pk %}" class="btn btn-primary flex-fill">
+                            Забронировать
+                        </a>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Добавить в избранное">
+                            <i class="far fa-heart"></i>
+                        </button>
+                    </div>
+
+                    {% if user.is_authenticated and user != listing.host %}
+                    <div class="mt-3">
+                        <a href="{% url 'moderation:file_complaint' listing_id=listing.id %}" class="btn btn-outline-warning btn-sm w-100">
+                            <i class="fas fa-flag me-1"></i> Пожаловаться на объявление
+                        </a>
+                    </div>
+                    {% endif %}
                     </form>
                 </div>
             </div>

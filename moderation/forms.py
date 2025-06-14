@@ -84,11 +84,40 @@ class BookingComplaintForm(forms.Form):
         label="Контактный email"
     )
 
+    evidence_video = forms.FileField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'video/*'
+        }),
+        label="Видео-доказательство",
+        help_text="Загрузите видео для подтверждения жалобы (макс. 100МБ)"
+    )
+
     def clean_description(self):
         description = self.cleaned_data.get('description')
         if len(description) < 20:
             raise forms.ValidationError("Пожалуйста, опишите проблему более подробно (минимум 20 символов).")
         return description
+
+    def clean_evidence_video(self):
+        video = self.cleaned_data.get('evidence_video')
+        if video:
+            # Check file size (100MB max)
+            max_size = 100 * 1024 * 1024  # 100MB in bytes
+            if video.size > max_size:
+                raise forms.ValidationError(
+                    f"Размер видеофайла не может превышать 100МБ. Текущий размер: {video.size / (1024 * 1024):.1f}МБ"
+                )
+
+            # Check file extension
+            allowed_extensions = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv']
+            file_extension = video.name.lower().split('.')[-1]
+            if f'.{file_extension}' not in allowed_extensions:
+                raise forms.ValidationError(
+                    f"Неверный формат видео. Разрешенные форматы: {', '.join(allowed_extensions)}"
+                )
+        return video
 
 class ListingComplaintForm(forms.Form):
     """Form for users to submit complaints about listings"""
@@ -151,11 +180,40 @@ class ListingComplaintForm(forms.Form):
         label="Контактный email"
     )
 
+    evidence_video = forms.FileField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'video/*'
+        }),
+        label="Видео-доказательство",
+        help_text="Загрузите видео для подтверждения жалобы (макс. 100МБ)"
+    )
+
     def clean_description(self):
         description = self.cleaned_data.get('description')
         if len(description) < 20:
             raise forms.ValidationError("Пожалуйста, опишите проблему более подробно (минимум 20 символов).")
         return description
+
+    def clean_evidence_video(self):
+        video = self.cleaned_data.get('evidence_video')
+        if video:
+            # Check file size (100MB max)
+            max_size = 100 * 1024 * 1024  # 100MB in bytes
+            if video.size > max_size:
+                raise forms.ValidationError(
+                    f"Размер видеофайла не может превышать 100МБ. Текущий размер: {video.size / (1024 * 1024):.1f}МБ"
+                )
+
+            # Check file extension
+            allowed_extensions = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv']
+            file_extension = video.name.lower().split('.')[-1]
+            if f'.{file_extension}' not in allowed_extensions:
+                raise forms.ValidationError(
+                    f"Неверный формат видео. Разрешенные форматы: {', '.join(allowed_extensions)}"
+                )
+        return video
 
 class UserComplaintForm(forms.Form):
     """Form for users to submit general complaints"""
@@ -238,7 +296,7 @@ class ComplaintResponseForm(forms.Form):
     PRIORITY_CHOICES = [
         ('low', 'Низкий'),
         ('medium', 'Средний'),
-        ('high', 'Высокий'),
+        ('high', 'Срочный'),
         ('urgent', 'Срочный'),
     ]
 

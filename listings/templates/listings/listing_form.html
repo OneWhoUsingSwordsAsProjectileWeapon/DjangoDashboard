@@ -313,23 +313,40 @@
                     <!-- Verification Video Section -->
                     <div class="row">
                         <div class="col-12">
-                            <h5 class="mb-3">Видео для верификации</h5>
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle"></i>
-                                Загрузите видео, демонстрирующее соответствие вашей недвижимости указанным параметрам. 
-                                Это видео будет просматриваться только модераторами при рассмотрении объявления.
-                                <br><strong>Максимальный размер:</strong> 250 МБ
-                                <br><strong>Поддерживаемые форматы:</strong> MP4, AVI, MOV, WMV, FLV, WebM, MKV
+                            <h5 class="mb-3">Видео для верификации <span class="text-danger">*</span></h5>
+                            <div class="alert alert-warning">
+                                <i class="fas fa-video"></i>
+                                <strong>ОБЯЗАТЕЛЬНОЕ ТРЕБОВАНИЕ К СЪЕМКЕ:</strong>
+                                <br>Видео должно быть <strong>непрерывным</strong> и включать:
+                                <ol class="mt-2 mb-2">
+                                    <li><strong>Демонстрацию адреса</strong> - покажите номер дома, улицу, подъезд</li>
+                                    <li><strong>Путь от входа до квартиры</strong> - лестница/лифт, этаж, дверь квартиры</li>
+                                    <li><strong>Все комнаты</strong> указанные в описании (спальни, ванные комнаты)</li>
+                                    <li><strong>Все заявленные удобства</strong> - кухня, техника, мебель, Wi-Fi и т.д.</li>
+                                    <li><strong>Вид из окон</strong> для подтверждения местоположения</li>
+                                </ol>
+                                <strong>Требования к видео:</strong>
+                                <ul class="mt-2">
+                                    <li>Непрерывная съемка без монтажа и склеек</li>
+                                    <li>Хорошее освещение и четкость изображения</li>
+                                    <li>Длительность: 3-10 минут</li>
+                                    <li>Максимальный размер: 250 МБ</li>
+                                    <li>Форматы: MP4, AVI, MOV, WMV, FLV, WebM, MKV</li>
+                                </ul>
+                                <div class="text-danger mt-2">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Видео, не соответствующие требованиям, приведут к отклонению объявления.
+                                </div>
                             </div>
                         </div>
                         <div class="col-12 mb-3">
-                            <label for="{{ form.verification_video.id_for_label }}" class="form-label">{{ form.verification_video.label }}</label>
+                            <label for="{{ form.verification_video.id_for_label }}" class="form-label">{{ form.verification_video.label }} <span class="text-danger">*</span></label>
                             {{ form.verification_video }}
                             {% if form.verification_video.errors %}
                                 <div class="text-danger">{{ form.verification_video.errors }}</div>
                             {% endif %}
                             <div class="form-text">
-                                Выберите видеофайл для подтверждения соответствия недвижимости описанию
+                                <strong>Обязательное поле.</strong> Загрузите видео, полностью соответствующее указанным выше требованиям.
                             </div>
                         </div>
                     </div>
