@@ -675,33 +675,36 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                 # Always calculate stats even if period seems short
                 total_possible_days = max(1, (actual_end_date - actual_start_date).days)
                 
-                # Используем ТОЧНО такую же логику как в общей статистике заполняемости
-                # Считаем заполняемость так же как в главной статистике
-                occupied_days = 0
+                # Get bookings for this listing - используем ту же логику что и в общей статистике
+                # Для завершенных бронирований используем end_date (когда реально получен доход)
+                period_bookings_all = selected_listing.bookings.filter(
+                    created_at__date__gte=actual_start_date,
+                    created_at__date__lte=actual_end_date
+                )
                 
-                # Получаем все подтвержденные и завершенные бронирования для этого объявления за весь период
+                # Для расчета заполняемости используем все подтвержденные и завершенные бронирования
                 occupancy_bookings = selected_listing.bookings.filter(
                     status__in=['completed', 'confirmed'],
-                    start_date__lt=actual_end_date,
+                    start_date__lt=actual_end_date + timedelta(days=1),
                     end_date__gt=actual_start_date
                 )
 
-                # Calculate occupied days - точно как в общей статистике
+                # Calculate occupied days
+                occupied_days = 0
                 for booking in occupancy_bookings:
                     # Calculate overlap between booking and our period
                     booking_start = max(booking.start_date, actual_start_date)
                     booking_end = min(booking.end_date, actual_end_date)
                     
-                    # Only count if there's actual overlap
-                    if booking_end > booking_start:
+                    if booking_end >= booking_start:
                         nights = (booking_end - booking_start).days
-                        if nights > 0:
-                            occupied_days += nights
+                        occupied_days += max(0, nights)
 
                 # Calculate occupancy rate
                 occupancy_rate = (occupied_days / total_possible_days * 100) if total_possible_days > 0 else 0
 
-                # Get revenue for the period - используем end_date для завершенных бронирований
+                # Get revenue for the period - используем ту же логику что и в общей статистике
+                # Для дохода используем end_date (когда бронирование завершилось)
                 period_revenue = selected_listing.bookings.filter(
                     status='completed',
                     end_date__gte=actual_start_date,
@@ -710,13 +713,9 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                     total_revenue=Sum('total_price')
                 )['total_revenue'] or 0
 
-                # Get booking stats - считаем все бронирования в периоде по created_at
-                all_bookings_in_period = selected_listing.bookings.filter(
-                    created_at__date__gte=actual_start_date,
-                    created_at__date__lte=actual_end_date
-                )
-                period_booking_count = all_bookings_in_period.count()
-                completed_bookings = all_bookings_in_period.filter(status='completed').count()
+                # Get booking stats - используем period_bookings_all для консистентности
+                period_booking_count = period_bookings_all.count()
+                completed_bookings = period_bookings_all.filter(status='completed').count()
                 
                 # Calculate average booking value
                 avg_booking_value = (period_revenue / completed_bookings) if completed_bookings > 0 else 0
@@ -743,24 +742,22 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                     # Days in month within our period
                     month_days = max(0, (month_actual_end - max(current_month, actual_start_date)).days + 1) if month_actual_end >= max(current_month, actual_start_date) else 0
 
-                    # Get bookings for this month - используем ту же логику что и выше
+                    # Get bookings for this month - для заполняемости
                     month_occupancy_bookings = selected_listing.bookings.filter(
                         status__in=['completed', 'confirmed'],
                         start_date__lt=month_end,
                         end_date__gt=current_month
                     )
 
-                    # Calculate occupied days for this month - точно как в общей логике
+                    # Calculate occupied days for this month
                     month_occupied = 0
                     for booking in month_occupancy_bookings:
                         booking_start = max(booking.start_date, max(current_month, actual_start_date))
                         booking_end = min(booking.end_date, month_actual_end)
                         
-                        # Only count if there's actual overlap
-                        if booking_end > booking_start:
-                            nights = (booking_end - booking_start).days
-                            if nights > 0:
-                                month_occupied += nights
+                        if booking_end >= booking_start:
+                            nights = (booking_end - booking_start).days + 1
+                            month_occupied += min(nights, month_days)
 
                     month_occupancy = (month_occupied / month_days * 100) if month_days > 0 else 0
 
