@@ -807,30 +807,6 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                 'error': 'Неверный ID объявления'
             }
 
-        listing_detail_stats = {
-                    'listing': selected_listing,
-                    'period_start': actual_start_date,
-                    'period_end': actual_end_date,
-                    'total_possible_days': total_possible_days,
-                    'occupied_days': occupied_days,
-                    'occupancy_rate': round(occupancy_rate, 1),
-                    'total_revenue': float(period_revenue),
-                    'total_bookings': period_booking_count,
-                    'completed_bookings': completed_bookings,
-                    'avg_booking_value': round(float(avg_booking_value), 2),
-                    'monthly_breakdown': monthly_breakdown
-                }
-
-            except Listing.DoesNotExist:
-                listing_detail_stats = {
-                    'error': 'Выбранное объявление не найдено'
-                }
-        elif selected_listing_id:
-            # Show error only if listing_id was provided but invalid
-            listing_detail_stats = {
-                'error': 'Неверный ID объявления'
-            }
-
         context.update({
             'stats': stats,
             'monthly_revenue': monthly_revenue,
