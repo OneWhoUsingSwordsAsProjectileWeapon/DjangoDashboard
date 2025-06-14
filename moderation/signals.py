@@ -67,9 +67,21 @@ def create_listing_approval(sender, instance, created, **kwargs):
     if created:
         approval, was_created = ListingApproval.objects.get_or_create(listing=instance)
         if not was_created:
-            # Запись уже существует, можно логировать или отправить уведомление
+            # Запись уже существует - показываем всплывающее сообщение
             from django.contrib import messages
             from django.contrib.auth import get_user_model
+            from django.http import HttpRequest
+            from django.contrib.messages import add_message, WARNING
+            
+            # Попытка получить текущий request из middleware
+            try:
+                import threading
+                request = getattr(threading.current_thread(), 'request', None)
+                if request and hasattr(request, 'user'):
+                    add_message(request, WARNING, 
+                        f'⚠️ Запись модерации для объявления "{instance.title}" уже существует! Дубликат не создан.')
+            except:
+                pass
             
             # Уведомляем администраторов о попытке создания дубликата
             try:
@@ -81,8 +93,9 @@ def create_listing_approval(sender, instance, created, **kwargs):
                     Notification.objects.create(
                         user=admin,
                         notification_type='system',
-                        title='Предупреждение: попытка создания дубликата',
-                        message=f'Попытка создать дублирующую запись модерации для объявления "{instance.title}" (ID: {instance.id}). Запись уже существует.'
+                        title='⚠️ Попытка создания дубликата',
+                        message=f'Пользователь {instance.host.username} пытался создать дублирующую запись модерации для объявления "{instance.title}" (ID: {instance.id}). Запись уже существует.',
+                        listing=instance
                     )
             except ImportError:
                 # notifications app недоступно

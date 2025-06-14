@@ -81,8 +81,9 @@
 
             {% if notifications %}
                 {% for notification in notifications %}
-                <div class="card mb-3 notification-card {% if not notification.is_read %}border-primary{% endif %}" 
-                     data-notification-id="{{ notification.id }}">
+                <div class="card mb-3 {% if not notification.is_read %}border-primary{% endif %} notification-card" 
+                         style="cursor: pointer;" 
+                         onclick="handleNotificationClick({{ notification.id }}, '{{ notification|notification_target_url }}')">
                     <div class="card-body">
                         <div class="d-flex">
                             <div class="notification-icon me-3">
@@ -126,7 +127,12 @@
                                 {% elif notification.conversation %}
                                     <div class="mt-2">
                                         <a href="{% url 'chat:conversation_detail' pk=notification.conversation.pk %}" 
-                                           class="btn btn-sm btn-outline-primary">Посмотреть беседу</a>
+                                           class="btn btn-sm btn-outline-primary">Открыть чат</a>
+                                    </div>
+                                {% elif notification.review %}
+                                    <div class="mt-2">
+                                        <a href="{% url 'listings:listing_detail' pk=notification.review.listing.pk %}" 
+                                           class="btn btn-sm btn-outline-primary">Посмотреть отзыв</a>
                                     </div>
                                 {% endif %}
                             </div>
@@ -240,5 +246,46 @@
             });
         }
     });
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function handleNotificationClick(notificationId, targetUrl) {
+    // Помечаем уведомление как прочитанное
+    fetch(`/notifications/${notificationId}/mark-read/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    }).then(response => {
+        if (response.ok) {
+            // Переходим к источнику уведомления
+            if (targetUrl && targetUrl !== '/notifications/') {
+                window.location.href = targetUrl;
+            }
+        }
+    }).catch(error => {
+        console.error('Error marking notification as read:', error);
+        // Все равно переходим к источнику
+        if (targetUrl && targetUrl !== '/notifications/') {
+            window.location.href = targetUrl;
+        }
+    });
+}
+
+// Добавляем hover эффект для карточек
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.notification-card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.classList.add('shadow-sm');
+        });
+        card.addEventListener('mouseleave', function() {
+            this.classList.remove('shadow-sm');
+        });
+    });
+});
 </script>
 {% endblock %}
