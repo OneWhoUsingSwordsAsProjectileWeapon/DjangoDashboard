@@ -88,7 +88,7 @@ class SubscriptionService:
         return True, ""
 
     @staticmethod
-    def create_subscription(user, plan, payment_reference=None, amount_paid=None):
+    def create_subscription(user, plan, payment_reference=None, amount_paid=None, auto_renew=False):
         """Create a new subscription for a user"""
         from django.utils import timezone
         from datetime import timedelta
@@ -114,7 +114,8 @@ class SubscriptionService:
             start_date=start_date,
             end_date=end_date,
             amount_paid=amount_paid or plan.price,
-            payment_reference=payment_reference
+            payment_reference=payment_reference,
+            auto_renew=auto_renew
         )
 
         # Create usage tracking

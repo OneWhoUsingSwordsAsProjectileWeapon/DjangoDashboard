@@ -154,6 +154,7 @@ def process_qr_payment(request):
                     user=user,
                     plan=plan,
                     payment_reference=payment_ref,
+                    amount_paid=plan.price,
                     auto_renew=payment_data.get('auto_renew', False)
                 )
 
@@ -199,6 +200,7 @@ def create_subscription(request):
                     user=request.user,
                     plan=plan,
                     payment_reference=serializer.validated_data.get('payment_reference'),
+                    amount_paid=plan.price,
                     auto_renew=serializer.validated_data.get('auto_renew', False)
                 )
 
@@ -354,6 +356,7 @@ def admin_create_subscription(request, user_id):
                     user=user,
                     plan=plan,
                     payment_reference=serializer.validated_data.get('payment_reference'),
+                    amount_paid=plan.price,
                     auto_renew=serializer.validated_data.get('auto_renew', False)
                 )
 
