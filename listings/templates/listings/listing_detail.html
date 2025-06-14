@@ -170,9 +170,6 @@
                 <button class="btn btn-outline-primary me-2" onclick="shareProperty()">
                     <i class="fas fa-share-alt"></i> Поделиться
                 </button>
-                <button class="btn btn-outline-danger" onclick="saveProperty()">
-                    <i class="far fa-heart"></i> Сохранить
-                </button>
             </div>
         </div>
     </div>
@@ -606,15 +603,6 @@
                             <button type="submit" class="btn btn-primary btn-lg">Забронировать</button>
                             <p class="text-center text-muted small mt-2">Оплата пока не требуется</p>
                         </div>
-
-                    <div class="d-flex gap-2">
-                        <a href="{% url 'listings:create_booking' pk=listing.pk %}" class="btn btn-primary flex-fill">
-                            Забронировать
-                        </a>
-                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Добавить в избранное">
-                            <i class="far fa-heart"></i>
-                        </button>
-                    </div>
 
                     {% if user.is_authenticated and user != listing.host %}
                     <div class="mt-3">
