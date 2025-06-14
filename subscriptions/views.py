@@ -160,9 +160,10 @@ def process_qr_payment(request):
 
                 logger.info(f"QR payment processed for user {user.username}, subscription {subscription.id}")
                 ModerationLog.objects.create(
-                    user=user,
-                    log_type='subscription_qr_payment',
-                    message=f"Subscription created via QR payment. Plan: {plan.name}, Subscription ID: {subscription.id}"
+                    moderator=user,
+                    action_type='subscription_created',
+                    target_user=user,
+                    description=f"Subscription created via QR payment. Plan: {plan.name}, Subscription ID: {subscription.id}"
                 )
 
                 return Response({
@@ -209,9 +210,10 @@ def create_subscription(request):
                 logger.info(f"Created subscription {subscription.id} for user {request.user.username}")
 
                 ModerationLog.objects.create(
-                    user=request.user,
-                    log_type='subscription_created',
-                    message=f"Subscription created. Plan: {plan.name}, Subscription ID: {subscription.id}"
+                    moderator=request.user,
+                    action_type='subscription_created',
+                    target_user=request.user,
+                    description=f"Subscription created. Plan: {plan.name}, Subscription ID: {subscription.id}"
                 )
 
                 return Response({
@@ -250,9 +252,10 @@ def toggle_auto_renew(request):
     current_subscription.save(update_fields=['auto_renew'])
 
     ModerationLog.objects.create(
-        user=request.user,
-        log_type='subscription_auto_renew_toggled',
-        message=f"Subscription auto-renew toggled to {current_subscription.auto_renew}. Subscription ID: {current_subscription.id}"
+        moderator=request.user,
+        action_type='subscription_renewed',
+        target_user=request.user,
+        description=f"Subscription auto-renew toggled to {current_subscription.auto_renew}. Subscription ID: {current_subscription.id}"
     )
 
     return Response({
@@ -280,9 +283,10 @@ def cancel_subscription(request):
     logger.info(f"User {request.user.username} canceled subscription {current_subscription.id}")
 
     ModerationLog.objects.create(
-        user=request.user,
-        log_type='subscription_cancelled',
-        message=f"Subscription cancelled. Subscription ID: {current_subscription.id}"
+        moderator=request.user,
+        action_type='subscription_canceled',
+        target_user=request.user,
+        description=f"Subscription cancelled. Subscription ID: {current_subscription.id}"
     )
 
     return Response({
@@ -365,9 +369,10 @@ def admin_create_subscription(request, user_id):
                 logger.info(f"Admin {request.user.username} created subscription {subscription.id} for user {user.username}")
 
                 ModerationLog.objects.create(
-                    user=request.user,
-                    log_type='admin_subscription_created',
-                    message=f"Admin created subscription for user {user.username}. Plan: {plan.name}, Subscription ID: {subscription.id}"
+                    moderator=request.user,
+                    action_type='subscription_created',
+                    target_user=user,
+                    description=f"Admin created subscription for user {user.username}. Plan: {plan.name}, Subscription ID: {subscription.id}"
                 )
 
                 return Response({
@@ -410,9 +415,10 @@ def admin_extend_subscription(request, subscription_id):
         logger.info(f"Admin {request.user.username} extended subscription {subscription.id} by {days} days")
 
         ModerationLog.objects.create(
-            user=request.user,
-            log_type='admin_subscription_extended',
-            message=f"Admin extended subscription {subscription.id} by {days} days. New end date: {subscription.end_date}"
+            moderator=request.user,
+            action_type='subscription_renewed',
+            target_user=subscription.user,
+            description=f"Admin extended subscription {subscription.id} by {days} days. New end date: {subscription.end_date}"
         )
 
         return Response({
