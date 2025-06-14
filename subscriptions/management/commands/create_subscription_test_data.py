@@ -6,6 +6,7 @@ from subscriptions.services import SubscriptionService
 from datetime import datetime, timedelta
 from decimal import Decimal
 import random
+import uuid
 
 User = get_user_model()
 
@@ -96,8 +97,8 @@ class Command(BaseCommand):
                 start_date=subscription_start,
                 end_date=subscription_end,
                 auto_renew=random.choice([True, False]),
-                payment_method='test',
-                payment_reference=f'test_ref_{random.randint(100000, 999999)}'
+                payment_reference=uuid.uuid4(),
+                amount_paid=plan.price
             )
             created_subscriptions += 1
 
@@ -155,8 +156,7 @@ class Command(BaseCommand):
                 SubscriptionLog.objects.create(
                     subscription=subscription,
                     action=log_event['action'],
-                    details=log_event['details'],
-                    timestamp=log_event['timestamp']
+                    description=log_event['details']
                 )
                 created_logs += 1
 
@@ -177,8 +177,8 @@ class Command(BaseCommand):
                 start_date=subscription_start,
                 end_date=subscription_end,
                 auto_renew=random.choice([True, False]),
-                payment_method='test',
-                payment_reference=f'recent_ref_{random.randint(100000, 999999)}'
+                payment_reference=uuid.uuid4(),
+                amount_paid=plan.price
             )
             created_subscriptions += 1
 
@@ -186,15 +186,13 @@ class Command(BaseCommand):
             SubscriptionLog.objects.create(
                 subscription=subscription,
                 action='created',
-                details=f'Recent subscription created for plan {plan.name}',
-                timestamp=subscription_start
+                description=f'Recent subscription created for plan {plan.name}'
             )
 
             SubscriptionLog.objects.create(
                 subscription=subscription,
-                action='payment_processed',
-                details=f'Recent payment of ${plan.price} processed',
-                timestamp=subscription_start
+                action='payment',
+                description=f'Recent payment of ${plan.price} processed'
             )
             created_logs += 2
 
@@ -241,8 +239,8 @@ class Command(BaseCommand):
                     start_date=subscription_start,
                     end_date=subscription_end,
                     auto_renew=random.choice([True, False]),
-                    payment_method='seasonal_test',
-                    payment_reference=f'seasonal_{month}_{random.randint(100000, 999999)}'
+                    payment_reference=uuid.uuid4(),
+                    amount_paid=plan.price
                 )
                 created_subscriptions += 1
 
@@ -250,8 +248,7 @@ class Command(BaseCommand):
                 SubscriptionLog.objects.create(
                     subscription=subscription,
                     action='created',
-                    details=f'Seasonal subscription for {plan.name}',
-                    timestamp=subscription_start
+                    description=f'Seasonal subscription for {plan.name}'
                 )
                 created_logs += 1
 
