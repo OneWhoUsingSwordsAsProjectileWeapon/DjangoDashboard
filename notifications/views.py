@@ -57,6 +57,7 @@ def get_unread_count_json(request):
 @login_required
 def recent_notifications(request):
     """API to get recent notifications for dropdown"""
+    # Only show unread notifications in the dropdown
     notifications = request.user.notifications.filter(is_read=False).order_by('-created_at')[:5]
     return render(request, 'notifications/partials/recent_notifications.html', {
         'notifications': notifications

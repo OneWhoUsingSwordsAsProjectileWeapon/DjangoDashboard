@@ -919,6 +919,19 @@ class ListingUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         listing = self.get_object()
         return self.request.user == listing.host
 
+    def dispatch(self, request, *args, **kwargs):
+        # Check if user is banned
+        from moderation.models import BannedUser
+        try:
+            ban = BannedUser.objects.get(user=request.user)
+            if ban.is_active:
+                messages.error(request, 'Ваша учетная запись заблокирована. Вы не можете редактировать объявления.')
+                return redirect('listings:host_listings')
+        except BannedUser.DoesNotExist:
+            pass
+        
+        return super().dispatch(request, *args, **kwargs)
+
     def form_valid(self, form):
         # Reset approval status if significant fields changed
         significant_fields = ['price_per_night', 'title', 'description', 'address']
@@ -1145,10 +1158,56 @@ def host_bookings(request):
     if status and status in [choice[0] for choice in Booking.STATUS_CHOICES]:
         bookings = bookings.filter(status=status)
 
+    # Filter by specific listing if provided
+    listing_id = request.GET.get('listing')
+    if listing_id:
+        try:
+            bookings = bookings.filter(listing_id=int(listing_id))
+        except ValueError:
+            pass
+
+    # Apply sorting
+    sort_by = request.GET.get('sort', '-created_at')
+    valid_sort_fields = [
+        'created_at', '-created_at',
+        'start_date', '-start_date', 
+        'end_date', '-end_date',
+        'total_price', '-total_price',
+        'status', '-status',
+        'guests', '-guests',
+        'guest__username', '-guest__username',
+        'listing__title', '-listing__title'
+    ]
+    
+    if sort_by in valid_sort_fields:
+        bookings = bookings.order_by(sort_by)
+    else:
+        bookings = bookings.order_by('-created_at')
+
+    # Get host's listings for filter dropdown
+    host_listings = Listing.objects.filter(host=request.user).order_by('title')
+
     return render(request, 'listings/host_bookings.html', {
         'bookings': bookings,
         'status_choices': Booking.STATUS_CHOICES,
-        'current_status': status
+        'current_status': status,
+        'host_listings': host_listings,
+        'current_listing': listing_id,
+        'current_sort': sort_by,
+        'sort_options': [
+            ('-created_at', 'Дата создания (новые)'),
+            ('created_at', 'Дата создания (старые)'),
+            ('-start_date', 'Дата заезда (поздние)'),
+            ('start_date', 'Дата заезда (ранние)'),
+            ('-total_price', 'Цена (по убыванию)'),
+            ('total_price', 'Цена (по возрастанию)'),
+            ('status', 'Статус (А-Я)'),
+            ('-status', 'Статус (Я-А)'),
+            ('guest__username', 'Гость (А-Я)'),
+            ('-guest__username', 'Гость (Я-А)'),
+            ('listing__title', 'Объявление (А-Я)'),
+            ('-listing__title', 'Объявление (Я-А)'),
+        ]
     })
 
 @login_required
@@ -1469,6 +1528,30 @@ def toggle_listing_status(request, pk):
 
     try:
         listing = Listing.objects.get(pk=pk, host=request.user)
+
+        # Check if user is banned
+        from moderation.models import BannedUser
+        try:
+            ban = BannedUser.objects.get(user=request.user)
+            if ban.is_active:
+                return JsonResponse({
+                    'error': 'Ваша учетная запись заблокирована. Вы не можете активировать объявления.',
+                    'success': False
+                }, status=403)
+        except BannedUser.DoesNotExist:
+            pass
+
+        # Prevent activation if trying to activate
+        if not listing.is_active:  # User wants to activate
+            try:
+                ban = BannedUser.objects.get(user=request.user)
+                if ban.is_active:
+                    return JsonResponse({
+                        'error': 'Ваша учетная запись заблокирована. Вы не можете активировать объявления.',
+                        'success': False
+                    }, status=403)
+            except BannedUser.DoesNotExist:
+                pass
 
         # Toggle the status
         listing.is_active = not listing.is_active

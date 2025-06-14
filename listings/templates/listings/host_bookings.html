@@ -1,3 +1,7 @@
+The code implements filtering and sorting functionality for host bookings in a Django template.
+```
+
+```html
 {% extends 'base.html' %}
 {% load static %}
 
@@ -8,7 +12,7 @@
     <div class="row">
         <div class="col-12">
             <h2 class="mb-4">Запросы бронирования</h2>
-            
+
             <ul class="nav nav-tabs mb-4">
                 <li class="nav-item">
                     <a class="nav-link {% if not current_status %}active{% endif %}" href="{% url 'listings:host_bookings' %}">
@@ -36,18 +40,157 @@
                     </a>
                 </li>
             </ul>
-            
+
+            <div class="row mb-3">
+        <div class="col-md-6">
+            <h1>Мои бронирования</h1>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{% url 'listings:host_dashboard' %}" class="btn btn-outline-primary">
+                <i class="fas fa-chart-bar me-1"></i> Панель управления
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters and Sorting -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Статус:</label>
+                            <select name="status" id="status" class="form-select">
+                                <option value="">Все статусы</option>
+                                {% for status_value, status_display in status_choices %}
+                                    <option value="{{ status_value }}" {% if current_status == status_value %}selected{% endif %}>
+                                        {{ status_display }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="listing" class="form-label">Объявление:</label>
+                            <select name="listing" id="listing" class="form-select">
+                                <option value="">Все объявления</option>
+                                {% for listing in host_listings %}
+                                    <option value="{{ listing.id }}" {% if current_listing == listing.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ listing.title|truncatechars:30 }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="sort" class="form-label">Сортировка:</label>
+                            <select name="sort" id="sort" class="form-select">
+                                {% for sort_value, sort_display in sort_options %}
+                                    <option value="{{ sort_value }}" {% if current_sort == sort_value %}selected{% endif %}>
+                                        {{ sort_display }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">Применить</button>
+                                <a href="{% url 'listings:host_bookings' %}" class="btn btn-outline-secondary">Сбросить</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
             {% if bookings %}
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
-                        <thead class="table-light">
+                        <thead class="table-dark">
                             <tr>
-                                <th>Недвижимость</th>
-                                <th>Гость</th>
-                                <th>Даты</th>
-                                <th>Гости</th>
-                                <th>Статус</th>
-                                <th>Сумма</th>
+                                <th>
+                                    <a href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}{% if request.GET.listing %}listing={{ request.GET.listing }}&{% endif %}sort={% if current_sort == '-created_at' %}created_at{% else %}-created_at{% endif %}" class="text-white text-decoration-none">
+                                        Бронирование
+                                        {% if current_sort == '-created_at' %}
+                                            <i class="fas fa-sort-down"></i>
+                                        {% elif current_sort == 'created_at' %}
+                                            <i class="fas fa-sort-up"></i>
+                                        {% else %}
+                                            <i class="fas fa-sort text-muted"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}{% if request.GET.listing %}listing={{ request.GET.listing }}&{% endif %}sort={% if current_sort == '-listing__title' %}listing__title{% else %}-listing__title{% endif %}" class="text-white text-decoration-none">
+                                        Объявление
+                                        {% if current_sort == '-listing__title' %}
+                                            <i class="fas fa-sort-down"></i>
+                                        {% elif current_sort == 'listing__title' %}
+                                            <i class="fas fa-sort-up"></i>
+                                        {% else %}
+                                            <i class="fas fa-sort text-muted"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}{% if request.GET.listing %}listing={{ request.GET.listing }}&{% endif %}sort={% if current_sort == '-guest__username' %}guest__username{% else %}-guest__username{% endif %}" class="text-white text-decoration-none">
+                                        Гость
+                                        {% if current_sort == '-guest__username' %}
+                                            <i class="fas fa-sort-down"></i>
+                                        {% elif current_sort == 'guest__username' %}
+                                            <i class="fas fa-sort-up"></i>
+                                        {% else %}
+                                            <i class="fas fa-sort text-muted"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}{% if request.GET.listing %}listing={{ request.GET.listing }}&{% endif %}sort={% if current_sort == '-start_date' %}start_date{% else %}-start_date{% endif %}" class="text-white text-decoration-none">
+                                        Даты
+                                        {% if current_sort == '-start_date' %}
+                                            <i class="fas fa-sort-down"></i>
+                                        {% elif current_sort == 'start_date' %}
+                                            <i class="fas fa-sort-up"></i>
+                                        {% else %}
+                                            <i class="fas fa-sort text-muted"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}{% if request.GET.listing %}listing={{ request.GET.listing }}&{% endif %}sort={% if current_sort == '-guests' %}guests{% else %}-guests{% endif %}" class="text-white text-decoration-none">
+                                        Гости
+                                        {% if current_sort == '-guests' %}
+                                            <i class="fas fa-sort-down"></i>
+                                        {% elif current_sort == 'guests' %}
+                                            <i class="fas fa-sort-up"></i>
+                                        {% else %}
+                                            <i class="fas fa-sort text-muted"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}{% if request.GET.listing %}listing={{ request.GET.listing }}&{% endif %}sort={% if current_sort == '-status' %}status{% else %}-status{% endif %}" class="text-white text-decoration-none">
+                                        Статус
+                                        {% if current_sort == '-status' %}
+                                            <i class="fas fa-sort-down"></i>
+                                        {% elif current_sort == 'status' %}
+                                            <i class="fas fa-sort-up"></i>
+                                        {% else %}
+                                            <i class="fas fa-sort text-muted"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="?{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}{% if request.GET.listing %}listing={{ request.GET.listing }}&{% endif %}sort={% if current_sort == '-total_price' %}total_price{% else %}-total_price{% endif %}" class="text-white text-decoration-none">
+                                        Сумма
+                                        {% if current_sort == '-total_price' %}
+                                            <i class="fas fa-sort-down"></i>
+                                        {% elif current_sort == 'total_price' %}
+                                            <i class="fas fa-sort-up"></i>
+                                        {% else %}
+                                            <i class="fas fa-sort text-muted"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
                                 <th>Действия</th>
                             </tr>
                         </thead>
@@ -141,3 +284,4 @@
     </div>
 </div>
 {% endblock %}
+</replit_final_file>

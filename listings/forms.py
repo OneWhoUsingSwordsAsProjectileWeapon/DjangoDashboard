@@ -62,23 +62,29 @@ class ListingForm(forms.ModelForm):
     def clean_verification_video(self):
         """Validate verification video file"""
         video = self.cleaned_data.get('verification_video')
-        if video:
-            # Check file size (250MB max)
-            max_size = 250 * 1024 * 1024  # 250MB in bytes
-            if video.size > max_size:
-                raise forms.ValidationError(
-                    _("Video file size cannot exceed 250MB. Current size: %(size).1fMB"),
-                    params={'size': video.size / (1024 * 1024)}
-                )
+        
+        # Make video mandatory
+        if not video:
+            raise forms.ValidationError(
+                _("Видео подтверждения является обязательным для отправки объявления на модерацию.")
+            )
+        
+        # Check file size (250MB max)
+        max_size = 250 * 1024 * 1024  # 250MB in bytes
+        if video.size > max_size:
+            raise forms.ValidationError(
+                _("Video file size cannot exceed 250MB. Current size: %(size).1fMB"),
+                params={'size': video.size / (1024 * 1024)}
+            )
 
-            # Check file extension
-            allowed_extensions = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv']
-            file_extension = video.name.lower().split('.')[-1]
-            if f'.{file_extension}' not in allowed_extensions:
-                raise forms.ValidationError(
-                    _("Invalid video format. Allowed formats: %(formats)s"),
-                    params={'formats': ', '.join(allowed_extensions)}
-                )
+        # Check file extension
+        allowed_extensions = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv']
+        file_extension = video.name.lower().split('.')[-1]
+        if f'.{file_extension}' not in allowed_extensions:
+            raise forms.ValidationError(
+                _("Invalid video format. Allowed formats: %(formats)s"),
+                params={'formats': ', '.join(allowed_extensions)}
+            )
 
         return video
 
