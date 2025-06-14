@@ -200,7 +200,7 @@ class SubscriptionService:
                 host=user,
                 is_active=True
             ).count()
-            
+
             usage, created = SubscriptionUsage.objects.get_or_create(
                 subscription=current_subscription
             )
@@ -222,7 +222,7 @@ class SubscriptionService:
                     host=user,
                     is_active=True
                 ).count()
-                
+
                 usage = current_subscription.usage
                 # Sync with actual count
                 usage.ads_count = actual_count
@@ -244,9 +244,9 @@ class SubscriptionService:
             if isinstance(end_date, str):
                 end_date = datetime.fromisoformat(end_date).date()
         else:
-            # Default to last 365 days for better analytics
+            # Default to last 2+ years for comprehensive analytics
             end_date = timezone.now().date()
-            start_date = end_date - timedelta(days=365)
+            start_date = date(2023, 1, 1)
 
         # Base queryset
         subscriptions = UserSubscription.objects.filter(
