@@ -505,7 +505,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         # Start from current quarter and go back 8 quarters
         today = timezone.now().date()
         current_quarter_start = date(today.year, ((today.month - 1) // 3) * 3 + 1, 1)
-        
+
         for i in range(7, -1, -1):  # Last 8 quarters
             quarter_start = current_quarter_start - relativedelta(months=i*3)
             quarter_end = quarter_start + relativedelta(months=3)
@@ -536,7 +536,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
 
         # Get data for last 2 years to have meaningful seasonal analysis
         two_years_ago = timezone.now().date() - timedelta(days=730)
-        
+
         for month in range(1, 13):
             month_bookings = all_bookings.filter(
                 status='completed',
@@ -647,14 +647,14 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         custom_detail_end = self.request.GET.get('custom_detail_end')
 
         listing_detail_stats = None
-        
+
         if selected_listing_id and selected_listing_id.isdigit():
             try:
                 selected_listing = host_listings.get(id=selected_listing_id)
-                
+
                 # Calculate date range for detailed stats
                 current_date = timezone.now().date()
-                
+
                 if custom_detail_start and custom_detail_end:
                     try:
                         detail_start_date = datetime.strptime(custom_detail_start, '%Y-%m-%d').date()
@@ -687,7 +687,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
 
                 # Always calculate stats even if period seems short
                 total_possible_days = max(1, (actual_end_date - actual_start_date).days)
-                
+
                 # Get bookings for this listing in the period
                 period_bookings = selected_listing.bookings.filter(
                     status__in=['completed', 'confirmed'],
@@ -701,7 +701,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                     # Calculate overlap between booking and our period
                     booking_start = max(booking.start_date, actual_start_date)
                     booking_end = min(booking.end_date, actual_end_date)
-                    
+
                     if booking_end >= booking_start:
                         nights = (booking_end - booking_start).days
                         occupied_days += max(0, nights)
@@ -717,14 +717,14 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                 # Get booking stats
                 period_booking_count = period_bookings.count()
                 completed_bookings = period_bookings.filter(status='completed').count()
-                
+
                 # Calculate average booking value
                 avg_booking_value = (period_revenue / completed_bookings) if completed_bookings > 0 else 0
 
                 # Get monthly breakdown
                 monthly_breakdown = []
                 current_month = actual_start_date.replace(day=1)
-                
+
                 month_names_ru = {
                     1: 'Янв', 2: 'Фев', 3: 'Мар', 4: 'Апр', 5: 'Май', 6: 'Июн',
                     7: 'Июл', 8: 'Авг', 9: 'Сен', 10: 'Окт', 11: 'Ноя', 12: 'Дек'
@@ -736,7 +736,752 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                         month_end = current_month.replace(year=current_month.year + 1, month=1)
                     else:
                         month_end = current_month.replace(month=current_month.month + 1)
-                    
+
+                    month_end = min(month_end, actual_end_date + timedelta(days=1))
+                    month_actual_end = min(month_end - timedelta(days=1), actual_end_date)
+
+                    # Days in month within our period<previous_generation>```python
+# Fix indentation error on line 824
+<replit_final_file>
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse, reverse_lazy
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db.models import Q, Avg, Count, Sum, F, Case, When, IntegerField, DecimalField
+from django.db.models.functions import TruncMonth, TruncWeek, TruncDay
+from django.db import models
+from django.http import JsonResponse, Http404, HttpResponse
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from datetime import datetime, timedelta, date
+from django.utils import timezone
+import json
+import calendar
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill
+from openpyxl.utils import get_column_letter
+
+from .models import Listing, Booking, Review, ListingImage
+from .forms import ListingForm, BookingForm, ReviewForm, ListingSearchForm, ListingImageForm
+from notifications.tasks import send_email_notification
+from subscriptions.services import SubscriptionService
+
+class ListingListView(ListView):
+    """View for displaying list of listings with search and filtering"""
+    model = Listing
+    template_name = 'listings/listing_list.html'
+    context_object_name = 'listings'
+    paginate_by = 12
+
+    def get_queryset(self):
+        queryset = Listing.objects.filter(
+            is_active=True, 
+            is_approved=True
+        ).filter(
+            Q(approval_record__status='approved') | Q(approval_record__isnull=True)
+        )
+
+        # Apply search and filters if form is submitted
+        form = ListingSearchForm(self.request.GET)
+        if form.is_valid():
+            # Location search
+            location = form.cleaned_data.get('location')
+            if location:
+                queryset = queryset.filter(
+                    Q(city__icontains=location) | 
+                    Q(state__icontains=location) |
+                    Q(country__icontains=location)
+                )
+
+            # Date availability
+            check_in = form.cleaned_data.get('check_in')
+            check_out = form.cleaned_data.get('check_out')
+            if check_in and check_out:
+                # Get all bookings that overlap with requested dates
+                overlapping_bookings = Booking.objects.filter(
+                    Q(start_date__lte=check_out, end_date__gte=check_in),
+                    status__in=['confirmed', 'pending']
+                ).values_list('listing_id', flat=True)
+
+                # Exclude listings with overlapping bookings
+                queryset = queryset.exclude(id__in=overlapping_bookings)
+
+            # Guest capacity
+            guests = form.cleaned_data.get('guests')
+            if guests:
+                queryset = queryset.filter(accommodates__gte=guests)
+
+            # Price range
+            min_price = form.cleaned_data.get('min_price')
+            if min_price:
+                queryset = queryset.filter(price_per_night__gte=min_price)
+
+            max_price = form.cleaned_data.get('max_price')
+            if max_price:
+                queryset = queryset.filter(price_per_night__lte=max_price)
+
+            # Property type
+            property_type = form.cleaned_data.get('property_type')
+            if property_type:
+                queryset = queryset.filter(property_type=property_type)
+
+            # Bedrooms
+            bedrooms = form.cleaned_data.get('bedrooms')
+            if bedrooms:
+                queryset = queryset.filter(bedrooms__gte=bedrooms)
+
+            # Bathrooms
+            bathrooms = form.cleaned_data.get('bathrooms')
+            if bathrooms:
+                queryset = queryset.filter(bathrooms__gte=bathrooms)
+
+        # Annotate with average rating
+        queryset = queryset.annotate(
+            avg_rating=Avg('reviews__rating'),
+            review_count=Count('reviews')
+        )
+
+        # Handle sorting
+        sort_by = self.request.GET.get('sort')
+        if sort_by == 'price_asc':
+            queryset = queryset.order_by('price_per_night')
+        elif sort_by == 'price_desc':
+            queryset = queryset.order_by('-price_per_night')
+        elif sort_by == 'rating':
+            queryset = queryset.order_by('-avg_rating', '-review_count')
+        elif sort_by == 'newest':
+            queryset = queryset.order_by('-created_at')
+        else:
+            # Default sorting by creation date
+            queryset = queryset.order_by('-created_at')
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add search form to context
+        context['form'] = ListingSearchForm(self.request.GET)
+
+        # Add popular destinations based on bookings in last month
+        context['popular_destinations'] = self.get_popular_destinations()
+        return context
+
+    def get_popular_destinations(self):
+        """Get popular destinations based on booking count in last month"""
+        from datetime import timedelta
+        from django.utils import timezone
+        from django.db.models import Count, Q
+
+        # Get bookings from last month
+        last_month = timezone.now() - timedelta(days=30)
+
+        # Get cities with most bookings in last month
+        popular_cities = Booking.objects.filter(
+            created_at__gte=last_month,
+            status__in=['confirmed', 'completed']
+        ).values(
+            'listing__city', 'listing__state', 'listing__country'
+        ).annotate(
+            booking_count=Count('id'),
+            city_name=F('listing__city'),
+            state_name=F('listing__state'),
+            country_name=F('listing__country')
+        ).filter(
+            booking_count__gt=0
+        ).order_by('-booking_count')[:8]
+
+        # Add sample image for each destination
+        destinations_with_images = []
+        default_images = [
+            "https://images.unsplash.com/photo-1571896349842-33c89424de2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", 
+            "https://images.unsplash.com/photo-1549144511-f099e773c147?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1520637836862-4d197d17c90a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1519302959554-a75be0afc82a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "https://images.unsplash.com/photo-1542640244-b5d31b9c4d06?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+        ]
+
+        for idx, city_data in enumerate(popular_cities):
+            destinations_with_images.append({
+                'city': city_data['city_name'],
+                'state': city_data['state_name'], 
+                'country': city_data['country_name'],
+                'booking_count': city_data['booking_count'],
+                'image': default_images[idx % len(default_images)]
+            })
+
+        # If no bookings, return default popular destinations
+        if not destinations_with_images:
+            destinations_with_images = [
+                {
+                    'city': 'Чита',
+                    'state': 'Забайкальский край',
+                    'country': 'Россия',
+                    'booking_count': 0,
+                    'image': default_images[0]
+                },
+                {
+                    'city': 'Сочи', 
+                    'state': 'Краснодарский край',
+                    'country': 'Россия',
+                    'booking_count': 0,
+                    'image': default_images[1]
+                },
+                {
+                    'city': 'Казань',
+                    'state': 'Татарстан',
+                    'country': 'Россия', 
+                    'booking_count': 0,
+                    'image': default_images[2]
+                },
+                {
+                    'city': 'Екатеринбург',
+                    'state': 'Свердловская область',
+                    'country': 'Россия',
+                    'booking_count': 0,
+                    'image': default_images[3]
+                }
+            ]
+
+        return destinations_with_images
+
+class ListingDetailView(DetailView):
+    """View for displaying listing details"""
+    model = Listing
+    template_name = 'listings/listing_detail.html'
+    context_object_name = 'listing'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        listing = self.get_object()
+
+        # Add booking form
+        context['booking_form'] = BookingForm(listing=listing)
+
+        # Get reviews
+        reviews = listing.reviews.filter(is_approved=True).select_related('reviewer')
+        context['reviews'] = reviews
+
+        # Check if user can leave a review
+        user = self.request.user
+        user_has_reviewed = False
+        can_review = False
+
+        if user.is_authenticated and user != listing.host:
+            # Check if user has already reviewed this listing
+            existing_review = Review.objects.filter(
+                reviewer=user, 
+                listing=listing
+            ).first()
+
+            user_has_reviewed = existing_review is not None
+            context['user_has_reviewed'] = user_has_reviewed
+
+            if not existing_review:
+                context['review_form'] = ReviewForm()
+                context['can_review'] = True
+                # Find any completed booking for this user and listing
+                completed_booking = Booking.objects.filter(
+                    guest=user,
+                    listing=listing,
+                    status='completed'
+                ).first()
+                context['booking_for_review'] = completed_booking
+
+        # Unavailable dates for calendar
+        unavailable_dates = listing.get_unavailable_dates()
+        context['unavailable_dates_json'] = json.dumps(unavailable_dates)
+        context['unavailable_dates'] = unavailable_dates
+
+        # Get similar listings
+        similar_listings = self.get_similar_listings(listing)
+        context['similar_listings'] = similar_listings
+
+        return context
+
+    def get_similar_listings(self, listing):
+        """Get similar listings based on location, accommodates, and price range"""
+        from django.db.models import Q, Case, When, IntegerField
+        from decimal import Decimal
+
+        # Calculate price range (±40% from current listing price) 
+        price_min = listing.price_per_night * Decimal('0.6')
+        price_max = listing.price_per_night * Decimal('1.4')
+
+        # Get similar listings with scoring system
+        similar = Listing.objects.filter(
+            is_active=True,
+            is_approved=True,
+            approval_record__status='approved'
+        ).exclude(
+            id=listing.id  # Exclude current listing
+        ).annotate(
+            # Score based on similarity criteria
+            similarity_score=Case(
+                # Same city gets highest priority (score 100)
+                When(city__iexact=listing.city, then=100),
+                # Same state gets medium priority (score 50)
+                When(state__iexact=listing.state, then=50),
+                # Same country gets low priority (score 25)
+                When(country__iexact=listing.country, then=25),
+                default=0,
+                output_field=IntegerField()
+            ) + Case(
+                # Same accommodates capacity (score 30)
+                When(accommodates=listing.accommodates, then=30),
+                # Similar capacity ±2 guests (score 15)
+                When(
+                    accommodates__gte=listing.accommodates - 2,
+                    accommodates__lte=listing.accommodates + 2,
+                    then=15
+                ),
+                default=0,
+                output_field=IntegerField()
+            ) + Case(
+                # Similar price range (score 20)
+                When(
+                    price_per_night__gte=price_min,
+                    price_per_night__lte=price_max,
+                    then=20
+                ),
+                default=0,
+                output_field=IntegerField()
+            ),
+            avg_rating=Avg('reviews__rating'),
+            review_count=Count('reviews')
+        ).filter(
+            # At least some similarity (same city, state, or country + similar accommodates/price)
+            Q(city__iexact=listing.city) |
+            Q(state__iexact=listing.state) |
+            (Q(country__iexact=listing.country) & (
+                Q(accommodates__gte=listing.accommodates - 2, accommodates__lte=listing.accommodates + 2) |
+                Q(price_per_night__gte=price_min, price_per_night__lte=price_max)
+            ))
+        ).order_by(
+            '-similarity_score',  # Best match first
+            '-avg_rating',        # Then by rating
+            'price_per_night'     # Then by price
+        )[:8]  # Limit to 8 similar listings
+
+        return similar
+
+class HostDashboardView(LoginRequiredMixin, TemplateView):
+    """Comprehensive host dashboard view"""
+    template_name = 'listings/host_dashboard.html'
+
+    def get(self, request, *args, **kwargs):
+        # Check if user is a host
+        if not request.user.is_host:
+            messages.error(request, "You are not registered as a host.")
+            return redirect('listings:listing_create')
+
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+
+        # Get filter parameters
+        time_filter = self.request.GET.get('time_filter', '30')  # days
+        listing_filter = self.request.GET.get('listing_filter', 'all')
+        status_filter = self.request.GET.get('status_filter', 'all')
+
+        # Custom date range
+        custom_start = self.request.GET.get('custom_start')
+        custom_end = self.request.GET.get('custom_end')
+
+        # Calculate date range
+        end_date = timezone.now().date()
+
+        if custom_start and custom_end:
+            try:
+                start_date = datetime.strptime(custom_start, '%Y-%m-%d').date()
+                end_date = datetime.strptime(custom_end, '%Y-%m-%d').date()
+                time_filter = 'custom'
+            except ValueError:
+                start_date = end_date - timedelta(days=30)
+        elif time_filter == '7':
+            start_date = end_date - timedelta(days=7)
+        elif time_filter == '30':
+            start_date = end_date - timedelta(days=30)
+        elif time_filter == '90':
+            start_date = end_date - timedelta(days=90)
+        elif time_filter == '365':
+            start_date = end_date - timedelta(days=365)
+        else:
+            start_date = end_date - timedelta(days=30)
+
+        # Get host's listings
+        host_listings = Listing.objects.filter(host=user)
+
+        # Apply listing filter
+        if listing_filter != 'all' and listing_filter.isdigit():
+            filtered_listings = host_listings.filter(id=listing_filter)
+        else:
+            filtered_listings = host_listings
+
+        # Get host's bookings with filters
+        host_bookings = Booking.objects.filter(
+            listing__host=user,
+            created_at__date__gte=start_date,
+            created_at__date__lte=end_date
+        )
+
+        # Apply listing filter to bookings
+        if listing_filter != 'all' and listing_filter.isdigit():
+            host_bookings = host_bookings.filter(listing_id=listing_filter)
+
+        # Apply status filter
+        if status_filter != 'all':
+            host_bookings = host_bookings.filter(status=status_filter)
+
+        # Calculate comprehensive statistics
+        all_bookings = Booking.objects.filter(listing__host=user)
+
+        stats = {
+            'total_listings': host_listings.count(),
+            'active_listings': host_listings.filter(is_active=True).count(),
+            'pending_listings': host_listings.filter(is_approved=False).count(),
+            'total_bookings': all_bookings.count(),
+            'pending_bookings': all_bookings.filter(status='pending').count(),
+            'confirmed_bookings': all_bookings.filter(status='confirmed').count(),
+            'completed_bookings': all_bookings.filter(status='completed').count(),
+            'canceled_bookings': all_bookings.filter(status='canceled').count(),
+            'total_revenue': all_bookings.filter(status='completed').aggregate(
+                total=Sum('total_price')
+            )['total'] or 0,
+            'filtered_revenue': host_bookings.filter(status='completed').aggregate(
+                total=Sum('total_price')
+            )['total'] or 0,
+            'average_booking_value': all_bookings.filter(status='completed').aggregate(
+                avg=Avg('total_price')
+            )['avg'] or 0,
+            'total_guests': all_bookings.filter(status__in=['completed', 'confirmed']).aggregate(
+                total=Sum('guests')
+            )['total'] or 0,
+        }
+
+        # Calculate occupancy rate properly
+        total_possible_nights = 0
+        total_booked_nights = 0
+
+        active_listings = host_listings.filter(is_active=True, is_approved=True)
+
+        for listing in active_listings:
+            # Calculate available days since listing creation or start_date, whichever is later
+            listing_created = listing.created_at.date() if listing.created_at else start_date
+            listing_start = max(listing_created, start_date)
+            listing_end = min(timezone.now().date(), end_date)
+
+            # Only calculate if we have a valid period
+            if listing_end > listing_start:
+                days_available = (listing_end - listing_start).days
+                if days_available > 0:
+                    total_possible_nights += days_available
+
+                    # Get bookings for this listing in the time period
+                    listing_bookings = listing.bookings.filter(
+                        status__in=['completed', 'confirmed'],
+                        start_date__lt=listing_end,
+                        end_date__gt=listing_start
+                    )
+
+                    for booking in listing_bookings:
+                        # Calculate overlap between booking and our period
+                        booking_start = max(booking.start_date, listing_start)
+                        booking_end = min(booking.end_date, listing_end)
+
+                        # Only count if there's actual overlap
+                        if booking_end > booking_start:
+                            nights = (booking_end - booking_start).days
+                            if nights > 0:
+                                total_booked_nights += nights
+
+        # Calculate occupancy rate as percentage
+        if total_possible_nights > 0:
+            occupancy_percentage = (total_booked_nights / total_possible_nights) * 100
+            stats['occupancy_rate'] = round(occupancy_percentage, 1)
+        else:
+            stats['occupancy_rate'] = 0
+
+        stats['total_booked_nights'] = total_booked_nights
+        stats['total_possible_nights'] = total_possible_nights
+
+        # Revenue by month (last 12 months)
+        from dateutil.relativedelta import relativedelta
+        import calendar
+
+        # Generate last 12 months data
+        monthly_revenue = []
+        current_date = timezone.now().date()
+
+        month_names_ru = {
+            1: 'Янв', 2: 'Фев', 3: 'Мар', 4: 'Апр', 5: 'Май', 6: 'Июн',
+            7: 'Июл', 8: 'Авг', 9: 'Сен', 10: 'Окт', 11: 'Ноя', 12: 'Дек'
+        }
+
+        for i in range(11, -1, -1):  # Go from 11 months ago to current month
+            target_date = current_date.replace(day=1) - relativedelta(months=i)
+            month_end = target_date + relativedelta(months=1)
+
+            # Use end_date for completed bookings (when they actually finished)
+            month_revenue = all_bookings.filter(
+                status='completed',
+                end_date__gte=target_date,
+                end_date__lt=month_end
+            ).aggregate(
+                total_revenue=Sum('total_price'),
+                total_bookings=Count('id')
+            )
+
+            month_name = f"{month_names_ru[target_date.month]} {target_date.year}"
+
+            monthly_revenue.append({
+                'month': target_date.strftime('%Y-%m-01'),
+                'month_name': month_name,
+                'revenue': float(month_revenue['total_revenue'] or 0),
+                'bookings': month_revenue['total_bookings'] or 0
+            })
+
+        # Quarterly revenue (last 8 quarters)
+        quarterly_revenue = []
+        # Start from current quarter and go back 8 quarters
+        today = timezone.now().date()
+        current_quarter_start = date(today.year, ((today.month - 1) // 3) * 3 + 1, 1)
+
+        for i in range(7, -1, -1):  # Last 8 quarters
+            quarter_start = current_quarter_start - relativedelta(months=i*3)
+            quarter_end = quarter_start + relativedelta(months=3)
+
+            quarter_revenue = all_bookings.filter(
+                status='completed',
+                end_date__gte=quarter_start,
+                end_date__lt=quarter_end
+            ).aggregate(
+                total_revenue=Sum('total_price'),
+                total_bookings=Count('id')
+            )
+
+            quarter_num = ((quarter_start.month - 1) // 3) + 1
+            quarterly_revenue.append({
+                'quarter': f"{quarter_start.year}-Q{quarter_num}",
+                'quarter_name': f"Q{quarter_num} {quarter_start.year}",
+                'revenue': float(quarter_revenue['total_revenue'] or 0),
+                'bookings': quarter_revenue['total_bookings'] or 0
+            })
+
+        # Seasonal revenue analysis (by month across all years)
+        seasonal_data = {}
+        month_names_ru = [
+            '', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+            'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+        ]
+
+        # Get data for last 2 years to have meaningful seasonal analysis
+        two_years_ago = timezone.now().date() - timedelta(days=730)
+
+        for month in range(1, 13):
+            month_bookings = all_bookings.filter(
+                status='completed',
+                end_date__month=month,
+                end_date__gte=two_years_ago  # Only last 2 years for better seasonal patterns
+            ).aggregate(
+                total_revenue=Sum('total_price'),
+                total_bookings=Count('id'),
+                avg_revenue=Avg('total_price')
+            )
+
+            seasonal_data[month] = {
+                'month': month,
+                'month_name': month_names_ru[month],
+                'total_revenue': float(month_bookings['total_revenue'] or 0),
+                'bookings': month_bookings['total_bookings'] or 0,
+                'avg_revenue': float(month_bookings['avg_revenue'] or 0)
+            }
+
+        seasonal_revenue = list(seasonal_data.values())
+
+        # Bookings by status
+        status_stats_qs = all_bookings.values('status').annotate(
+            count=Count('id'),
+            revenue=Sum(Case(
+                When(status='completed', then='total_price'),
+                default=0,
+                output_field=DecimalField()
+            ))
+        )
+
+        # Convert to list with proper formatting
+        status_stats = []
+        for item in status_stats_qs:
+            if item['count'] > 0:  # Only include statuses that have bookings
+                status_stats.append({
+                    'status': item['status'],
+                    'count': item['count'],
+                    'revenue': float(item['revenue'] or 0)
+                })
+
+        # Top performing listings with proper annotations
+        top_listings = host_listings.annotate(
+            avg_rating=Avg('reviews__rating'),
+            review_count=Count('reviews', distinct=True),
+            bookings_count=Count('bookings', distinct=True),
+            total_revenue=Sum(
+                Case(
+                    When(bookings__status='completed', then='bookings__total_price'),
+                    default=0,
+                    output_field=DecimalField()
+                )
+            )
+        ).prefetch_related('bookings').order_by('-total_revenue')
+
+        # Calculate occupancy days separately to avoid aggregation issues
+        for listing in top_listings:
+            total_nights = 0
+            for booking in listing.bookings.filter(status__in=['completed', 'confirmed']):
+                nights = (booking.end_date - booking.start_date).days
+                total_nights += nights
+            listing.occupancy_days = total_nights
+
+        # Recent activity (last 10)
+        recent_bookings = all_bookings.select_related(
+            'listing', 'guest'
+        ).order_by('-created_at')[:10]
+
+        # Guest demographics
+        guest_stats = all_bookings.filter(
+            status__in=['completed', 'confirmed']
+        ).aggregate(
+            avg_guests_per_booking=Avg('guests'),
+            max_guests=models.Max('guests'),
+            min_guests=models.Min('guests')
+        )
+
+        # Booking trends (last 30 days)
+        daily_bookings = all_bookings.filter(
+            created_at__gte=timezone.now() - timedelta(days=30)
+        ).annotate(
+            day=TruncDay('created_at')
+        ).values('day').annotate(
+            count=Count('id')
+        ).order_by('day')
+
+        # Average response time to bookings
+        pending_time = all_bookings.filter(
+            status__in=['confirmed', 'canceled']
+        ).annotate(
+            response_time=F('updated_at') - F('created_at')
+        ).aggregate(
+            avg_response=Avg('response_time')
+        )
+
+        # Analytics data for charts
+        today = timezone.now().date()
+        last_30_days = today - timedelta(days=30)
+        last_12_months = today - timedelta(days=365)
+
+        # Get user's listings for filtering
+        user_listings = self.request.user.listings.all()
+
+        # Detailed listing statistics
+        selected_listing_id = self.request.GET.get('detail_listing_id')
+        selected_year = self.request.GET.get('detail_year')
+        custom_detail_start = self.request.GET.get('custom_detail_start')
+        custom_detail_end = self.request.GET.get('custom_detail_end')
+
+        listing_detail_stats = None
+
+        if selected_listing_id and selected_listing_id.isdigit():
+            try:
+                selected_listing = host_listings.get(id=selected_listing_id)
+
+                # Calculate date range for detailed stats
+                current_date = timezone.now().date()
+
+                if custom_detail_start and custom_detail_end:
+                    try:
+                        detail_start_date = datetime.strptime(custom_detail_start, '%Y-%m-%d').date()
+                        detail_end_date = datetime.strptime(custom_detail_end, '%Y-%m-%d').date()
+                    except ValueError:
+                        # Fallback to last year if dates are invalid
+                        detail_start_date = current_date.replace(year=current_date.year - 1, month=1, day=1)
+                        detail_end_date = current_date
+                elif selected_year and selected_year.isdigit():
+                    try:
+                        year = int(selected_year)
+                        detail_start_date = date(year, 1, 1)
+                        detail_end_date = date(year, 12, 31)
+                        # Don't go beyond current date
+                        if detail_end_date > current_date:
+                            detail_end_date = current_date
+                    except ValueError:
+                        # Fallback to last year
+                        detail_start_date = current_date.replace(year=current_date.year - 1, month=1, day=1)
+                        detail_end_date = current_date
+                else:
+                    # Default: last 12 months from current date
+                    detail_start_date = current_date.replace(year=current_date.year - 1, month=current_date.month, day=1)
+                    detail_end_date = current_date
+
+                # Get listing creation date - use listing start if it's later
+                listing_created = selected_listing.created_at.date() if selected_listing.created_at else detail_start_date
+                actual_start_date = max(detail_start_date, listing_created)
+                actual_end_date = min(detail_end_date, current_date)
+
+                # Always calculate stats even if period seems short
+                total_possible_days = max(1, (actual_end_date - actual_start_date).days)
+
+                # Get bookings for this listing in the period
+                period_bookings = selected_listing.bookings.filter(
+                    status__in=['completed', 'confirmed'],
+                    start_date__lt=actual_end_date + timedelta(days=1),
+                    end_date__gt=actual_start_date
+                )
+
+                # Calculate occupied days
+                occupied_days = 0
+                for booking in period_bookings:
+                    # Calculate overlap between booking and our period
+                    booking_start = max(booking.start_date, actual_start_date)
+                    booking_end = min(booking.end_date, actual_end_date)
+
+                    if booking_end >= booking_start:
+                        nights = (booking_end - booking_start).days
+                        occupied_days += max(0, nights)
+
+                # Calculate occupancy rate
+                occupancy_rate = (occupied_days / total_possible_days * 100) if total_possible_days > 0 else 0
+
+                # Get revenue for the period
+                period_revenue = period_bookings.filter(status='completed').aggregate(
+                    total_revenue=Sum('total_price')
+                )['total_revenue'] or 0
+
+                # Get booking stats
+                period_booking_count = period_bookings.count()
+                completed_bookings = period_bookings.filter(status='completed').count()
+
+                # Calculate average booking value
+                avg_booking_value = (period_revenue / completed_bookings) if completed_bookings > 0 else 0
+
+                # Get monthly breakdown
+                monthly_breakdown = []
+                current_month = actual_start_date.replace(day=1)
+
+                month_names_ru = {
+                    1: 'Янв', 2: 'Фев', 3: 'Мар', 4: 'Апр', 5: 'Май', 6: 'Июн',
+                    7: 'Июл', 8: 'Авг', 9: 'Сен', 10: 'Окт', 11: 'Ноя', 12: 'Дек'
+                }
+
+                while current_month <= actual_end_date:
+                    # Calculate month end
+                    if current_month.month == 12:
+                        month_end = current_month.replace(year=current_month.year + 1, month=1)
+                    else:
+                        month_end = current_month.replace(month=current_month.month + 1)
+
                     month_end = min(month_end, actual_end_date + timedelta(days=1))
                     month_actual_end = min(month_end - timedelta(days=1), actual_end_date)
 
@@ -755,7 +1500,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                     for booking in month_bookings:
                         booking_start = max(booking.start_date, max(current_month, actual_start_date))
                         booking_end = min(booking.end_date, month_actual_end)
-                        
+
                         if booking_end >= booking_start:
                             nights = (booking_end - booking_start).days + 1
                             month_occupied += min(nights, month_days)
@@ -784,30 +1529,6 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                         current_month = current_month.replace(month=current_month.month + 1)
 
                 listing_detail_stats = {
-                    'listing': selected_listing,
-                    'period_start': actual_start_date,
-                    'period_end': actual_end_date,
-                    'total_possible_days': total_possible_days,
-                    'occupied_days': occupied_days,
-                    'occupancy_rate': round(occupancy_rate, 1),
-                    'total_revenue': float(period_revenue),
-                    'total_bookings': period_booking_count,
-                    'completed_bookings': completed_bookings,
-                    'avg_booking_value': round(float(avg_booking_value), 2),
-                    'monthly_breakdown': monthly_breakdown
-                }
-
-            except Listing.DoesNotExist:
-                listing_detail_stats = {
-                    'error': 'Выбранное объявление не найдено'
-                }
-        elif selected_listing_id:
-            # Show error only if listing_id was provided but invalid
-            listing_detail_stats = {
-                'error': 'Неверный ID объявления'
-            }
-
-        listing_detail_stats = {
                     'listing': selected_listing,
                     'period_start': actual_start_date,
                     'period_end': actual_end_date,
