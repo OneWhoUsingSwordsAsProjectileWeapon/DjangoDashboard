@@ -8,6 +8,7 @@
 .notification-card {
     transition: all 0.3s ease;
     border-left: 4px solid transparent;
+    cursor: pointer;
 }
 
 .notification-card:hover {
@@ -209,35 +210,54 @@
         });
     }
 
-    // Mark individual notifications as read when clicked
+    // Mark individual notifications as read when clicked and redirect
     document.addEventListener('click', function(e) {
         const notificationCard = e.target.closest('.notification-card');
-        if (notificationCard && notificationCard.classList.contains('border-primary')) {
+        const actionButton = e.target.closest('.btn-outline-primary');
+        
+        // If clicked on action button, don't handle the card click
+        if (actionButton) {
+            return;
+        }
+        
+        if (notificationCard) {
             const notificationId = notificationCard.dataset.notificationId;
+            
+            // Mark as read if unread
+            if (notificationCard.classList.contains('border-primary')) {
+                fetch(`/notifications/${notificationId}/mark-read/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken(),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        notificationCard.classList.remove('border-primary');
+                        const badge = notificationCard.querySelector('.badge');
+                        if (badge) badge.remove();
+                        const title = notificationCard.querySelector('.card-title');
+                        if (title) title.classList.remove('fw-bold');
 
-            fetch(`/notifications/${notificationId}/mark-read/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCSRFToken(),
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    notificationCard.classList.remove('border-primary');
-                    const badge = notificationCard.querySelector('.badge');
-                    if (badge) badge.remove();
-                    const title = notificationCard.querySelector('.card-title');
-                    if (title) title.classList.remove('fw-bold');
-
-                    // Update the navbar badge
-                    updateNotificationBadge();
-                }
-            })
-            .catch(error => {
-                console.error('Error marking notification as read:', error);
-            });
+                        // Update the navbar badge
+                        updateNotificationBadge();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error marking notification as read:', error);
+                });
+            }
+            
+            // Find and click the action button to redirect
+            const actionLink = notificationCard.querySelector('.btn-outline-primary');
+            if (actionLink) {
+                // Small delay to ensure mark as read completes
+                setTimeout(() => {
+                    window.location.href = actionLink.href;
+                }, 100);
+            }
         }
     });
 </script>

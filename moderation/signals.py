@@ -67,9 +67,21 @@ def create_listing_approval(sender, instance, created, **kwargs):
     if created:
         approval, was_created = ListingApproval.objects.get_or_create(listing=instance)
         if not was_created:
-            # Запись уже существует, можно логировать или отправить уведомление
+            # Запись уже существует - показываем всплывающее сообщение
             from django.contrib import messages
             from django.contrib.auth import get_user_model
+            
+            # Добавляем сообщение для текущего пользователя если есть request
+            try:
+                from core.middleware import get_current_request
+                request = get_current_request()
+                if request and hasattr(request, 'user'):
+                    messages.warning(
+                        request, 
+                        f'Запись модерации для объявления "{instance.title}" уже существует. Дубликат не создан.'
+                    )
+            except:
+                pass
             
             # Уведомляем администраторов о попытке создания дубликата
             try:
