@@ -1,3 +1,4 @@
+
 {% extends 'base.html' %}
 {% load static %}
 
@@ -17,45 +18,42 @@
                 <div class="card-body p-0 conversation-list">
                 {% if conversations %}
                     {% for conversation in conversations %}
-                        {% if conversation.participant1 == request.user %}
-                            {% with other_participant=conversation.participant2 %}
-                        {% else %}
-                            {% with other_participant=conversation.participant1 %}
-                        {% endif %}
-                    <a href="{% url 'chat:conversation_detail' conversation.id %}" class="conversation-item text-decoration-none {% if conversation.id == current_conversation_id %}bg-light{% endif %}">
-                        <div class="conversation-item-content d-flex w-100">
-                            <div class="me-3">
-                                {% if other_participant.profile_picture %}
-                                    <img src="{{ other_participant.profile_picture.url }}" alt="{{ other_participant.username }}" class="rounded-circle" style="width: 48px; height: 48px; object-fit: cover;">
-                                {% else %}
-                                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                        <i class="fas fa-user text-secondary"></i>
-                                    </div>
-                                {% endif %}
-                            </div>
-                            <div class="flex-grow-1 min-w-0">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div class="flex-grow-1 min-w-0">
-                                        <h6 class="mb-1 text-truncate">{{ other_participant.get_full_name|default:other_participant.username }}</h6>
-                                        {% if conversation.listing %}
-                                            <small class="text-muted d-block text-truncate">{{ conversation.listing.title }}</small>
-                                        {% endif %}
-                                        {% if conversation.last_message %}
-                                            <p class="mb-0 text-muted small text-truncate">{{ conversation.last_message.content }}</p>
-                                        {% endif %}
-                                    </div>
-                                    <div class="text-end ms-2 flex-shrink-0">
-                                        {% if conversation.last_message %}
-                                            <small class="text-muted d-block">{{ conversation.last_message.created_at|timesince }} назад</small>
-                                        {% endif %}
-                                        {% if conversation.unread_count > 0 %}
-                                            <span class="badge bg-primary rounded-pill mt-1">{{ conversation.unread_count }}</span>
-                                        {% endif %}
+                        {% with other_participant=conversation.get_other_participant:request.user %}
+                        <a href="{% url 'chat:conversation_detail' conversation.id %}" class="conversation-item text-decoration-none {% if conversation.id == current_conversation_id %}bg-light{% endif %}">
+                            <div class="conversation-item-content d-flex w-100">
+                                <div class="me-3">
+                                    {% if other_participant.profile_picture %}
+                                        <img src="{{ other_participant.profile_picture.url }}" alt="{{ other_participant.username }}" class="rounded-circle" style="width: 48px; height: 48px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                            <i class="fas fa-user text-secondary"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1 min-w-0">
+                                            <h6 class="mb-1 text-truncate">{{ other_participant.get_full_name|default:other_participant.username }}</h6>
+                                            {% if conversation.listing %}
+                                                <small class="text-muted d-block text-truncate">{{ conversation.listing.title }}</small>
+                                            {% endif %}
+                                            {% if conversation.last_message %}
+                                                <p class="mb-0 text-muted small text-truncate">{{ conversation.last_message.content }}</p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-end ms-2 flex-shrink-0">
+                                            {% if conversation.last_message %}
+                                                <small class="text-muted d-block">{{ conversation.last_message.created_at|timesince }} назад</small>
+                                            {% endif %}
+                                            {% if conversation.unread_count > 0 %}
+                                                <span class="badge bg-primary rounded-pill mt-1">{{ conversation.unread_count }}</span>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </a>
+                        </a>
+                        {% endwith %}
                     {% endfor %}
                 {% else %}
                     <div class="text-center py-5">
@@ -67,6 +65,7 @@
                         </a>
                     </div>
                 {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -75,48 +74,37 @@
 
 {% block extra_css %}
 <style>
-.conversation-link {
-    transition: all 0.2s ease;
-    display: block;
-}
-
-.conversation-link:hover {
-    background-color: #f8f9fa;
-    text-decoration: none !important;
-}
-
-.conversation-link:hover .conversation-item {
-    transform: translateY(-1px);
-}
-
 .conversation-item {
     transition: all 0.2s ease;
-    margin: 0;
+    display: block;
     padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+}
+
+.conversation-item:hover {
+    background-color: #f8f9fa !important;
+    text-decoration: none !important;
+    color: inherit;
+}
+
+.conversation-item:hover h6 {
+    color: #007bff !important;
 }
 
 .conversation-item:last-child {
     border-bottom: none !important;
 }
 
-.conversation-link:hover h6 {
-    color: #007bff !important;
+.conversation-list {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
 }
 
 .badge {
     font-size: 0.75rem;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: #6c757d;
-}
-
-.empty-state i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
 }
 </style>
 {% endblock %}
