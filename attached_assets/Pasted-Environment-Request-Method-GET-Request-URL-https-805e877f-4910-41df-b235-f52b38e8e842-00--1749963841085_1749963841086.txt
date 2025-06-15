@@ -1,0 +1,147 @@
+Environment:
+
+
+Request Method: GET
+Request URL: https://805e877f-4910-41df-b235-f52b38e8e842-00-1wslzvvsdtatb.riker.replit.dev/users/profile/10/
+
+Django Version: 5.2.3
+Python Version: 3.12.7
+Installed Applications:
+['django.contrib.admin',
+ 'django.contrib.auth',
+ 'django.contrib.contenttypes',
+ 'django.contrib.sessions',
+ 'django.contrib.messages',
+ 'django.contrib.staticfiles',
+ 'django.contrib.humanize',
+ 'rest_framework',
+ 'django_filters',
+ 'channels',
+ 'users.apps.UsersConfig',
+ 'listings.apps.ListingsConfig',
+ 'chat.apps.ChatConfig',
+ 'notifications.apps.NotificationsConfig',
+ 'moderation.apps.ModerationConfig',
+ 'subscriptions.apps.SubscriptionsConfig',
+ 'django_extensions']
+Installed Middleware:
+['django.middleware.security.SecurityMiddleware',
+ 'django.contrib.sessions.middleware.SessionMiddleware',
+ 'django.middleware.common.CommonMiddleware',
+ 'django.middleware.csrf.CsrfViewMiddleware',
+ 'django.contrib.auth.middleware.AuthenticationMiddleware',
+ 'django.contrib.messages.middleware.MessageMiddleware',
+ 'django.middleware.clickjacking.XFrameOptionsMiddleware']
+
+
+Template error:
+In template /home/runner/workspace/users/templates/users/public_profile.html, error at line 125
+   Invalid field name(s) given in select_related: 'user'. Choices are: listing, reviewer, booking
+   115 :                         </div>
+   116 :                     </div>
+   117 :                 </div>
+   118 :                 {% endfor %}
+   119 :             </div>
+   120 :         </div>
+   121 :         {% endif %}
+   122 : 
+   123 :         <!-- Reviews Tab -->
+   124 :         <div class="tab-pane fade {% if not user_listings %}show active{% endif %}" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
+   125 :              {% if reviews_received %} 
+   126 :             <div class="card shadow-sm">
+   127 :                 <div class="card-body">
+   128 :                     <h5 class="card-title">Отзывы о пользователе</h5>
+   129 :                     {% for review in reviews_received %}
+   130 :                     <div class="border-bottom pb-3 mb-3">
+   131 :                         <div class="d-flex justify-content-between align-items-start">
+   132 :                             <div class="flex-grow-1">
+   133 :                                 <div class="d-flex align-items-center mb-2">
+   134 :                                     {% if review.reviewer.profile_picture %}
+   135 :                                         <img src="{{ review.reviewer.profile_picture.url }}" class="rounded-circle me-2" width="30" height="30" alt="{{ review.reviewer.username }}">
+
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/users/views.py", line 167, in public_profile_view
+    return render(request, 'users/public_profile.html', context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 171, in render
+    return self._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 163, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader_tags.py", line 159, in render
+    return compiled_parent._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 163, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader_tags.py", line 65, in render
+    result = block.nodelist.render(context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1016, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 977, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/defaulttags.py", line 326, in render
+    if match:
+       ^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 398, in __bool__
+    self._fetch_all()
+    ^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 1949, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 91, in __iter__
+    results = compiler.execute_sql(
+              
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1610, in execute_sql
+    sql, params = self.as_sql()
+                  ^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 766, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup(
+                                       
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 85, in pre_sql_setup
+    self.setup_query(with_col_aliases=with_col_aliases)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 74, in setup_query
+    self.select, self.klass_info, self.annotation_col_map = self.get_select(
+                                                            
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 299, in get_select
+    related_klass_infos = self.get_related_selections(select, select_mask)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1396, in get_related_selections
+    raise FieldError(
+    ^
+
+Exception Type: FieldError at /users/profile/10/
+Exception Value: Invalid field name(s) given in select_related: 'user'. Choices are: listing, reviewer, booking
