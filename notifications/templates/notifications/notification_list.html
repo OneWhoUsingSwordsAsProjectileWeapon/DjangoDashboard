@@ -214,15 +214,15 @@
     document.addEventListener('click', function(e) {
         const notificationCard = e.target.closest('.notification-card');
         const actionButton = e.target.closest('.btn-outline-primary');
-        
+
         // If clicked on action button, don't handle the card click
         if (actionButton) {
             return;
         }
-        
+
         if (notificationCard) {
             const notificationId = notificationCard.dataset.notificationId;
-            
+
             // Mark as read if unread
             if (notificationCard.classList.contains('border-primary')) {
                 fetch(`/notifications/${notificationId}/mark-read/`, {
@@ -249,7 +249,7 @@
                     console.error('Error marking notification as read:', error);
                 });
             }
-            
+
             // Find and click the action button to redirect
             const actionLink = notificationCard.querySelector('.btn-outline-primary');
             if (actionLink) {

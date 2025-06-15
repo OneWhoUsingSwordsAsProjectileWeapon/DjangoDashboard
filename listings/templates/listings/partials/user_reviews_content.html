@@ -1,0 +1,185 @@
+
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Фильтры отзывов</h5>
+                <div class="list-group mt-3">
+                    <a href="#" class="list-group-item list-group-item-action review-filter {% if not request.GET.review_type %}active{% endif %}" data-filter="all">
+                        Все отзывы
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action review-filter {% if request.GET.review_type == 'given' %}active{% endif %}" data-filter="given">
+                        Оставленные мной
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action review-filter {% if request.GET.review_type == 'received' %}active{% endif %}" data-filter="received">
+                        Полученные
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-9">
+        {% if reviews_given or reviews_received %}
+            <!-- Reviews Given -->
+            {% if request.GET.review_type == 'given' or not request.GET.review_type %}
+                <div class="card shadow-sm mb-4 reviews-section" data-section="given">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-edit me-2"></i>Отзывы, написанные мной
+                            <span class="badge bg-primary">{{ reviews_given.count }}</span>
+                        </h5>
+                        {% if reviews_given %}
+                            {% for review in reviews_given %}
+                            <div class="border-bottom pb-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <h6 class="mb-0 me-3">{{ review.listing.title }}</h6>
+                                            <div class="text-warning">
+                                                {% for i in '12345' %}
+                                                    {% if forloop.counter <= review.rating %}
+                                                    <i class="fas fa-star"></i>
+                                                    {% else %}
+                                                    <i class="far fa-star"></i>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <p class="mb-1">{{ review.comment }}</p>
+                                        <small class="text-muted">
+                                            {{ review.created_at|date:"d.m.Y" }}
+                                            {% if review.is_edited %}
+                                                <span class="badge bg-info ms-1">Редактирован</span>
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    <div class="ms-3">
+                                        <a href="{% url 'listings:listing_detail' review.listing.id %}" class="btn btn-sm btn-outline-primary">
+                                            Просмотреть объявление
+                                        </a>
+                                        <div class="mt-2">
+                                            <a href="{% url 'listings:edit_review' review.id %}" class="btn btn-sm btn-outline-secondary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'listings:delete_review' review.id %}" class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Вы ещё не написали ни одного отзыва.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Reviews Received -->
+            {% if request.GET.review_type == 'received' or not request.GET.review_type %}
+                <div class="card shadow-sm reviews-section" data-section="received">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-star me-2"></i>Отзывы о моих объявлениях
+                            <span class="badge bg-success">{{ reviews_received.count }}</span>
+                        </h5>
+                        {% if reviews_received %}
+                            {% for review in reviews_received %}
+                            <div class="border-bottom pb-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="me-3">
+                                                {% if review.reviewer.profile_picture %}
+                                                    <img src="{{ review.reviewer.profile_picture.url }}" alt="{{ review.reviewer.get_full_name|default:review.reviewer.username }}" class="rounded-circle" width="40" height="40">
+                                                {% else %}
+                                                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                        <i class="fas fa-user text-secondary"></i>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0">{{ review.reviewer.get_full_name|default:review.reviewer.username }}</h6>
+                                                <div class="text-warning">
+                                                    {% for i in '12345' %}
+                                                        {% if forloop.counter <= review.rating %}
+                                                        <i class="fas fa-star"></i>
+                                                        {% else %}
+                                                        <i class="far fa-star"></i>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="mb-1">{{ review.comment }}</p>
+                                        <small class="text-muted">
+                                            {{ review.created_at|date:"d.m.Y" }} • {{ review.listing.title }}
+                                        </small>
+                                    </div>
+                                    <div class="ms-3">
+                                        <a href="{% url 'listings:listing_detail' review.listing.id %}" class="btn btn-sm btn-outline-primary">
+                                            Просмотреть объявление
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Пока нет отзывов о ваших объявлениях.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="card shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-star fa-3x text-muted mb-3"></i>
+                    <h5>Нет отзывов</h5>
+                    <p class="text-muted">У вас пока нет отзывов. Забронируйте жилье, чтобы оставить свой первый отзыв!</p>
+                    <a href="{% url 'listings:listing_list' %}" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>Найти жилье
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterLinks = document.querySelectorAll('.review-filter');
+    const reviewsSections = document.querySelectorAll('.reviews-section');
+    
+    filterLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const filter = this.dataset.filter;
+            
+            // Update active filter
+            filterLinks.forEach(l => l.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Show/hide sections
+            reviewsSections.forEach(section => {
+                const sectionType = section.dataset.section;
+                
+                if (filter === 'all') {
+                    section.style.display = 'block';
+                } else if (filter === sectionType) {
+                    section.style.display = 'block';
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+        });
+    });
+});
+</script>

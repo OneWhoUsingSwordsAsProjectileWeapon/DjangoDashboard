@@ -32,7 +32,7 @@ def create_notification(user, notification_type, title, message, **kwargs):
     In a real app with Celery, this would be a @task-decorated function
     """
     from notifications.models import Notification
-    
+
     try:
         notification = Notification.objects.create(
             user=user,
@@ -52,29 +52,29 @@ def send_booking_request_notification(booking):
     host = booking.listing.host
     guest = booking.guest
     listing = booking.listing
-    
+
     # Email notification
     subject = f"New booking request for {listing.title}"
     message = f"""
     Hello {host.first_name or host.username},
-    
+
     You have received a new booking request:
-    
+
     Listing: {listing.title}
     Guest: {guest.get_full_name() or guest.username}
     Check-in: {booking.start_date}
     Check-out: {booking.end_date}
     Guests: {booking.guests}
     Total price: ${booking.total_price}
-    
+
     Please log in to your account to accept or decline this booking.
-    
+
     Best regards,
     The Rental App Team
     """
-    
+
     send_email_notification(host.email, subject, message)
-    
+
     # In-app notification
     create_notification(
         user=host,
@@ -90,30 +90,30 @@ def send_booking_confirmed_notification(booking):
     # Notify guest
     guest = booking.guest
     listing = booking.listing
-    
+
     # Email notification
     subject = f"Your booking for {listing.title} has been confirmed"
     message = f"""
     Hello {guest.first_name or guest.username},
-    
+
     Your booking has been confirmed:
-    
+
     Listing: {listing.title}
     Check-in: {booking.start_date}
     Check-out: {booking.end_date}
     Guests: {booking.guests}
     Total price: ${booking.total_price}
-    
+
     Host: {listing.host.get_full_name() or listing.host.username}
-    
+
     Please log in to your account to view booking details and message the host.
-    
+
     Best regards,
     The Rental App Team
     """
-    
+
     send_email_notification(guest.email, subject, message)
-    
+
     # In-app notification
     create_notification(
         user=guest,
@@ -129,7 +129,7 @@ def send_booking_canceled_notification(booking, canceled_by):
     listing = booking.listing
     host = listing.host
     guest = booking.guest
-    
+
     # Determine who to notify (the other party)
     if canceled_by == host:
         # Host canceled, notify guest
@@ -139,28 +139,28 @@ def send_booking_canceled_notification(booking, canceled_by):
         # Guest canceled, notify host
         recipient = host
         by_text = "by the guest"
-    
+
     # Email notification
     subject = f"Booking for {listing.title} has been canceled"
     message = f"""
     Hello {recipient.first_name or recipient.username},
-    
+
     A booking has been canceled {by_text}:
-    
+
     Listing: {listing.title}
     Check-in: {booking.start_date}
     Check-out: {booking.end_date}
     Guests: {booking.guests}
     Total price: ${booking.total_price}
-    
+
     Please log in to your account for more details.
-    
+
     Best regards,
     The Rental App Team
     """
-    
+
     send_email_notification(recipient.email, subject, message)
-    
+
     # In-app notification
     create_notification(
         user=recipient,
@@ -175,7 +175,7 @@ def send_new_message_notification(message):
     """Send notification for new message"""
     conversation = message.conversation
     sender = message.sender
-    
+
     # Notify all other participants
     for recipient in conversation.participants.exclude(id=sender.id):
         # Don't send email for every message, just in-app notification
@@ -192,17 +192,17 @@ def send_new_message_notification(message):
             f"С уважением,\n"
             f"Команда Агрегатора Аренды"
         )
-        
+
         send_email_notification(recipient.email, subject, email_message)
         """
-        
+
         # In-app notification
         context = ""
         if conversation.listing:
             context = f" об объявлении {conversation.listing.title}"
         elif conversation.booking:
             context = f" по бронированию {conversation.booking.listing.title}"
-            
+
         create_notification(
             user=recipient,
             notification_type='message_received',
@@ -218,26 +218,26 @@ def send_new_review_notification(review):
     listing = review.listing
     host = listing.host
     reviewer = review.reviewer
-    
+
     # Email notification
     subject = f"New review for {listing.title}"
     message = f"""
     Hello {host.first_name or host.username},
-    
+
     Your listing "{listing.title}" has received a new {review.rating}-star review:
-    
+
     "{review.comment[:100]}{"..." if len(review.comment) > 100 else ""}"
-    
+
     - {reviewer.get_full_name() or reviewer.username}
-    
+
     Please log in to your account to view the full review.
-    
+
     Best regards,
     The Rental App Team
     """
-    
+
     send_email_notification(host.email, subject, message)
-    
+
     # In-app notification
     create_notification(
         user=host,
@@ -248,43 +248,43 @@ def send_new_review_notification(review):
         listing=listing
     )
 
-def create_notification(user, notification_type, title, message, **kwargs):
+def create_notification(user, notification_type, title, message, booking=None, listing=None, conversation=None, review=None):
     """Create an in-app notification for a user"""
     from .models import Notification
-    
+
     notification = Notification.objects.create(
         user=user,
         notification_type=notification_type,
         title=title,
         message=message,
-        booking=kwargs.get('booking'),
-        listing=kwargs.get('listing'),
-        conversation=kwargs.get('conversation'),
-        review=kwargs.get('review')
+        booking=booking,
+        listing=listing,
+        conversation=conversation,
+        review=review
     )
     return notification
 
 def send_listing_approved_notification(listing):
     """Send notification when listing is approved"""
     host = listing.host
-    
+
     # Email notification
     subject = f"Your listing '{listing.title}' has been approved"
     message = f"""
     Hello {host.first_name or host.username},
-    
+
     Great news! Your listing "{listing.title}" has been reviewed and approved. 
     It is now visible to potential guests on our platform.
-    
+
     You can manage your listing, including updating details and managing bookings, 
     from your host dashboard.
-    
+
     Best regards,
     The Rental App Team
     """
-    
+
     send_email_notification(host.email, subject, message)
-    
+
     # In-app notification
     create_notification(
         user=host,

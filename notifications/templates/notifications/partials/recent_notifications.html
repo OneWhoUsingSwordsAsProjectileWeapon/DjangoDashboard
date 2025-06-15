@@ -1,4 +1,3 @@
-
 <style>
 .notification-item {
     padding: 0.75rem 1rem;
@@ -108,6 +107,20 @@
                 <div class="notification-title small fw-bold">{{ notification.title }}</div>
                 <div class="notification-message small text-muted">{{ notification.message|truncatechars:60 }}</div>
                 <div class="notification-time small text-muted">{{ notification.created_at|timesince }} назад</div>
+                 {% if notification.booking %}
+                                <a href="{% url 'listings:booking_detail' notification.booking.booking_reference %}" class="text-decoration-none">
+                                    <small class="text-muted">Бронирование #{{ notification.booking.booking_reference|slice:":8" }}</small>
+                                </a>
+                            {% elif notification.listing %}
+                                <a href="{% url 'listings:listing_detail' notification.listing.id %}" class="text-decoration-none">
+                                    <small class="text-muted">{{ notification.listing.title }}</small>
+                                </a>
+                            {% endif %}
+                            {% if notification.review %}
+                                <a href="{% url 'listings:listing_detail' notification.review.listing.id %}" class="text-decoration-none">
+                                    <small class="text-muted">{{ notification.review.listing.title }}</small>
+                                </a>
+                            {% endif %}
             </div>
             {% if not notification.is_read %}
                 <div class="notification-dot">

@@ -154,55 +154,13 @@
 
         <!-- Reviews Tab -->
         <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
-            <div class="row">
-                <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Фильтры отзывов</h5>
-                            <div class="list-group mt-3">
-                                <a href="#" class="list-group-item list-group-item-action active">Все</a>
-                                <a href="#" class="list-group-item list-group-item-action">Оставленные мной</a>
-                                <a href="#" class="list-group-item list-group-item-action">Оставленные обо мне</a>
-                                <a href="#" class="list-group-item list-group-item-action">Оставленные о моих объявлениях</a>
-                            </div>
-                        </div>
+            <!-- Load user reviews using HTMX -->
+            <div id="reviews-content">
+                <div class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
                     </div>
-                </div>
-                <div class="col-md-9">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Отзывы написаные мной</h5>
-                            {% if user.reviews.all %}
-                                {% for review in user.reviews.all %}
-                                <div class="border-bottom pb-3 mb-3">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <h6>{{ review.listing.title }}</h6>
-                                            <div class="text-warning mb-2">
-                                                {% for i in '12345' %}
-                                                    {% if forloop.counter <= review.rating %}
-                                                    <i class="fas fa-star"></i>
-                                                    {% else %}
-                                                    <i class="far fa-star"></i>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </div>
-                                            <p class="mb-1">{{ review.comment }}</p>
-                                            <small class="text-muted">{{ review.created_at|date:"F d, Y" }}</small>
-                                        </div>
-                                        <a href="{% url 'listings:listing_detail' review.listing.id %}" class="btn btn-sm btn-outline-primary">
-                                            Просмотреть объявление
-                                        </a>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="alert alert-info">
-                                    <p class="mb-0">Вы ещё не написали ни одного отзыва.</p>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
+                    <p class="mt-2">Загрузка отзывов...</p>
                 </div>
             </div>
         </div>
@@ -363,6 +321,15 @@
                                 swap: 'innerHTML'
                             });
                             listingsContent.setAttribute('data-loaded', 'true');
+                        }
+                    } else if (targetId === '#reviews') {
+                        const reviewsContent = document.getElementById('reviews-content');
+                        if (reviewsContent && !reviewsContent.hasAttribute('data-loaded')) {
+                            htmx.ajax('GET', '{% url 'listings:user_reviews' %}?tab_content=1', {
+                                target: '#reviews-content',
+                                swap: 'innerHTML'
+                            });
+                            reviewsContent.setAttribute('data-loaded', 'true');
                         }
                     }
                 });

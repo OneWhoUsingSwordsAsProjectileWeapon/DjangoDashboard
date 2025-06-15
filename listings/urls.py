@@ -28,6 +28,7 @@ urlpatterns = [
     path('bookings/<uuid:reference>/', views.booking_detail, name='booking_detail'),
     path('booking/<uuid:reference>/', views.booking_detail, name='booking_detail_alt'),
     path('my-bookings/', views.user_bookings, name='user_bookings'),
+    path('my-reviews/', views.user_reviews, name='user_reviews'),
     path('host-bookings/', views.host_bookings, name='host_bookings'),
     path('bookings/<uuid:reference>/status/<str:status>/', views.update_booking_status, name='update_booking_status'),
 

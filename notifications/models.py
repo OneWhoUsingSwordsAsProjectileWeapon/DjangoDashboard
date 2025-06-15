@@ -16,7 +16,7 @@ class Notification(models.Model):
         ('payment_received', _('Payment Received')),
         ('system', _('System Notification')),
     ]
-    
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -66,15 +66,15 @@ class Notification(models.Model):
     )
     # Timestamps
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
-    
+
     class Meta:
         verbose_name = _("Notification")
         verbose_name_plural = _("Notifications")
         ordering = ['-created_at']
-    
+
     def __str__(self):
         return f"{self.notification_type} - {self.title} - {self.user.username}"
-    
+
     def mark_as_read(self):
         """Mark notification as read"""
         if not self.is_read:
@@ -88,10 +88,10 @@ class EmailTemplate(models.Model):
     name = models.CharField(_("Template Name"), max_length=50, unique=True)
     subject = models.CharField(_("Subject"), max_length=255)
     content = models.TextField(_("Content"))
-    
+
     class Meta:
         verbose_name = _("Email Template")
         verbose_name_plural = _("Email Templates")
-    
+
     def __str__(self):
         return self.name

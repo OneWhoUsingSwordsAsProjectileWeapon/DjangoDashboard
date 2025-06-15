@@ -1091,6 +1091,29 @@ def create_booking(request, pk):
                 host_message
             )
 
+            # Create in-app notifications
+            from notifications.tasks import create_notification
+            
+            # Notification for guest
+            create_notification(
+                user=request.user,
+                notification_type='booking_created',
+                title=f"Запрос на бронирование создан",
+                message=f"Ваш запрос на бронирование жилья '{listing.title}' создан и отправлен хозяину. Ожидайте подтверждения.",
+                listing=listing,
+                booking=booking
+            )
+            
+            # Notification for host
+            create_notification(
+                user=listing.host,
+                notification_type='booking_received',
+                title=f"Новый запрос на бронирование",
+                message=f"Пользователь {request.user.get_full_name() or request.user.username} хочет забронировать ваше жилье '{listing.title}' с {start_date} по {end_date}.",
+                listing=listing,
+                booking=booking
+            )
+
             messages.success(request, "Booking created successfully. Awaiting host confirmation.")
             return redirect('listings:booking_detail', reference=booking.booking_reference)
     else:
@@ -1269,6 +1292,17 @@ def update_booking_status(request, reference, status):
                 "Booking Confirmed",
                 message
             )
+
+            # Create in-app notification for guest
+            from notifications.tasks import create_notification
+            create_notification(
+                user=booking.guest,
+                notification_type='booking_confirmed',
+                title=f"Бронирование подтверждено!",
+                message=f"Ваше бронирование жилья '{booking.listing.title}' подтверждено хозяином. Заезд: {booking.start_date}, Выезд: {booking.end_date}.",
+                listing=booking.listing,
+                booking=booking
+            )
         elif status == 'canceled':
             # Determine who canceled
             canceler = "host" if request.user == booking.listing.host else "you"
@@ -1284,6 +1318,17 @@ def update_booking_status(request, reference, status):
                     message
                 )
 
+                # Create in-app notification for guest
+                from notifications.tasks import create_notification
+                create_notification(
+                    user=booking.guest,
+                    notification_type='booking_canceled',
+                    title=f"Бронирование отклонено",
+                    message=f"Ваш запрос на бронирование жилья '{booking.listing.title}' был отклонен хозяином.",
+                    listing=booking.listing,
+                    booking=booking
+                )
+
             # Send to host
             if request.user == booking.guest:
                 message = f"Booking for {booking.listing.title} has been canceled by the guest. " \
@@ -1294,6 +1339,17 @@ def update_booking_status(request, reference, status):
                     booking.listing.host.email,
                     "Booking Canceled",
                     message
+                )
+
+                # Create in-app notification for host
+                from notifications.tasks import create_notification
+                create_notification(
+                    user=booking.listing.host,
+                    notification_type='booking_canceled_by_guest',
+                    title=f"Бронирование отменено гостем",
+                    message=f"Пользователь {booking.guest.get_full_name() or booking.guest.username} отменил бронирование жилья '{booking.listing.title}'.",
+                    listing=booking.listing,
+                    booking=booking
                 )
 
         # Send automatic message to chat if conversation exists
@@ -1623,6 +1679,33 @@ def set_main_image(request, pk, image_id):
 
     messages.success(request, 'Главное изображение обновлено.')
     return redirect('listings:listing_images', pk=listing.pk)
+
+@login_required
+def user_reviews(request):
+    """View for displaying user's reviews (given and received)"""
+    user = request.user
+    
+    # Get reviews written by user
+    reviews_given = Review.objects.filter(
+        reviewer=user
+    ).select_related('listing').order_by('-created_at')
+    
+    # Get reviews received by user (for their listings)
+    reviews_received = Review.objects.filter(
+        listing__host=user
+    ).select_related('reviewer', 'listing').order_by('-created_at')
+    
+    # Check if this is a request for tab content only
+    if request.GET.get('tab_content'):
+        return render(request, 'listings/partials/user_reviews_content.html', {
+            'reviews_given': reviews_given,
+            'reviews_received': reviews_received
+        })
+    
+    return render(request, 'listings/user_reviews.html', {
+        'reviews_given': reviews_given,
+        'reviews_received': reviews_received
+    })
 
 @login_required
 def export_dashboard_excel(request):
