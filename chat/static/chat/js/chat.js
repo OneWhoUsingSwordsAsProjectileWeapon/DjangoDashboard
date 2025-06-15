@@ -16,12 +16,18 @@ function initChatSocket(conversationId, currentUserId) {
         chatSocket.close();
     }
 
-    // Determine WebSocket protocol based on current page protocol
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    // Determine if we're using secure connection
+    // In Replit, always use secure WebSocket connection
+    const protocol = 'wss:';
     const host = window.location.host;
     const wsUrl = `${protocol}//${host}/ws/chat/${conversationId}/`;
 
     console.log('Attempting to connect to:', wsUrl);
+
+    // Create WebSocket connection
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}/ws/chat/${conversationId}/`;
 
     console.log('Connecting to WebSocket:', wsUrl);
     chatSocket = new WebSocket(wsUrl);
