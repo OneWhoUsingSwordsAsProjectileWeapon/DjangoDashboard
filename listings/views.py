@@ -881,6 +881,12 @@ class HostListingListView(LoginRequiredMixin, ListView):
             
         return queryset
 
+    def get_template_names(self):
+        # Return different template for tab content
+        if self.request.GET.get('tab_content'):
+            return ['listings/partials/host_listings_content.html']
+        return [self.template_name]
+
 class ListingCreateView(LoginRequiredMixin, CreateView):
     """View for creating a new listing"""
     model = Listing
@@ -1144,6 +1150,14 @@ def user_bookings(request):
     status = request.GET.get('status')
     if status and status in [choice[0] for choice in Booking.STATUS_CHOICES]:
         bookings = bookings.filter(status=status)
+
+    # Check if this is a request for tab content only
+    if request.GET.get('tab_content'):
+        return render(request, 'listings/partials/user_bookings_content.html', {
+            'bookings': bookings,
+            'status_choices': Booking.STATUS_CHOICES,
+            'current_status': status
+        })
 
     return render(request, 'listings/user_bookings.html', {
         'bookings': bookings,

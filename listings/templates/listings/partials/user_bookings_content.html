@@ -1,0 +1,57 @@
+
+{% if bookings %}
+    {% for booking in bookings %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    {% if booking.listing.main_image %}
+                        <img src="{{ booking.listing.main_image }}" alt="{{ booking.listing.title }}" class="img-fluid rounded">
+                    {% else %}
+                        <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 120px;">
+                            <i class="fas fa-home fa-2x text-muted"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <h5 class="card-title">{{ booking.listing.title }}</h5>
+                    <p class="text-muted mb-1">
+                        <i class="fas fa-map-marker-alt"></i> {{ booking.listing.city }}, {{ booking.listing.state }}
+                    </p>
+                    <p class="mb-1">
+                        <strong>Даты:</strong> {{ booking.start_date|date:"d M Y" }} - {{ booking.end_date|date:"d M Y" }}
+                    </p>
+                    <p class="mb-1">
+                        <strong>Гости:</strong> {{ booking.guests }}
+                    </p>
+                    <p class="mb-0">
+                        <span class="badge bg-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'pending' %}warning{% elif booking.status == 'completed' %}primary{% else %}secondary{% endif %}">
+                            {{ booking.get_status_display }}
+                        </span>
+                    </p>
+                </div>
+                <div class="col-md-3 text-end">
+                    <p class="h5 mb-2">₽{{ booking.total_price }}</p>
+                    <a href="{% url 'listings:booking_detail' booking.booking_reference %}" class="btn btn-outline-primary btn-sm">
+                        Просмотреть
+                    </a>
+                    {% if booking.status == 'pending' %}
+                    <button class="btn btn-outline-danger btn-sm mt-1" onclick="confirmCancelBooking('{{ booking.booking_reference }}')">
+                        Отменить
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="text-center p-5">
+        <i class="fas fa-suitcase fa-3x text-muted mb-3"></i>
+        <h5>У вас пока нет бронирований</h5>
+        <p class="text-muted mb-4">Исследуйте наши объявления и забронируйте идеальное место для отдыха!</p>
+        <a href="{% url 'listings:listing_list' %}" class="btn btn-primary">
+            <i class="fas fa-search"></i> Найти жилье
+        </a>
+    </div>
+{% endif %}
