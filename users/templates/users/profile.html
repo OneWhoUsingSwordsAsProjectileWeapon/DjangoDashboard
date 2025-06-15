@@ -322,6 +322,28 @@
 </div>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+.tab-content > .tab-pane {
+    display: none;
+}
+
+.tab-content > .tab-pane.active {
+    display: block;
+}
+
+.nav-tabs .nav-link {
+    cursor: pointer;
+}
+
+.nav-tabs .nav-link.active {
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+    color: #495057;
+}
+</style>
+{% endblock %}
+
 {% block extra_js %}
 <script>
     // Handle the deactivation confirmation checkbox
@@ -363,6 +385,14 @@
                 }
             });
         });
+
+        // Initialize Bootstrap Tab instance for proper functionality
+        if (typeof bootstrap !== 'undefined') {
+            const triggerTabList = [].slice.call(document.querySelectorAll('#profileTabs button[data-bs-toggle="tab"]'));
+            triggerTabList.map(function (triggerEl) {
+                return new bootstrap.Tab(triggerEl);
+            });
+        }
     });
 </script>
 {% endblock %}

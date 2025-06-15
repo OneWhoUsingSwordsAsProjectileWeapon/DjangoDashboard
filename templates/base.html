@@ -754,8 +754,18 @@
         {% include 'includes/notifications.html' %}
     </div>
 
-    <!-- Bootstrap Bundle with Popper -->
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Initialize Bootstrap components -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ensure Bootstrap is loaded and available globally
+            if (typeof bootstrap === 'undefined') {
+                console.warn('Bootstrap JS not loaded properly');
+            }
+        });
+    </script>
 
     <script>
         // Global HTMX configuration

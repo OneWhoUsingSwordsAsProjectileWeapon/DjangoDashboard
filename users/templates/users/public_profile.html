@@ -223,6 +223,16 @@ document.querySelectorAll('.rating-input input[type="radio"]').forEach(radio => 
         });
     });
 });
+
+// Initialize Bootstrap tabs for public profile
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof bootstrap !== 'undefined') {
+        const triggerTabList = [].slice.call(document.querySelectorAll('#profileTabs button[data-bs-toggle="tab"]'));
+        triggerTabList.map(function (triggerEl) {
+            return new bootstrap.Tab(triggerEl);
+        });
+    }
+});
 </script>
 
 <style>
@@ -250,6 +260,24 @@ document.querySelectorAll('.rating-input input[type="radio"]').forEach(radio => 
 
 .rating-input input[type="radio"]:checked ~ .star-label {
     color: #ffc107 !important;
+}
+
+.tab-content > .tab-pane {
+    display: none;
+}
+
+.tab-content > .tab-pane.active {
+    display: block;
+}
+
+.nav-tabs .nav-link {
+    cursor: pointer;
+}
+
+.nav-tabs .nav-link.active {
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+    color: #495057;
 }
 </style>
 {% endblock %}
