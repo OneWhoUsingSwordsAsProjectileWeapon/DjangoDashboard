@@ -22,14 +22,14 @@ def register_view(request):
         form = UserRegisterForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            
+
             # Set all new users as guests by default
             user.is_host = False
             user.is_guest = True
-            
+
             # Save the user with default guest role
             user.save()
-            
+
             # Send verification email
             token = uuid.uuid4().hex
             verification_url = request.build_absolute_uri(
@@ -41,13 +41,13 @@ def register_view(request):
                 'Verify your email address',
                 f'Please click the link to verify your email: {verification_url}'
             )
-            
+
             login(request, user)
             messages.success(request, 'Your account has been created! A verification email has been sent.')
             return redirect('users:profile')
     else:
         form = UserRegisterForm()
-    
+
     return render(request, 'users/register.html', {'form': form})
 
 class CustomLoginView(LoginView):
@@ -75,7 +75,7 @@ def edit_profile_view(request):
             return redirect('users:profile')
     else:
         form = UserProfileForm(instance=request.user)
-    
+
     return render(request, 'users/edit_profile.html', {'form': form})
 
 def verify_email(request, token):
@@ -89,7 +89,7 @@ def verify_email(request, token):
         messages.success(request, 'Your email has been verified!')
     else:
         messages.error(request, 'Verification link is invalid or expired.')
-    
+
     return redirect('users:profile')
 
 @login_required
@@ -113,44 +113,44 @@ def send_verification_code(request):
             return redirect('users:profile')
         else:
             messages.error(request, 'Please provide a valid phone number.')
-    
+
     return redirect('users:verify_phone')
 
 def public_profile_view(request, user_id):
     """Display public user profile"""
     profile_user = get_object_or_404(User, id=user_id)
-    
+
     # Get user's listings if they are a host
     user_listings = None
     if profile_user.is_host:
         from listings.models import Listing
         user_listings = Listing.objects.filter(host=profile_user, is_active=True)[:6]
-    
+
     # Get user's reviews
     from listings.models import Review
     reviews_received = Review.objects.filter(listing__host=profile_user).select_related('user', 'listing')[:10]
     reviews_given = Review.objects.filter(reviewer=profile_user).select_related('listing')[:10]
-    
+
     # Calculate average rating
     avg_rating = reviews_received.aggregate(avg_rating=Avg('rating'))['avg_rating']
     total_reviews = reviews_received.count()
-    
+
     # Check if current user can leave a review
     can_leave_review = False
     if request.user.is_authenticated and request.user != profile_user:
         from listings.models import Booking
         # Check if user has completed bookings with this host
         completed_bookings = Booking.objects.filter(
-            user=request.user,
+            guest=profile_user,
             listing__host=profile_user,
             status='confirmed'
         ).exists()
-        
+
         # Check if user already reviewed this host
         existing_review = reviews_received.filter(reviewer=request.user).exists()
-        
+
         can_leave_review = completed_bookings and not existing_review
-    
+
     context = {
         'profile_user': profile_user,
         'user_listings': user_listings,
@@ -160,7 +160,7 @@ def public_profile_view(request, user_id):
         'total_reviews': total_reviews,
         'can_leave_review': can_leave_review,
     }
-    
+
     return render(request, 'users/public_profile.html', context)
 
 def logout_view(request):
