@@ -1794,125 +1794,99 @@ def user_reviews(request):
 
 @login_required
 def host_dashboard_data(request):
-    """AJAX endpoint for updating dashboard chart data with independent filters"""
+    """AJAX endpoint for updating dashboard chart data"""
     if not request.user.is_host:
         return JsonResponse({'error': 'Not a host'}, status=403)
     
     chart_type = request.GET.get('chart_type')
     period = request.GET.get('period', '12')
+    
+    # Get current filter parameters from session or request
+    time_filter = request.GET.get('time_filter', '30')
     listing_filter = request.GET.get('listing_filter', 'all')
-    start_date_param = request.GET.get('start_date')
-    end_date_param = request.GET.get('end_date')
+    status_filter = request.GET.get('status_filter', 'all')
+    custom_start = request.GET.get('custom_start')
+    custom_end = request.GET.get('custom_end')
     
     user = request.user
     all_bookings = Booking.objects.filter(listing__host=user)
     
-    # Calculate date range based on parameters
+    # Calculate date range for filtering (same logic as main view)
     end_date = timezone.now().date()
-    
-    if start_date_param and end_date_param:
+    if custom_start and custom_end:
         try:
-            start_date = datetime.strptime(start_date_param, '%Y-%m-%d').date()
-            end_date = datetime.strptime(end_date_param, '%Y-%m-%d').date()
+            start_date = datetime.strptime(custom_start, '%Y-%m-%d').date()
+            end_date = datetime.strptime(custom_end, '%Y-%m-%d').date()
         except ValueError:
             start_date = end_date - timedelta(days=30)
+    elif time_filter == '7':
+        start_date = end_date - timedelta(days=7)
+    elif time_filter == '30':
+        start_date = end_date - timedelta(days=30)
+    elif time_filter == '90':
+        start_date = end_date - timedelta(days=90)
+    elif time_filter == '365':
+        start_date = end_date - timedelta(days=365)
     else:
-        # Use period parameter
-        try:
-            days = int(period) if period != 'all' else 365
-        except ValueError:
-            days = 30
-            
-        if days == 7:
-            start_date = end_date - timedelta(days=7)
-        elif days == 30:
-            start_date = end_date - timedelta(days=30)
-        elif days == 90:
-            start_date = end_date - timedelta(days=90)
-        elif days == 365:
-            start_date = end_date - timedelta(days=365)
-        else:
-            start_date = end_date - timedelta(days=days)
+        start_date = end_date - timedelta(days=30)
     
-    # Apply listing filter to bookings
-    filtered_bookings = all_bookings
+    # Apply filters to bookings
+    filtered_bookings = all_bookings.filter(
+        created_at__date__gte=start_date,
+        created_at__date__lte=end_date
+    )
+    
     if listing_filter != 'all' and listing_filter.isdigit():
         filtered_bookings = filtered_bookings.filter(listing_id=listing_filter)
+    
+    if status_filter != 'all':
+        filtered_bookings = filtered_bookings.filter(status=status_filter)
     
     response_data = {}
     
     if chart_type == 'revenue':
-        # Generate revenue data based on period and filters
+        # Generate revenue data based on period
         from dateutil.relativedelta import relativedelta
         
-        if start_date_param and end_date_param:
-            # Custom date range - show daily data
-            current_date = start_date
-            monthly_revenue = []
+        try:
+            period_months = int(period) if period != 'all' else 12
+        except ValueError:
+            period_months = 12
             
-            while current_date <= end_date:
-                next_date = current_date + timedelta(days=1)
-                
-                day_revenue = filtered_bookings.filter(
-                    status='completed',
-                    end_date__gte=current_date,
-                    end_date__lt=next_date
-                ).aggregate(
-                    total_revenue=Sum('total_price'),
-                    total_bookings=Count('id')
-                )
-                
-                monthly_revenue.append({
-                    'month': current_date.strftime('%Y-%m-%d'),
-                    'month_name': current_date.strftime('%d %b'),
-                    'revenue': float(day_revenue['total_revenue'] or 0),
-                    'bookings': day_revenue['total_bookings'] or 0
-                })
-                
-                current_date = next_date
-        else:
-            # Period-based data - show monthly data
-            try:
-                period_months = int(period) if period != 'all' else 12
-            except ValueError:
-                period_months = 12
-                
-            monthly_revenue = []
-            current_date = timezone.now().date()
+        monthly_revenue = []
+        current_date = timezone.now().date()
+        
+        month_names_ru = {
+            1: 'Янв', 2: 'Фев', 3: 'Мар', 4: 'Апр', 5: 'Май', 6: 'Июн',
+            7: 'Июл', 8: 'Авг', 9: 'Сен', 10: 'Окт', 11: 'Ноя', 12: 'Дек'
+        }
+        
+        for i in range(period_months - 1, -1, -1):
+            target_date = current_date.replace(day=1) - relativedelta(months=i)
+            month_end = target_date + relativedelta(months=1)
             
-            month_names_ru = {
-                1: 'Янв', 2: 'Фев', 3: 'Мар', 4: 'Апр', 5: 'Май', 6: 'Июн',
-                7: 'Июл', 8: 'Авг', 9: 'Сен', 10: 'Окт', 11: 'Ноя', 12: 'Дек'
-            }
+            month_revenue = all_bookings.filter(
+                status='completed',
+                end_date__gte=target_date,
+                end_date__lt=month_end
+            ).aggregate(
+                total_revenue=Sum('total_price'),
+                total_bookings=Count('id')
+            )
             
-            for i in range(period_months - 1, -1, -1):
-                target_date = current_date.replace(day=1) - relativedelta(months=i)
-                month_end = target_date + relativedelta(months=1)
-                
-                month_revenue = filtered_bookings.filter(
-                    status='completed',
-                    end_date__gte=target_date,
-                    end_date__lt=month_end
-                ).aggregate(
-                    total_revenue=Sum('total_price'),
-                    total_bookings=Count('id')
-                )
-                
-                month_name = f"{month_names_ru[target_date.month]} {target_date.year}"
-                
-                monthly_revenue.append({
-                    'month': target_date.strftime('%Y-%m-01'),
-                    'month_name': month_name,
-                    'revenue': float(month_revenue['total_revenue'] or 0),
-                    'bookings': month_revenue['total_bookings'] or 0
-                })
+            month_name = f"{month_names_ru[target_date.month]} {target_date.year}"
+            
+            monthly_revenue.append({
+                'month': target_date.strftime('%Y-%m-01'),
+                'month_name': month_name,
+                'revenue': float(month_revenue['total_revenue'] or 0),
+                'bookings': month_revenue['total_bookings'] or 0
+            })
         
         response_data['monthly_revenue'] = monthly_revenue
     
     elif chart_type == 'quarterly':
-        # Generate quarterly data with listing filter
-        from dateutil.relativedelta import relativedelta
-        
+        # Generate quarterly data
         try:
             period_quarters = int(period) if period != 'all' else 8
         except ValueError:
@@ -1926,7 +1900,7 @@ def host_dashboard_data(request):
             quarter_start = current_quarter_start - relativedelta(months=i*3)
             quarter_end = quarter_start + relativedelta(months=3)
             
-            quarter_revenue = filtered_bookings.filter(
+            quarter_revenue = all_bookings.filter(
                 status='completed',
                 end_date__gte=quarter_start,
                 end_date__lt=quarter_end
@@ -1946,7 +1920,7 @@ def host_dashboard_data(request):
         response_data['quarterly_revenue'] = quarterly_revenue
     
     elif chart_type == 'seasonal':
-        # Generate seasonal data with listing filter
+        # Generate seasonal data based on period
         seasonal_data = {}
         month_names_ru = [
             '', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -1956,15 +1930,11 @@ def host_dashboard_data(request):
         # Filter by period
         if period == 'current':
             year_filter = timezone.now().year
-            bookings_filter = filtered_bookings.filter(end_date__year=year_filter)
-        elif period == 'compare':
-            # Show last 2 years for comparison
-            two_years_ago = timezone.now().date() - timedelta(days=730)
-            bookings_filter = filtered_bookings.filter(end_date__gte=two_years_ago)
+            bookings_filter = all_bookings.filter(end_date__year=year_filter)
         else:
             # All time or last 2 years
             two_years_ago = timezone.now().date() - timedelta(days=730)
-            bookings_filter = filtered_bookings.filter(end_date__gte=two_years_ago)
+            bookings_filter = all_bookings.filter(end_date__gte=two_years_ago)
         
         for month in range(1, 13):
             month_bookings = bookings_filter.filter(
@@ -1987,17 +1957,8 @@ def host_dashboard_data(request):
         response_data['seasonal_revenue'] = list(seasonal_data.values())
     
     elif chart_type == 'status':
-        # Generate status data using date-filtered bookings
-        date_filtered_bookings = all_bookings.filter(
-            created_at__date__gte=start_date,
-            created_at__date__lte=end_date
-        )
-        
-        # Apply listing filter if specified
-        if listing_filter != 'all' and listing_filter.isdigit():
-            date_filtered_bookings = date_filtered_bookings.filter(listing_id=listing_filter)
-        
-        status_stats_qs = date_filtered_bookings.values('status').annotate(
+        # Generate status data using filtered bookings
+        status_stats_qs = filtered_bookings.values('status').annotate(
             count=Count('id'),
             revenue=Sum(Case(
                 When(status='completed', then='total_price'),
