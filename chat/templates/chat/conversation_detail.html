@@ -1,82 +1,368 @@
+
 {% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Чат{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'chat/css/chat.css' %}">
+<style>
+.chat-container {
+    max-width: 800px;
+    margin: 0 auto;
+    height: calc(100vh - 120px);
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.chat-header .user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.chat-header .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.3);
+}
+
+.chat-header .user-details h6 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.chat-header .user-details small {
+    opacity: 0.8;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    background: #f8f9fa;
+    border-left: 1px solid #e9ecef;
+    border-right: 1px solid #e9ecef;
+}
+
+.message-wrapper {
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.message-wrapper.own {
+    flex-direction: row-reverse;
+}
+
+.message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.message-content {
+    max-width: 70%;
+    position: relative;
+}
+
+.message-bubble {
+    padding: 12px 16px;
+    border-radius: 18px;
+    word-wrap: break-word;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.message-wrapper:not(.own) .message-bubble {
+    background: white;
+    border-bottom-left-radius: 6px;
+}
+
+.message-wrapper.own .message-bubble {
+    background: #007bff;
+    color: white;
+    border-bottom-right-radius: 6px;
+}
+
+.message-time {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 4px;
+    text-align: right;
+}
+
+.message-wrapper.own .message-time {
+    text-align: left;
+    color: rgba(255,255,255,0.7);
+}
+
+.chat-input {
+    background: white;
+    padding: 1rem;
+    border-radius: 0 0 12px 12px;
+    border: 1px solid #e9ecef;
+    border-top: none;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+}
+
+.input-group {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.input-group textarea {
+    flex: 1;
+    resize: none;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    padding: 12px 16px;
+    max-height: 100px;
+    min-height: 44px;
+}
+
+.input-group textarea:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.send-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+    background: #007bff;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.send-btn:hover {
+    background: #0056b3;
+    transform: scale(1.05);
+}
+
+.empty-chat {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+}
+
+.empty-chat i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+}
+
+.back-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.back-btn:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    background: #28a745;
+    border-radius: 50%;
+    border: 2px solid white;
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card chat-card">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <a href="{% url 'chat:conversation_list' %}" class="btn btn-outline-light btn-sm me-3">
-                            <i class="fas fa-arrow-left"></i>
-                        </a>
-                        <div>
-                            <h6 class="mb-0">
-                                {% with other_user=conversation.get_other_participant:request.user %}
-                                    {% if other_user %}
-                                        Чат с {{ other_user.get_full_name|default:other_user.username }}
-                                    {% else %}
-                                        Чат
-                                    {% endif %}
-                                {% endwith %}
-                            </h6>
-                            {% if conversation.related_listing %}
-                                <small class="opacity-75">По поводу: {{ conversation.related_listing.title }}</small>
-                            {% elif conversation.related_booking %}
-                                <small class="opacity-75">Бронирование: {{ conversation.related_booking.booking_reference }}</small>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="online-status">
-                        <span class="badge bg-success">В сети</span>
-                    </div>
-                </div>
-
-                <div class="card-body p-0">
-                    <div id="chat-messages" class="chat-messages">
-                        {% for message in messages %}
-                            {% include 'chat/_message.html' with message=message %}
-                        {% empty %}
-                            <div class="text-center p-4 text-muted">
-                                <i class="fas fa-comments fa-2x mb-2"></i>
-                                <p>Пока нет сообщений. Начните разговор!</p>
+<div class="container-fluid p-3">
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="user-info">
+                    <a href="{% url 'chat:conversation_list' %}" class="back-btn">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    {% with other_user=conversation.get_other_participant:request.user %}
+                        {% if other_user %}
+                            <div style="position: relative;">
+                                <img src="https://ui-avatars.com/api/?name={{ other_user.get_full_name|default:other_user.username }}&background=ffffff&color=007bff&size=40" 
+                                     class="avatar" alt="Аватар">
+                                <div class="status-indicator"></div>
                             </div>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <div class="card-footer">
-                    <form id="chat-form" class="d-flex">
-                        {% csrf_token %}
-                        <input type="text" id="chat-message-input" class="form-control me-2" 
-                               placeholder="Введите ваше сообщение..." autocomplete="off">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </form>
+                            <div class="user-details">
+                                <h6>{{ other_user.get_full_name|default:other_user.username }}</h6>
+                                {% if conversation.related_listing %}
+                                    <small>{{ conversation.related_listing.title }}</small>
+                                {% elif conversation.related_booking %}
+                                    <small>Бронирование #{{ conversation.related_booking.booking_reference }}</small>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endwith %}
                 </div>
             </div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+            {% for message in messages %}
+                <div class="message-wrapper {% if message.sender == request.user %}own{% endif %}">
+                    <img src="https://ui-avatars.com/api/?name={{ message.sender.get_full_name|default:message.sender.username }}&background={% if message.sender == request.user %}007bff{% else %}6c757d{% endif %}&color=ffffff&size=32" 
+                         class="message-avatar" alt="Аватар">
+                    <div class="message-content">
+                        <div class="message-bubble">
+                            {{ message.content|linebreaksbr }}
+                        </div>
+                        <div class="message-time">
+                            {{ message.created_at|date:"d.m H:i" }}
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-chat">
+                    <i class="fas fa-comments"></i>
+                    <p>Пока нет сообщений. Начните разговор!</p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="chat-input">
+            <form id="chat-form" class="input-group">
+                {% csrf_token %}
+                <textarea id="chat-message-input" placeholder="Введите сообщение..." rows="1"></textarea>
+                <button type="submit" class="send-btn">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'chat/js/chat.js' %}"></script>
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageContainer = document.getElementById('chat-messages');
+    const messageInput = document.getElementById('chat-message-input');
+    const chatForm = document.getElementById('chat-form');
+    
+    // Прокрутка к последнему сообщению
+    messageContainer.scrollTop = messageContainer.scrollHeight;
+    
+    // Автоматическое изменение размера textarea
+    messageInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+    });
+    
+    // Отправка по Enter (но не Shift+Enter)
+    messageInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            chatForm.dispatchEvent(new Event('submit'));
+        }
+    });
+    
+    // WebSocket подключение
     const conversationId = {{ conversation.id }};
-    const chatSocket = new WebSocket(
-        'ws://' + window.location.host + '/ws/chat/' + conversationId + '/'
-    );
-
-    // Initialize chat functionality
-    initializeChat(chatSocket, conversationId);
+    let chatSocket;
+    
+    try {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        chatSocket = new WebSocket(
+            protocol + '//' + window.location.host + '/ws/chat/' + conversationId + '/'
+        );
+        
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            if (data.message) {
+                addMessage(data.message, data.sender, data.timestamp, data.is_own);
+            }
+        };
+        
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+    } catch (error) {
+        console.log('WebSocket не поддерживается, используем обычную форму');
+    }
+    
+    // Отправка сообщения
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const message = messageInput.value.trim();
+        
+        if (!message) return;
+        
+        if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+            chatSocket.send(JSON.stringify({
+                'message': message
+            }));
+        } else {
+            // Fallback - обычная отправка формы
+            fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: 'content=' + encodeURIComponent(message)
+            }).then(() => {
+                location.reload();
+            });
+        }
+        
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
+    });
+    
+    function addMessage(content, sender, timestamp, isOwn) {
+        const messageWrapper = document.createElement('div');
+        messageWrapper.className = 'message-wrapper' + (isOwn ? ' own' : '');
+        
+        messageWrapper.innerHTML = `
+            <img src="https://ui-avatars.com/api/?name=${sender}&background=${isOwn ? '007bff' : '6c757d'}&color=ffffff&size=32" 
+                 class="message-avatar" alt="Аватар">
+            <div class="message-content">
+                <div class="message-bubble">
+                    ${content.replace(/\n/g, '<br>')}
+                </div>
+                <div class="message-time">
+                    ${new Date(timestamp).toLocaleString('ru-RU', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}
+                </div>
+            </div>
+        `;
+        
+        messageContainer.appendChild(messageWrapper);
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+    }
+});
 </script>
 {% endblock %}
