@@ -42,20 +42,6 @@
 
 .line-chart svg, .bar-chart svg {
     width: 100% !important;
-    height: 100% !important;
-    position: relative !important;
-    border-radius: 12px !important;
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 50%, #f8f9fa 100%) !important;
-    padding: 15px !important;
-    overflow: hidden !important;
-    box-sizing: border-box !important;
-    flex: 1 !important;
-    display: flex !important;
-    align-items: stretch !important;
-}
-
-.line-chart svg, .bar-chart svg {
-    width: 100% !important;
     height: calc(100% - 10px) !important;
     display: block !important;
     max-width: 100% !important;
@@ -234,94 +220,66 @@
     border-left: 4px solid #dc3545 !important;
 }
 
-/* Chart Button Styles */
-.btn-group .btn {
-    position: relative !important;
-    z-index: 1 !important;
+/* Chart Filter Styles */
+.chart-filters {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border: 1px solid #dee2e6;
 }
 
-.btn-group .btn.active {
-    background-color: #007bff !important;
-    border-color: #007bff !important;
-    color: white !important;
+.filter-row {
+    display: flex;
+    gap: 15px;
+    align-items: end;
+    flex-wrap: wrap;
 }
 
-/* Inline Legend Styles */
-.legend-item-inline {
-    display: flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    padding: 6px 12px !important;
-    border-radius: 6px !important;
-    background: rgba(255,255,255,0.8) !important;
-    border: 1px solid #dee2e6 !important;
-    font-size: 13px !important;
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 120px;
 }
 
-.legend-color-inline {
-    width: 14px !important;
-    height: 14px !important;
-    border-radius: 3px !important;
-    display: block !important;
-    flex-shrink: 0 !important;
+.filter-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #495057;
+    margin: 0;
 }
 
-.legend-label-inline {
-    font-weight: 500 !important;
-    color: #495057 !important;
-    margin: 0 !important;
+.filter-select, .filter-input {
+    padding: 6px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 13px;
+    background: white;
 }
 
-/* Enhanced Chart Labels */
-.chart-title {
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    fill: #2c3e50 !important;
-    text-anchor: middle !important;
+.filter-btn {
+    padding: 6px 15px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    height: fit-content;
 }
 
-.chart-axis-title {
-    font-size: 12px !important;
-    font-weight: 500 !important;
-    fill: #6c757d !important;
+.filter-btn:hover {
+    background: #0056b3;
 }
 
-/* Period Selector Styles */
-.form-select-sm {
-    border: 1px solid #dee2e6 !important;
-    border-radius: 6px !important;
-    padding: 4px 8px !important;
-    font-size: 13px !important;
-    background-color: #ffffff !important;
-    transition: all 0.2s ease !important;
-    min-width: 140px !important;
+.custom-dates {
+    display: none;
+    gap: 10px;
 }
 
-.form-select-sm:focus {
-    border-color: #007bff !important;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15) !important;
-    outline: none !important;
-}
-
-.form-select-sm:hover {
-    border-color: #b0b8c1 !important;
-}
-
-/* Card Header Improvements */
-.card-header {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
-    border-bottom: 1px solid #dee2e6 !important;
-    padding: 15px 20px !important;
-}
-
-.card-header .card-title {
-    font-weight: 600 !important;
-    color: #2c3e50 !important;
-}
-
-/* Card Body Improvements */
-.card-body.p-3 {
-    padding: 20px !important;
+.custom-dates.show {
+    display: flex;
 }
 
 /* Responsive chart adjustments */
@@ -343,14 +301,13 @@
         font-size: 10px !important;
     }
 
-    .card-header .d-flex {
-        flex-direction: column !important;
-        gap: 10px !important;
-        align-items: stretch !important;
+    .filter-row {
+        flex-direction: column;
+        align-items: stretch;
     }
 
-    .btn-group {
-        justify-content: center !important;
+    .filter-group {
+        min-width: auto;
     }
 }
 
@@ -383,113 +340,10 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2>Панель владельца недвижимости</h2>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filtersModal">
-                        <i class="fas fa-filter"></i> Фильтры
-                    </button>
-                    <a href="{% url 'listings:export_dashboard' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" 
+                    <a href="{% url 'listings:export_dashboard' %}" 
                        class="btn btn-outline-success">
                         <i class="fas fa-file-excel"></i> Экспорт в Excel
                     </a>
-                </div>
-            </div>
-
-            <!-- Current Filters Display -->
-            {% if current_filters.time_filter != '30' or current_filters.listing_filter != 'all' or current_filters.status_filter != 'all' %}
-            <div class="alert alert-info">
-                <strong>Активные фильтры:</strong>
-                <span class="badge bg-primary ms-2">
-                    Период: 
-                    {% if current_filters.time_filter == 'custom' %}
-                        {{ start_date }} - {{ end_date }}
-                    {% else %}
-                        {% for value, label in time_filter_options %}
-                            {% if value == current_filters.time_filter %}{{ label }}{% endif %}
-                        {% endfor %}
-                    {% endif %}
-                </span>
-                {% if current_filters.listing_filter != 'all' %}
-                    <span class="badge bg-secondary ms-1">
-                        Объявление: {% for listing in host_listings_for_filter %}{% if listing.id|stringformat:"s" == current_filters.listing_filter %}{{ listing.title }}{% endif %}{% endfor %}
-                    </span>
-                {% endif %}
-                {% if current_filters.status_filter != 'all' %}
-                    <span class="badge bg-warning ms-1">
-                        Статус: {% for value, label in status_filter_options %}{% if value == current_filters.status_filter %}{{ label }}{% endif %}{% endfor %}
-                    </span>
-                {% endif %}
-                <a href="{% url 'listings:host_dashboard' %}" class="btn btn-sm btn-outline-secondary ms-2">
-                    <i class="fas fa-times"></i> Сбросить фильтры
-                </a>
-            </div>
-            {% endif %}
-
-            <!-- Filters Modal -->
-            <div class="modal fade" id="filtersModal" tabindex="-1">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Фильтры панели</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <form method="get" id="filtersForm">
-                            <div class="modal-body">
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Временной период</label>
-                                        <select name="time_filter" class="form-select" id="timeFilterSelect">
-                                            {% for value, label in time_filter_options %}
-                                            <option value="{{ value }}" {% if current_filters.time_filter == value %}selected{% endif %}>
-                                                {{ label }}
-                                            </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Объявление</label>
-                                        <select name="listing_filter" class="form-select">
-                                            <option value="all">Все объявления</option>
-                                            {% for listing in host_listings_for_filter %}
-                                            <option value="{{ listing.id }}" {% if current_filters.listing_filter == listing.id|stringformat:"s" %}selected{% endif %}>
-                                                {{ listing.title|truncatechars:40 }}
-                                            </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <!-- Custom Date Range -->
-                                <div id="customDateRange" style="{% if current_filters.time_filter != 'custom' %}display: none;{% endif %}">
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Дата начала</label>
-                                            <input type="date" name="custom_start" class="form-control" 
-                                                   value="{{ current_filters.custom_start|default:'' }}">
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Дата окончания</label>
-                                            <input type="date" name="custom_end" class="form-control" 
-                                                   value="{{ current_filters.custom_end|default:'' }}">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Статус бронирования</label>
-                                    <select name="status_filter" class="form-select">
-                                        {% for value, label in status_filter_options %}
-                                        <option value="{{ value }}" {% if current_filters.status_filter == value %}selected{% endif %}>
-                                            {{ label }}
-                                        </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                                <button type="submit" class="btn btn-primary">Применить фильтры</button>
-                            </div>
-                        </form>
-                    </div>
                 </div>
             </div>
 
@@ -519,7 +373,7 @@
                                 <div>
                                     <h6 class="card-title">Общий доход</h6>
                                     <h3 class="mb-0">₽{{ stats.total_revenue|floatformat:0|intcomma }}</h3>
-                                    <small>За период: ₽{{ stats.filtered_revenue|floatformat:0|intcomma }}</small>
+                                    <small>За все время</small>
                                 </div>
                                 <div class="align-self-center">
                                     <i class="fas fa-dollar-sign fa-2x"></i>
@@ -564,74 +418,54 @@
                 </div>
             </div>
 
-            <!-- Additional Stats Row -->
-            <div class="row mb-4">
-                <div class="col-lg-3 col-md-6 mb-3">
-                    <div class="card border-left-success h-100">
-                        <div class="card-body">
-                            <div class="text-success">
-                                <i class="fas fa-check-circle"></i> Подтверждено
-                            </div>
-                            <h4 class="mb-0">{{ stats.confirmed_bookings }}</h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-3">
-                    <div class="card border-left-info h-100">
-                        <div class="card-body">
-                            <div class="text-info">
-                                <i class="fas fa-flag-checkered"></i> Завершено
-                            </div>
-                            <h4 class="mb-0">{{ stats.completed_bookings }}</h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-3">
-                    <div class="card border-left-danger h-100">
-                        <div class="card-body">
-                            <div class="text-danger">
-                                <i class="fas fa-times-circle"></i> Отменено
-                            </div>
-                            <h4 class="mb-0">{{ stats.canceled_bookings }}</h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-6 mb-3">
-                    <div class="card border-left-warning h-100">
-                        <div class="card-body">
-                            <div class="text-warning">
-                                <i class="fas fa-users"></i> Средн. гостей
-                            </div>
-                            <h4 class="mb-0">{{ guest_stats.avg_guests_per_booking|floatformat:1 }}</h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Charts Row -->
+            <!-- Revenue Chart -->
             <div class="row mb-4">
                 <div class="col-12 mb-3">
                     <div class="card h-100">
-                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                        <div class="card-header">
                             <h5 class="card-title mb-0">
                                 <i class="fas fa-chart-line text-success me-2"></i>
                                 Динамика доходов
                             </h5>
-                            <div class="d-flex gap-2 flex-wrap">
-                                <select class="form-select form-select-sm" id="revenuePeriodSelect" style="width: auto;">
-                                    <option value="6">Последние 6 месяцев</option>
-                                    <option value="12" selected>Последние 12 месяцев</option>
-                                    <option value="24">Последние 24 месяца</option>
-                                    <option value="all">Все время</option>
-                                </select>
-                                <div class="btn-group" role="group" aria-label="Chart type">
-                                    <button type="button" class="btn btn-outline-primary btn-sm active" data-chart="monthly">Месячно</button>
-                                    <button type="button" class="btn btn-outline-primary btn-sm" data-chart="quarterly">Квартально</button>
-                                    <button type="button" class="btn btn-outline-primary btn-sm" data-chart="seasonal">Сезонно</button>
-                                </div>
-                            </div>
                         </div>
                         <div class="card-body p-3">
+                            <!-- Revenue Chart Filters -->
+                            <div class="chart-filters">
+                                <div class="filter-row">
+                                    <div class="filter-group">
+                                        <label>Период:</label>
+                                        <select class="filter-select" id="revenue-period">
+                                            <option value="30">30 дней</option>
+                                            <option value="90">3 месяца</option>
+                                            <option value="365" selected>1 год</option>
+                                            <option value="custom">Произвольный</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label>Объявление:</label>
+                                        <select class="filter-select" id="revenue-listing">
+                                            <option value="all">Все объявления</option>
+                                            {% for listing in host_listings_for_filter %}
+                                            <option value="{{ listing.id }}">{{ listing.title|truncatechars:30 }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="custom-dates" id="revenue-custom-dates">
+                                        <div class="filter-group">
+                                            <label>От:</label>
+                                            <input type="date" class="filter-input" id="revenue-start-date">
+                                        </div>
+                                        <div class="filter-group">
+                                            <label>До:</label>
+                                            <input type="date" class="filter-input" id="revenue-end-date">
+                                        </div>
+                                    </div>
+                                    <button class="filter-btn" onclick="updateRevenueChart()">
+                                        <i class="fas fa-sync"></i> Обновить
+                                    </button>
+                                </div>
+                            </div>
+
                             <div class="chart-container">
                                 <div class="line-chart" id="revenueChart">
                                     <div class="no-data-message">
@@ -639,38 +473,48 @@
                                         <span>Загрузка данных...</span>
                                     </div>
                                 </div>
-                                <div class="chart-legend mt-3" id="revenueLegend" style="display: none;">
-                                    <div class="d-flex justify-content-center align-items-center gap-4 flex-wrap">
-                                        <div class="legend-item-inline">
-                                            <span class="legend-color-inline" style="background-color: #28a745;"></span>
-                                            <span class="legend-label-inline">Доходы</span>
-                                        </div>
-                                        <div class="legend-item-inline">
-                                            <span class="legend-color-inline" style="background-color: #17a2b8;"></span>
-                                            <span class="legend-label-inline">Количество бронирований</span>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Status Chart Row -->
+            <!-- Status and Quarterly Charts Row -->
             <div class="row mb-4">
                 <div class="col-lg-4 mb-3">
                     <div class="card h-100">
-                        <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="card-header">
                             <h5 class="card-title mb-0">Статусы бронирований</h5>
-                            <select class="form-select form-select-sm" id="statusPeriodSelect" style="width: auto;">
-                                <option value="30">За 30 дней</option>
-                                <option value="90">За 3 месяца</option>
-                                <option value="365" selected>За год</option>
-                                <option value="all">Все время</option>
-                            </select>
                         </div>
                         <div class="card-body p-3">
+                            <!-- Status Chart Filters -->
+                            <div class="chart-filters">
+                                <div class="filter-row">
+                                    <div class="filter-group">
+                                        <label>Период:</label>
+                                        <select class="filter-select" id="status-period">
+                                            <option value="30" selected>30 дней</option>
+                                            <option value="90">3 месяца</option>
+                                            <option value="365">1 год</option>
+                                            <option value="custom">Произвольный</option>
+                                        </select>
+                                    </div>
+                                    <div class="custom-dates" id="status-custom-dates">
+                                        <div class="filter-group">
+                                            <label>От:</label>
+                                            <input type="date" class="filter-input" id="status-start-date">
+                                        </div>
+                                        <div class="filter-group">
+                                            <label>До:</label>
+                                            <input type="date" class="filter-input" id="status-end-date">
+                                        </div>
+                                    </div>
+                                    <button class="filter-btn" onclick="updateStatusChart()">
+                                        <i class="fas fa-sync"></i> Обновить
+                                    </button>
+                                </div>
+                            </div>
+
                             <div class="chart-container">
                                 <div class="pie-chart" id="statusChart">
                                     <div class="no-data-message">
@@ -683,6 +527,7 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="col-lg-8 mb-3">
                     <div class="card h-100">
                         <div class="card-header">
@@ -693,136 +538,76 @@
                         </div>
                         <div class="card-body">
                             <!-- Filters for detailed statistics -->
-                            <form method="get" class="mb-4">
-                                <!-- Preserve existing filters -->
-                                <input type="hidden" name="time_filter" value="{{ current_filters.time_filter }}">
-                                <input type="hidden" name="listing_filter" value="{{ current_filters.listing_filter }}">
-                                <input type="hidden" name="status_filter" value="{{ current_filters.status_filter }}">
-
-                                <div class="row">
-                                    <div class="col-md-6 mb-2">
-                                        <label class="form-label">Объявление:</label>
-                                        <select class="form-select form-select-sm" name="detail_listing_id">
+                            <div class="chart-filters">
+                                <div class="filter-row">
+                                    <div class="filter-group">
+                                        <label>Объявление:</label>
+                                        <select class="filter-select" id="detail-listing">
                                             <option value="">Выберите объявление</option>
                                             {% for listing in host_listings_for_filter %}
-                                            <option value="{{ listing.id }}" {% if selected_listing_id == listing.id|stringformat:"s" %}selected{% endif %}>
-                                                {{ listing.title|truncatechars:40 }}
-                                            </option>
+                                            <option value="{{ listing.id }}">{{ listing.title|truncatechars:30 }}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
-                                    <div class="col-md-3 mb-2">
-                                        <label class="form-label">Начальная дата:</label>
-                                        <input type="date" class="form-control form-control-sm" name="custom_detail_start" value="{{ custom_detail_start }}" placeholder="Начало периода">
+                                    <div class="filter-group">
+                                        <label>От:</label>
+                                        <input type="date" class="filter-input" id="detail-start-date">
                                     </div>
-                                    <div class="col-md-3 mb-2">
-                                        <label class="form-label">Конечная дата:</label>
-                                        <input type="date" class="form-control form-control-sm" name="custom_detail_end" value="{{ custom_detail_end }}" placeholder="Конец периода">
+                                    <div class="filter-group">
+                                        <label>До:</label>
+                                        <input type="date" class="filter-input" id="detail-end-date">
                                     </div>
+                                    <button class="filter-btn" onclick="updateDetailedStats()">
+                                        <i class="fas fa-search"></i> Показать
+                                    </button>
                                 </div>
-                                <div class="row">
-                                    <div class="col-12 d-flex justify-content-end">
-                                        <button type="submit" class="btn btn-primary btn-sm">Показать статистику</button>
-                                    </div>
-                                </div>
-                            </form>
+                            </div>
 
-                            {% if listing_detail_stats %}
-                                {% if listing_detail_stats.error %}
-                                    <div class="alert alert-warning">
-                                        <i class="fas fa-exclamation-triangle me-2"></i>
-                                        {{ listing_detail_stats.error }}
-                                    </div>
-                                {% else %}
-                                    <!-- Summary statistics -->
-                                    <div class="row mb-4">
-                                        <div class="col-md-3 text-center">
-                                            <div class="p-3 bg-success bg-opacity-10 rounded">
-                                                <h4 class="text-success mb-1">{{ listing_detail_stats.occupancy_rate }}%</h4>
-                                                <small class="text-muted">Заполняемость</small>
-                                                <div class="small text-muted mt-1">{{ listing_detail_stats.occupied_days }} из {{ listing_detail_stats.total_possible_days }} дней</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3 text-center">
-                                            <div class="p-3 bg-primary bg-opacity-10 rounded">
-                                                <h4 class="text-primary mb-1">₽{{ listing_detail_stats.total_revenue|floatformat:0|intcomma }}</h4>
-                                                <small class="text-muted">Общий доход</small>
-                                                <div class="small text-muted mt-1">{{ listing_detail_stats.period_start }} - {{ listing_detail_stats.period_end }}</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3 text-center">
-                                            <div class="p-3 bg-warning bg-opacity-10 rounded">
-                                                <h4 class="text-warning mb-1">{{ listing_detail_stats.total_bookings }}</h4>
-                                                <small class="text-muted">Всего бронирований</small>
-                                                <div class="small text-muted mt-1">{{ listing_detail_stats.completed_bookings }} завершено</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3 text-center">
-                                            <div class="p-3 bg-info bg-opacity-10 rounded">
-                                                <h4 class="text-info mb-1">₽{{ listing_detail_stats.avg_booking_value|floatformat:0 }}</h4>
-                                                <small class="text-muted">Средний чек</small>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Monthly breakdown -->
-                                    <div class="table-responsive">
-                                        <table class="table table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th>Месяц</th>
-                                                    ```
-Анализ: The code changes remove the year selection from the detailed statistics form and adjust the layout.
-                                                    <th>Дни в периоде</th>
-                                                    <th>Занято дней</th>
-                                                    <th>Заполняемость</th>
-                                                    <th>Бронирований</th>
-                                                    <th>Доход</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for month in listing_detail_stats.monthly_breakdown %}
-                                                <tr>
-                                                    <td>{{ month.month_name }}</td>
-                                                    <td>{{ month.days }}</td>
-                                                    <td>{{ month.occupied_days }}</td>
-                                                    <td>
-                                                        <span class="badge {% if month.occupancy_rate >= 70 %}bg-success{% elif month.occupancy_rate >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
-                                                            {{ month.occupancy_rate }}%
-                                                        </span>
-                                                    </td>
-                                                    <td>{{ month.bookings }}</td>
-                                                    <td>₽{{ month.revenue|floatformat:0|intcomma }}</td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                {% endif %}
-                            {% else %}
+                            <div id="detailed-stats-content">
                                 <div class="text-center py-4 text-muted">
                                     <i class="fas fa-chart-line fa-3x mb-3"></i>
                                     <p>Выберите объявление и период для просмотра детальной статистики</p>
                                 </div>
-                            {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Additional Charts Row -->
+            <!-- Quarterly and Seasonal Charts Row -->
             <div class="row mb-4">
                 <div class="col-lg-6 mb-3">
                     <div class="card h-100">
-                        <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="card-header">
                             <h5 class="card-title mb-0">Сравнение кварталов</h5>
-                            <select class="form-select form-select-sm" id="quarterlyPeriodSelect" style="width: auto;">
-                                <option value="4">Последние 4 квартала</option>
-                                <option value="8" selected>Последние 8 кварталов</option>
-                                <option value="all">Все кварталы</option>
-                            </select>
                         </div>
                         <div class="card-body p-3">
+                            <!-- Quarterly Chart Filters -->
+                            <div class="chart-filters">
+                                <div class="filter-row">
+                                    <div class="filter-group">
+                                        <label>Кварталы:</label>
+                                        <select class="filter-select" id="quarterly-period">
+                                            <option value="4">Последние 4</option>
+                                            <option value="8" selected>Последние 8</option>
+                                            <option value="all">Все</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label>Объявление:</label>
+                                        <select class="filter-select" id="quarterly-listing">
+                                            <option value="all">Все объявления</option>
+                                            {% for listing in host_listings_for_filter %}
+                                            <option value="{{ listing.id }}">{{ listing.title|truncatechars:25 }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <button class="filter-btn" onclick="updateQuarterlyChart()">
+                                        <i class="fas fa-sync"></i> Обновить
+                                    </button>
+                                </div>
+                            </div>
+
                             <div class="chart-container">
                                 <div class="bar-chart" id="quarterlyChart">
                                     <div class="no-data-message">
@@ -834,17 +619,39 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="col-lg-6 mb-3">
                     <div class="card h-100">
-                        <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="card-header">
                             <h5 class="card-title mb-0">Сезонная активность</h5>
-                            <select class="form-select form-select-sm" id="seasonalPeriodSelect" style="width: auto;">
-                                <option value="current">Текущий год</option>
-                                <option value="all" selected>Все время</option>
-                                <option value="compare">Сравнение лет</option>
-                            </select>
                         </div>
                         <div class="card-body p-3">
+                            <!-- Seasonal Chart Filters -->
+                            <div class="chart-filters">
+                                <div class="filter-row">
+                                    <div class="filter-group">
+                                        <label>Период:</label>
+                                        <select class="filter-select" id="seasonal-period">
+                                            <option value="current">Текущий год</option>
+                                            <option value="all" selected>Все время</option>
+                                            <option value="compare">Сравнение лет</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label>Объявление:</label>
+                                        <select class="filter-select" id="seasonal-listing">
+                                            <option value="all">Все объявления</option>
+                                            {% for listing in host_listings_for_filter %}
+                                            <option value="{{ listing.id }}">{{ listing.title|truncatechars:25 }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <button class="filter-btn" onclick="updateSeasonalChart()">
+                                        <i class="fas fa-sync"></i> Обновить
+                                    </button>
+                                </div>
+                            </div>
+
                             <div class="chart-container">
                                 <div class="bar-chart" id="seasonalChart">
                                     <div class="no-data-message">
@@ -904,60 +711,9 @@
                                     Эффективность объявлений
                                 </h5>
                                 <div class="d-flex gap-2 flex-wrap">
-                                    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#listingsFilters">
-                                        <i class="fas fa-filter"></i> Фильтры
-                                    </button>
                                     <a href="{% url 'listings:host_listings' %}" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-cog"></i> Управлять всеми
                                     </a>
-                                </div>
-                            </div>
-
-                            <!-- Filters Section -->
-                            <div class="collapse mt-3" id="listingsFilters">
-                                <div class="row">
-                                    <div class="col-md-3 mb-2">
-                                        <label class="form-label">Поиск по названию:</label>
-                                        <input type="text" class="form-control form-control-sm" id="searchListings" placeholder="Введите название...">
-                                    </div>
-                                    <div class="col-md-2 mb-2">
-                                        <label class="form-label">Статус:</label>
-                                        <select class="form-select form-select-sm" id="filterStatus">
-                                            <option value="">Все</option>
-                                            <option value="active">Активные</option>
-                                            <option value="inactive">Неактивные</option>
-                                            <option value="pending">Ожидают</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-2 mb-2">
-                                        <label class="form-label">Рейтинг:</label>
-                                        <select class="form-select form-select-sm" id="filterRating">
-                                            <option value="">Все</option>
-                                            <option value="5">5 звезд</option>
-                                            <option value="4">4+ звезд</option>
-                                            <option value="3">3+ звезд</option>
-                                            <option value="no_rating">Без рейтинга</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-2 mb-2">
-                                        <label class="form-label">Сортировка:</label>
-                                        <select class="form-select form-select-sm" id="sortListings">
-                                            <option value="revenue_desc">По доходу ↓</option>
-                                            <option value="revenue_asc">По доходу ↑</option>
-                                            <option value="bookings_desc">По бронированиям ↓</option>
-                                            <option value="rating_desc">По рейтингу ↓</option>
-                                            <option value="price_desc">По цене ↓</option>
-                                            <option value="price_asc">По цене ↑</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3 mb-2 d-flex align-items-end">
-                                        <button class="btn btn-sm btn-outline-secondary me-2" onclick="resetListingsFilters()">
-                                            <i class="fas fa-undo"></i> Сбросить
-                                        </button>
-                                        <button class="btn btn-sm btn-success" onclick="exportListingsData()">
-                                            <i class="fas fa-download"></i> Экспорт
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -967,19 +723,19 @@
                                 <div class="col-md-3">
                                     <div class="text-center p-2 bg-light rounded">
                                         <small class="text-muted">Общий доход</small>
-                                        <div class="fw-bold text-success" id="totalRevenueDisplay">₽{{ stats.total_revenue|floatformat:0|intcomma }}</div>
+                                        <div class="fw-bold text-success">₽{{ stats.total_revenue|floatformat:0|intcomma }}</div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="text-center p-2 bg-light rounded">
                                         <small class="text-muted">Всего бронирований</small>
-                                        <div class="fw-bold text-primary" id="totalBookingsDisplay">{{ stats.total_bookings }}</div>
+                                        <div class="fw-bold text-primary">{{ stats.total_bookings }}</div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="text-center p-2 bg-light rounded">
                                         <small class="text-muted">Средний рейтинг</small>
-                                        <div class="fw-bold text-warning" id="avgRatingDisplay">
+                                        <div class="fw-bold text-warning">
                                             {% with avg_rating=top_listings|dictsortreversed:"avg_rating"|first %}
                                                 {% if avg_rating.avg_rating %}{{ avg_rating.avg_rating|floatformat:1 }}{% else %}—{% endif %}
                                             {% endwith %}
@@ -989,13 +745,13 @@
                                 <div class="col-md-3">
                                     <div class="text-center p-2 bg-light rounded">
                                         <small class="text-muted">Активных объявлений</small>
-                                        <div class="fw-bold text-info" id="activeListingsDisplay">{{ stats.active_listings }}</div>
+                                        <div class="fw-bold text-info">{{ stats.active_listings }}</div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="table-responsive">
-                                <table class="table table-hover" id="listingsTable">
+                                <table class="table table-hover">
                                     <thead class="table-light">
                                         <tr>
                                             <th style="width: 25%;">
@@ -1032,15 +788,9 @@
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody id="listingsTableBody">
+                                    <tbody>
                                         {% for listing in top_listings %}
-                                        <tr data-listing-id="{{ listing.id }}" 
-                                            data-title="{{ listing.title|lower }}"
-                                            data-status="{% if listing.is_active %}active{% else %}inactive{% endif %}{% if not listing.is_approved %} pending{% endif %}"
-                                            data-rating="{{ listing.avg_rating|default:'0' }}"
-                                            data-revenue="{{ listing.total_revenue|default:'0' }}"
-                                            data-bookings="{{ listing.bookings_count }}"
-                                            data-price="{{ listing.price_per_night }}">
+                                        <tr>
                                             <td>
                                                 <div class="d-flex align-items-center">
                                                     <img src="{{ listing.main_image_url }}" alt="{{ listing.title }}" 
@@ -1089,7 +839,7 @@
                                             <td>
                                                 <div class="text-center">
                                                     <span class="badge bg-primary fs-6">{{ listing.bookings_count }}</span>
-                                                    {% if listing.bookings_count > 0 %}
+                                                    {% iflisting.bookings_count > 0 %}
                                                         <div class="mt-1">
                                                             <small class="text-success">
                                                                 <i class="fas fa-check-circle me-1"></i>
@@ -1137,31 +887,6 @@
                                                        class="btn btn-sm btn-outline-secondary" title="Редактировать">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
-                                                    <div class="btn-group">
-                                                        <button class="btn btn-sm btn-outline-info dropdown-toggle" 
-                                                                data-bs-toggle="dropdown" title="Еще">
-                                                            <i class="fas fa-ellipsis-v"></i>
-                                                        </button>
-                                                        <ul class="dropdown-menu">
-                                                            <li>
-                                                                <a class="dropdown-item" href="{% url 'listings:listing_images' pk=listing.pk %}">
-                                                                    <i class="fas fa-images me-2"></i>Фото
-                                                                </a>
-                                                            </li>
-                                                            <li>
-                                                                <a class="dropdown-item" href="{% url 'listings:host_bookings' %}?listing={{ listing.id }}">
-                                                                    <i class="fas fa-calendar-alt me-2"></i>Бронирования
-                                                                </a>
-                                                            </li>
-                                                            <li><hr class="dropdown-divider"></li>
-                                                            <li>
-                                                                <button class="dropdown-item" onclick="toggleListingStatus({{ listing.id }}, {{ listing.is_active|yesno:'false,true' }})">
-                                                                    <i class="fas fa-toggle-{% if listing.is_active %}off{% else %}on{% endif %} me-2"></i>
-                                                                    {% if listing.is_active %}Деактивировать{% else %}Активировать{% endif %}
-                                                                </button>
-                                                            </li>
-                                                        </ul>
-                                                    </div>
                                                 </div>
                                             </td>
                                         </tr>
@@ -1259,14 +984,13 @@
 </div>
 
 <script>
-// Native JavaScript chart implementation
+// Dashboard chart management with individual filters
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Host dashboard initializing...');
-    
+
     // Check if Chart.js is loaded
     if (typeof Chart === 'undefined') {
         console.error('Chart.js is not loaded!');
-        // Show error message in chart containers
         const chartContainers = document.querySelectorAll('.chart-container .line-chart, .chart-container .bar-chart, .chart-container .pie-chart');
         chartContainers.forEach(container => {
             container.innerHTML = '<div class="no-data-message"><i class="fas fa-exclamation-triangle"></i><span>Chart.js не загружен. Графики недоступны.</span></div>';
@@ -1276,277 +1000,166 @@ document.addEventListener('DOMContentLoaded', function() {
 
     console.log('Dashboard charts initializing...');
 
-    // Chart data - ensure proper JSON parsing
-    let monthlyData, quarterlyData, seasonalData;
+    // Initialize chart data from backend
+    let monthlyData = {{ monthly_revenue|safe }};
+    let quarterlyData = {{ quarterly_revenue|safe }};
+    let seasonalData = {{ seasonal_revenue|safe }};
+    let statusData = {{ status_stats|safe }};
 
-    try {
-        monthlyData = {{ monthly_revenue|safe }};
-        quarterlyData = {{ quarterly_revenue|safe }};
-        seasonalData = {{ seasonal_revenue|safe }};
-    } catch (e) {
-        console.error('Error parsing chart data:', e);
-        monthlyData = [];
-        quarterlyData = [];
-        seasonalData = [];
+    // Initialize all charts
+    initializeAllCharts();
+
+    // Setup filter change handlers
+    setupFilterHandlers();
+
+    function initializeAllCharts() {
+        createRevenueChart();
+        createStatusChart();
+        createQuarterlyChart();
+        createSeasonalChart();
     }
 
-    let currentChartType = 'monthly';
+    function setupFilterHandlers() {
+        // Revenue chart filters
+        document.getElementById('revenue-period').addEventListener('change', function() {
+            toggleCustomDates('revenue', this.value);
+        });
 
-    // Custom date range toggle
-    const timeFilterSelect = document.getElementById('timeFilterSelect');
-    const customDateRange = document.getElementById('customDateRange');
-
-    if (timeFilterSelect && customDateRange) {
-        timeFilterSelect.addEventListener('change', function() {
-            if (this.value === 'custom') {
-                customDateRange.style.display = 'block';
-            } else {
-                customDateRange.style.display = 'none';
-            }
+        // Status chart filters
+        document.getElementById('status-period').addEventListener('change', function() {
+            toggleCustomDates('status', this.value);
         });
     }
 
-    // Chart type switcher
-    const chartButtons = document.querySelectorAll('[data-chart]');
-    chartButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            chartButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            currentChartType = this.dataset.chart;
-            createRevenueChart();
-        });
-    });
-
-    // Period selectors with AJAX updates
-    const revenuePeriodSelect = document.getElementById('revenuePeriodSelect');
-    const statusPeriodSelect = document.getElementById('statusPeriodSelect');
-    const quarterlyPeriodSelect = document.getElementById('quarterlyPeriodSelect');
-    const seasonalPeriodSelect = document.getElementById('seasonalPeriodSelect');
-
-    if (revenuePeriodSelect) {
-        revenuePeriodSelect.addEventListener('change', function() {
-            updateChartsWithPeriod('revenue', this.value);
-        });
-    }
-
-    if (statusPeriodSelect) {
-        statusPeriodSelect.addEventListener('change', function() {
-            updateChartsWithPeriod('status', this.value);
-        });
-    }
-
-    if (quarterlyPeriodSelect) {
-        quarterlyPeriodSelect.addEventListener('change', function() {
-            updateChartsWithPeriod('quarterly', this.value);
-        });
-    }
-
-    if (seasonalPeriodSelect) {
-        seasonalPeriodSelect.addEventListener('change', function() {
-            updateChartsWithPeriod('seasonal', this.value);
-        });
-    }
-
-    // Function to update charts with AJAX
-    function updateChartsWithPeriod(chartType, period) {
-        const url = new URL(window.location);
-        url.searchParams.set(chartType + '_period', period);
-        
-        // Show loading for specific chart
-        const chartContainer = document.getElementById(chartType + 'Chart');
-        if (chartContainer) {
-            chartContainer.innerHTML = '<div class="no-data-message"><i class="fas fa-spinner fa-spin"></i><span>Обновление данных...</span></div>';
+    function toggleCustomDates(chartType, period) {
+        const customDatesDiv = document.getElementById(chartType + '-custom-dates');
+        if (period === 'custom') {
+            customDatesDiv.classList.add('show');
+        } else {
+            customDatesDiv.classList.remove('show');
         }
-
-        // Get current filter values from URL parameters
-        const currentUrl = new URL(window.location);
-        const timeFilter = currentUrl.searchParams.get('time_filter') || '30';
-        const listingFilter = currentUrl.searchParams.get('listing_filter') || 'all';
-        const statusFilter = currentUrl.searchParams.get('status_filter') || 'all';
-        const customStart = currentUrl.searchParams.get('custom_start') || '';
-        const customEnd = currentUrl.searchParams.get('custom_end') || '';
-
-        // Build request URL with current filters
-        let requestUrl = `/listings/host-dashboard-data/?chart_type=${chartType}&period=${period}`;
-        requestUrl += `&time_filter=${timeFilter}`;
-        requestUrl += `&listing_filter=${listingFilter}`;
-        requestUrl += `&status_filter=${statusFilter}`;
-        if (customStart) requestUrl += `&custom_start=${customStart}`;
-        if (customEnd) requestUrl += `&custom_end=${customEnd}`;
-
-        // Make AJAX request to get updated data
-        fetch(requestUrl, {
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Update the specific chart with new data
-            switch(chartType) {
-                case 'revenue':
-                    if (data.monthly_revenue) {
-                        monthlyData = data.monthly_revenue;
-                        createRevenueChart();
-                    }
-                    break;
-                case 'status':
-                    if (data.status_stats) {
-                        // Update status stats and recreate chart
-                        createStatusChart();
-                    }
-                    break;
-                case 'quarterly':
-                    if (data.quarterly_revenue) {
-                        quarterlyData = data.quarterly_revenue;
-                        createQuarterlyChart();
-                    }
-                    break;
-                case 'seasonal':
-                    if (data.seasonal_revenue) {
-                        seasonalData = data.seasonal_revenue;
-                        createSeasonalChart();
-                    }
-                    break;
-            }
-        })
-        .catch(error => {
-            console.error('Error updating chart:', error);
-            if (chartContainer) {
-                chartContainer.innerHTML = '<div class="no-data-message"><i class="fas fa-exclamation-triangle"></i><span>Ошибка загрузки данных</span></div>';
-            }
-        });
     }
 
-    // Revenue Line Chart
+    // Revenue Chart
     function createRevenueChart() {
         const container = document.getElementById('revenueChart');
-        if (!container) return;
-
-        let chartData, chartTitle;
-        const periodSelect = document.getElementById('revenuePeriodSelect');
-        const selectedPeriod = periodSelect ? periodSelect.value : '12';
-
-        switch(currentChartType) {
-            case 'quarterly':
-                chartData = quarterlyData;
-                chartTitle = 'Квартальная динамика доходов';
-                break;
-            case 'seasonal':
-                chartData = seasonalData;
-                chartTitle = 'Сезонная статистика доходов';
-                break;
-            default:
-                chartData = monthlyData;
-                chartTitle = 'Месячная динамика доходов';
-        }
-
-        console.log('Revenue data:', chartData);
-
-        if (!chartData || chartData.length === 0) {
-            container.innerHTML = `
-                <div class="no-data-message">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Нет данных о доходах за выбранный период</span>
-                </div>
-            `;
+        if (!container || !monthlyData || monthlyData.length === 0) {
+            if (container) {
+                container.innerHTML = '<div class="no-data-message"><i class="fas fa-chart-line"></i><span>Нет данных о доходах</span></div>';
+            }
             return;
         }
 
-        // Filter data based on selected period
-        if (selectedPeriod !== 'all' && currentChartType === 'monthly') {
-            const periodMonths = parseInt(selectedPeriod);
-            chartData = chartData.slice(-periodMonths);
-        } else if (selectedPeriod !== 'all' && currentChartType === 'quarterly') {
-            const periodQuarters = parseInt(selectedPeriod || '8');
-            chartData = chartData.slice(-periodQuarters);
+        const data = monthlyData.map(item => {
+            const date = new Date(item.month + 'T00:00:00');
+            return {
+                label: date.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }),
+                value: parseFloat(item.revenue) || 0
+            };
+        });
+
+        createLineChart(container, data, '#28a745');
+    }
+
+    // Status Chart
+    function createStatusChart() {
+        const container = document.getElementById('statusChart');
+        const legendContainer = document.getElementById('statusLegend');
+
+        if (!container || !statusData || statusData.length === 0) {
+            if (container) {
+                container.innerHTML = '<div class="no-data-message"><i class="fas fa-chart-pie"></i><span>Нет данных о статусах</span></div>';
+            }
+            return;
         }
 
-        // Prepare data
-        let data;
-        if (currentChartType === 'quarterly') {
-            data = chartData.map(item => ({
-                label: item.quarter_name,
-                value: parseFloat(item.revenue) || 0
-            }));
-        } else if (currentChartType === 'seasonal') {
-            data = chartData.map(item => ({
-                label: item.month_name.substr(0, 3),
-                value: parseFloat(item.total_revenue) || 0
-            }));
-        } else {
-            data = chartData.map(item => {
-                const date = new Date(item.month + 'T00:00:00');
-                return {
-                    label: date.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }),
-                    value: parseFloat(item.revenue) || 0
-                };
-            });
+        const statusLabels = {
+            'pending': 'В ожидании',
+            'confirmed': 'Подтверждено',
+            'completed': 'Завершено',
+            'canceled': 'Отменено'
+        };
+
+        const statusColors = {
+            'pending': '#ffc107',
+            'confirmed': '#28a745',
+            'completed': '#17a2b8',
+            'canceled': '#dc3545'
+        };
+
+        const data = statusData.map(item => ({
+            label: statusLabels[item.status] || item.status,
+            value: item.count,
+            color: statusColors[item.status] || '#6c757d'
+        }));
+
+        createPieChart(container, data, legendContainer);
+    }
+
+    // Quarterly Chart
+    function createQuarterlyChart() {
+        const container = document.getElementById('quarterlyChart');
+        if (!container || !quarterlyData || quarterlyData.length === 0) {
+            if (container) {
+                container.innerHTML = '<div class="no-data-message"><i class="fas fa-chart-bar"></i><span>Нет квартальных данных</span></div>';
+            }
+            return;
         }
+
+        const data = quarterlyData.map(item => ({
+            label: item.quarter_name,
+            value: parseFloat(item.revenue) || 0
+        }));
+
+        createBarChart(container, data, '#17a2b8');
+    }
+
+    // Seasonal Chart
+    function createSeasonalChart() {
+        const container = document.getElementById('seasonalChart');
+        if (!container || !seasonalData || seasonalData.length === 0) {
+            if (container) {
+                container.innerHTML = '<div class="no-data-message"><i class="fas fa-chart-bar"></i><span>Нет сезонных данных</span></div>';
+            }
+            return;
+        }
+
+        const data = seasonalData.map(item => ({
+            label: item.month_name.substr(0, 3),
+            value: parseFloat(item.total_revenue) || 0
+        }));
+
+        createBarChart(container, data, '#ffc107');
+    }
+
+    // Generic chart creation functions
+    function createLineChart(container, data, color) {
+        if (!data || data.length === 0) return;
 
         const maxValue = Math.max(...data.map(d => d.value), 1000);
-        const minValue = 0;
         const padding = 50;
-
-        // Calculate container dimensions properly
         const containerRect = container.getBoundingClientRect();
-        const containerStyle = window.getComputedStyle(container);
-        const containerPadding = parseFloat(containerStyle.paddingTop) + parseFloat(containerStyle.paddingBottom);
-
-        const availableWidth = Math.max(containerRect.width || container.offsetWidth, 300);
-        const availableHeight = Math.max((containerRect.height || container.offsetHeight) - containerPadding, 250);
-
-        const chartWidth = availableWidth - (padding * 2);
-        const chartHeight = availableHeight - (padding * 2);
-
-        // SVG dimensions should fill container completely
-        const svgWidth = availableWidth;
-        const svgHeight = availableHeight;
+        const svgWidth = Math.max(containerRect.width || container.offsetWidth, 300);
+        const svgHeight = Math.max(containerRect.height || container.offsetHeight, 250);
+        const chartWidth = svgWidth - (padding * 2);
+        const chartHeight = svgHeight - (padding * 2);
 
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('width', '100%');
         svg.setAttribute('height', '100%');
         svg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
-        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
-        // Create gradient
-        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-        const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
-        gradient.setAttribute('id', 'gradient');
-        gradient.setAttribute('x1', '0%');
-        gradient.setAttribute('y1', '0%');
-        gradient.setAttribute('x2', '0%');
-        gradient.setAttribute('y2', '100%');
-
-        const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
-        stop1.setAttribute('offset', '0%');
-        stop1.setAttribute('stop-color', '#28a745');
-        stop1.setAttribute('stop-opacity', '0.3');
-
-        const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
-        stop2.setAttribute('offset', '100%');
-        stop2.setAttribute('stop-color', '#28a745');
-        stop2.setAttribute('stop-opacity', '0.1');
-
-        gradient.appendChild(stop1);
-        gradient.appendChild(stop2);
-        defs.appendChild(gradient);
-        svg.appendChild(defs);
-
-        // Create grid lines and Y-axis labels
+        // Create grid lines
         const gridCount = 5;
         for (let i = 0; i <= gridCount; i++) {
             const y = padding + (i * (chartHeight / gridCount));
-
-            // Grid line
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line.setAttribute('x1', padding);
             line.setAttribute('y1', y);
             line.setAttribute('x2', padding + chartWidth);
             line.setAttribute('y2', y);
-            line.setAttribute('class', 'chart-grid');
+            line.setAttribute('stroke', '#e0e0e0');
+            line.setAttribute('stroke-width', '1');
             svg.appendChild(line);
 
             // Y-axis labels
@@ -1555,7 +1168,8 @@ document.addEventListener('DOMContentLoaded', function() {
             text.setAttribute('x', padding - 10);
             text.setAttribute('y', y + 4);
             text.setAttribute('text-anchor', 'end');
-            text.setAttribute('class', 'chart-label');
+            text.setAttribute('font-size', '12');
+            text.setAttribute('fill', '#6c757d');
 
             if (value >= 1000000) {
                 text.textContent = '₽' + (value / 1000000).toFixed(1) + 'М';
@@ -1564,7 +1178,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 text.textContent = '₽' + Math.round(value).toLocaleString('ru-RU');
             }
-
             svg.appendChild(text);
         }
 
@@ -1576,75 +1189,28 @@ document.addEventListener('DOMContentLoaded', function() {
             return { x, y, value: d.value, label: d.label };
         });
 
-        // Create area path
+        // Create line path
         if (points.length > 1) {
-            const areaPoints = points.map(p => `${p.x},${p.y}`).join(' L');
-            const areaPath = `M ${padding},${padding + chartHeight} L${areaPoints} L${padding + chartWidth},${padding + chartHeight} Z`;
-
-            const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            area.setAttribute('d', areaPath);
-            area.setAttribute('fill', 'url(#gradient)');
-            svg.appendChild(area);
-
-            // Create line path
             const linePoints = points.map(p => `${p.x},${p.y}`).join(' L');
             const linePath = `M${linePoints}`;
 
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             line.setAttribute('d', linePath);
             line.setAttribute('fill', 'none');
-            line.setAttribute('stroke', '#28a745');            line.setAttribute('stroke-width', '3');
-            line.setAttribute('stroke-linecap', 'round');
-            line.setAttribute('stroke-linejoin', 'round');
+            line.setAttribute('stroke', color);
+            line.setAttribute('stroke-width', '3');
             svg.appendChild(line);
         }
 
-        // Create points and labels
+        // Create points
         points.forEach((point, i) => {
-            // Point circle
             const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             circle.setAttribute('cx', point.x);
             circle.setAttribute('cy', point.y);
             circle.setAttribute('r', 5);
-            circle.setAttribute('fill', '#28a745');
+            circle.setAttribute('fill', color);
             circle.setAttribute('stroke', '#ffffff');
             circle.setAttribute('stroke-width', '2');
-            circle.style.cursor = 'pointer';
-
-            // Add tooltip
-            circle.addEventListener('mouseenter', function(e) {
-                const tooltip = document.createElement('div');
-                tooltip.className = 'chart-tooltip';
-
-                let valueText;
-                if (point.value >= 1000000) {
-                    valueText = (point.value / 1000000).toFixed(1) + 'М';
-                } else if (point.value >= 1000) {
-                    valueText = (point.value / 1000).toFixed(0) + 'К';
-                } else {
-                    valueText = point.value.toLocaleString('ru-RU');
-                }
-
-                tooltip.innerHTML = `${point.label}<br>₽${valueText}`;
-
-                const rect = container.getBoundingClientRect();
-                tooltip.style.position = 'absolute';
-                tooltip.style.left = (e.clientX - rect.left + 10) + 'px';
-                tooltip.style.top = (e.clientY - rect.top - 40) + 'px';
-                tooltip.style.display = 'block';
-                tooltip.style.zIndex = '1001';
-                container.style.position = 'relative';
-                container.appendChild(tooltip);
-
-                circle._tooltip = tooltip;
-            });
-
-            circle.addEventListener('mouseleave', function() {
-                if (circle._tooltip) {
-                    circle._tooltip.remove();
-                }
-            });
-
             svg.appendChild(circle);
 
             // X-axis labels
@@ -1652,7 +1218,8 @@ document.addEventListener('DOMContentLoaded', function() {
             text.setAttribute('x', point.x);
             text.setAttribute('y', padding + chartHeight + 20);
             text.setAttribute('text-anchor', 'middle');
-            text.setAttribute('class', 'chart-label');
+            text.setAttribute('font-size', '12');
+            text.setAttribute('fill', '#6c757d');
             text.textContent = point.label;
             svg.appendChild(text);
         });
@@ -1661,609 +1228,399 @@ document.addEventListener('DOMContentLoaded', function() {
         container.appendChild(svg);
     }
 
-    // Status Pie Chart
-    function createStatusChart() {
-        const container = document.getElementById('statusChart');
-        const legendContainer = document.getElementById('statusLegend');
-        if (!container) return;
-
-        // Note: For full period filtering, we would need to make an AJAX call to get filtered data
-        // For now, we'll use the existing data but show the selection
-        const statusStats = {{ status_stats|safe }};
-        console.log('Status data:', statusStats);
-
-        // Get selected period for display purposes
-        const periodSelect = document.getElementById('statusPeriodSelect');
-        const selectedPeriod = periodSelect ? periodSelect.value : 'all';
-
-        if (!statusStats || statusStats.length === 0) {
-            container.innerHTML = `
-                <div class="no-data-message">
-                    <i class="fas fa-chart-pie"></i>
-                    <span>Нет данных о бронированиях за выбранный период</span>
-                </div>
-            `;
-            if (legendContainer) legendContainer.innerHTML = '';
+    function createBarChart(container, data, color) {
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="no-data-message"><i class="fas fa-chart-bar"></i><span>Нет данных</span></div>';
             return;
         }
 
-        const statusMap = {
-            'confirmed': 'Подтверждено',
-            'pending': 'В ожидании',
-            'completed': 'Завершено',
-            'canceled': 'Отменено'
-        };
-
-        const statusColors = {
-            'confirmed': '#28a745',
-            'pending': '#ffc107',
-            'completed': '#17a2b8',
-            'canceled': '#dc3545'
-        };
-
-        const data = statusStats.map(item => ({
-            label: statusMap[item.status] || item.status,
-            value: item.count,
-            color: statusColors[item.status] || '#6c757d',
-            status: item.status
-        }));
-
-        const total = data.reduce((sum, d) => sum + d.value, 0);
-        const radius = 110;
-        const centerX = 150;
-        const centerY = 150;
+        const maxValue = Math.max(...data.map(d => d.value), 1000);
+        const padding = 50;
+        const containerRect = container.getBoundingClientRect();
+        const svgWidth = Math.max(containerRect.width || container.offsetWidth, 300);
+        const svgHeight = Math.max(containerRect.height || container.offsetHeight, 250);
+        const chartWidth = svgWidth - (padding * 2);
+        const chartHeight = svgHeight - (padding * 2);
+        const barWidth = chartWidth / data.length * 0.8;
+        const barSpacing = chartWidth / data.length * 0.2;
 
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('width', '300');
-        svg.setAttribute('height', '300');
-        svg.setAttribute('viewBox', '0 0 300 300');
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+        svg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
+
+        // Create bars
+        data.forEach((d, i) => {
+            const barHeight = maxValue > 0 ? (d.value / maxValue) * chartHeight : 0;
+            const x = padding + (i * (chartWidth / data.length)) + (barSpacing / 2);
+            const y = padding + chartHeight - barHeight;
+
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', x);
+            rect.setAttribute('y', y);
+            rect.setAttribute('width', barWidth);
+            rect.setAttribute('height', barHeight);
+            rect.setAttribute('fill', color);
+            rect.setAttribute('opacity', '0.8');
+            svg.appendChild(rect);
+
+            // X-axis labels
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', x + barWidth / 2);
+            text.setAttribute('y', padding + chartHeight + 20);
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('font-size', '12');
+            text.setAttribute('fill', '#6c757d');
+            text.textContent = d.label;
+            svg.appendChild(text);
+        });
+
+        container.innerHTML = '';
+        container.appendChild(svg);
+    }
+
+    function createPieChart(container, data, legendContainer) {
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="no-data-message"><i class="fas fa-chart-pie"></i><span>Нет данных</span></div>';
+            return;
+        }
+
+        const total = data.reduce((sum, d) => sum + d.value, 0);
+        if (total === 0) {
+            container.innerHTML = '<div class="no-data-message"><i class="fas fa-chart-pie"></i><span>Нет данных</span></div>';
+            return;
+        }
+
+        const centerX = 140;
+        const centerY = 140;
+        const radius = 100;
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+        svg.setAttribute('viewBox', '0 0 280 280');
 
         let currentAngle = 0;
+        const legendHtml = [];
 
-        data.forEach((segment, i) => {
-            const angle = (segment.value / total) * 360;
-            const startAngle = currentAngle;
-            const endAngle = currentAngle + angle;
+        data.forEach((d, i) => {
+            const sliceAngle = (d.value / total) * 360;
+            const endAngle = currentAngle + sliceAngle;
 
-            const startAngleRad = (startAngle * Math.PI) / 180;
-            const endAngleRad = (endAngle * Math.PI) / 180;
+            const x1 = centerX + radius * Math.cos((currentAngle * Math.PI) / 180);
+            const y1 = centerY + radius * Math.sin((currentAngle * Math.PI) / 180);
+            const x2 = centerX + radius * Math.cos((endAngle * Math.PI) / 180);
+            const y2 = centerY + radius * Math.sin((endAngle * Math.PI) / 180);
 
-            const x1 = centerX + radius * Math.cos(startAngleRad);
-            const y1 = centerY + radius * Math.sin(startAngleRad);
-            const x2 = centerX + radius * Math.cos(endAngleRad);
-            const y2 = centerY + radius * Math.sin(endAngleRad);
-
-            const largeArcFlag = angle > 180 ? 1 : 0;
+            const largeArcFlag = sliceAngle > 180 ? 1 : 0;
 
             const pathData = [
-                'M', centerX, centerY,
-                'L', x1, y1,
-                'A', radius, radius, 0, largeArcFlag, 1, x2, y2,
+                `M ${centerX} ${centerY}`,
+                `L ${x1} ${y1}`,
+                `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
                 'Z'
             ].join(' ');
 
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             path.setAttribute('d', pathData);
-            path.setAttribute('fill', segment.color);
+            path.setAttribute('fill', d.color);
             path.setAttribute('stroke', '#ffffff');
-            path.setAttribute('stroke-width', '3');
-            path.style.cursor = 'pointer';
-            path.style.transition = 'all 0.3s ease';
-            path.setAttribute('data-status', segment.status);
-
-            // Add hover effects
-            path.addEventListener('mouseenter', function(e) {
-                // Highlight corresponding legend item
-                const legendItems = legendContainer.querySelectorAll('.legend-item');
-                legendItems.forEach(item => item.classList.remove('highlighted'));
-                const correspondingLegend = legendContainer.querySelector(`[data-status="${segment.status}"]`);
-                if (correspondingLegend) {
-                    correspondingLegend.classList.add('highlighted');
-                }
-
-                // Transform path
-                const transform = `scale(1.05)`;
-                path.style.transformOrigin = `${centerX}px ${centerY}px`;
-                path.style.transform = transform;
-                path.style.filter = 'brightness(1.15) drop-shadow(0 2px 8px rgba(0,0,0,0.3))';
-
-                const tooltip = document.createElement('div');
-                tooltip.className = 'chart-tooltip';
-                tooltip.innerHTML = `${segment.label}<br><strong>${segment.value} бронирований</strong><br>(${((segment.value / total) * 100).toFixed(1)}%)`;
-
-                const rect = container.getBoundingClientRect();
-                tooltip.style.position = 'absolute';
-                tooltip.style.left = (e.clientX - rect.left + 15) + 'px';
-                tooltip.style.top = (e.clientY - rect.top - 40) + 'px';
-                tooltip.style.display = 'block';
-                tooltip.style.zIndex = '1001';
-                container.style.position = 'relative';
-                container.appendChild(tooltip);
-
-                path._tooltip = tooltip;
-            });
-
-            path.addEventListener('mouseleave', function() {
-                // Remove highlighting
-                const legendItems = legendContainer.querySelectorAll('.legend-item');
-                legendItems.forEach(item => item.classList.remove('highlighted'));
-
-                // Reset path
-                path.style.transform = 'none';
-                path.style.filter = 'none';
-                if (path._tooltip) {
-                    path._tooltip.remove();
-                }
-            });
-
+            path.setAttribute('stroke-width', '2');
             svg.appendChild(path);
-            currentAngle += angle;
+
+            // Create legend item
+            legendHtml.push(`
+            <div class="legend-item">
+                <span class="legend-color" style="background-color: ${d.color};"></span>
+                <div class="legend-label-container">
+                    <div class="legend-label">${d.label}</div>
+                    <div class="legend-count">${d.value} (${((d.value / total) * 100).toFixed(1)}%)</div>
+                </div>
+            </div>
+        `);
+
+            currentAngle = endAngle;
         });
 
         container.innerHTML = '';
         container.appendChild(svg);
 
-        // Create improved legend
-        legendContainer.innerHTML = '';
-        data.forEach((segment, index) => {
-            const legendItem = document.createElement('div');
-            legendItem.className = 'legend-item';
-            legendItem.setAttribute('data-status', segment.status);
-
-            const colorBox = document.createElement('div');
-            colorBox.className = 'legend-color';
-            colorBox.style.backgroundColor = segment.color;
-            colorBox.style.border = '2px solid rgba(255,255,255,0.9)';
-            colorBox.style.boxShadow = '0 2px 4px rgba(0,0,0,0.15)';
-
-            const labelContainer = document.createElement('div');
-            labelContainer.className = 'legend-label-container';
-
-            const label = document.createElement('div');
-            label.className = 'legend-label';
-            label.textContent = segment.label;
-
-            const count = document.createElement('div');
-            count.className = 'legend-count';
-            count.textContent = `${segment.value} (${((segment.value / total) * 100).toFixed(1)}%)`;
-
-            labelContainer.appendChild(label);
-            labelContainer.appendChild(count);
-
-            legendItem.appendChild(colorBox);
-            legendItem.appendChild(labelContainer);
-
-            // Add hover effect to legend items
-            legendItem.addEventListener('mouseenter', function() {
-                const correspondingPath = svg.querySelector(`[data-status="${segment.status}"]`);
-                if (correspondingPath) {
-                    correspondingPath.style.transform = 'scale(1.05)';
-                    correspondingPath.style.transformOrigin = `${centerX}px ${centerY}px`;
-                    correspondingPath.style.filter = 'brightness(1.15) drop-shadow(0 2px 8px rgba(0,0,0,0.3))';
-                }
-                legendItem.classList.add('highlighted');
-            });
-
-            legendItem.addEventListener('mouseleave', function() {
-                const correspondingPath = svg.querySelector(`[data-status="${segment.status}"]`);
-                if (correspondingPath) {
-                    correspondingPath.style.transform = 'none';
-                    correspondingPath.style.filter = 'none';
-                }
-                legendItem.classList.remove('highlighted');
-            });
-
-            legendContainer.appendChild(legendItem);
-        });
-    }
-
-    // Quarterly Bar Chart
-    function createQuarterlyChart() {
-        const container = document.getElementById('quarterlyChart');
-        if (!container) return;
-
-        console.log('Quarterly data:', quarterlyData);
-
-        if (!quarterlyData || quarterlyData.length === 0) {
-            container.innerHTML = `
-                <div class="no-data-message">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Нет квартальных данных</span>
-                </div>
-            `;
-            return;
-        }
-
-        // Filter data based on selected period
-        const periodSelect = document.getElementById('quarterlyPeriodSelect');
-        const selectedPeriod = periodSelect ? periodSelect.value : '8';
-
-        let filteredData = quarterlyData;
-        if (selectedPeriod !== 'all') {
-            const periodQuarters = parseInt(selectedPeriod);
-            filteredData = quarterlyData.slice(-periodQuarters);
-        }
-
-        const data = filteredData.map(item => ({
-            label: item.quarter_name,
-            value: parseFloat(item.revenue) || 0,
-            bookings: item.bookings || 0
-        }));
-
-        createBarChart(container, data, '#17a2b8');
-    }
-
-    // Seasonal Bar Chart
-    function createSeasonalChart() {
-        const container = document.getElementById('seasonalChart');
-        if (!container) return;
-
-        console.log('Seasonal data:', seasonalData);
-
-        if (!seasonalData || seasonalData.length === 0) {
-            container.innerHTML = `
-                <div class="no-data-message">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Нет сезонных данных</span>
-                </div>
-            `;
-            return;
-        }
-
-        // Filter data based on selected period
-        const periodSelect = document.getElementById('seasonalPeriodSelect');
-        const selectedPeriod = periodSelect ? periodSelect.value : 'all';
-
-        let filteredData = seasonalData;
-        let chartColor = '#28a745';
-
-        // Different filtering logic for seasonal data
-        if (selectedPeriod === 'current') {
-            // Show only current year data (would need backend support for this)
-            // For now, we'll show all data
-        } else if (selectedPeriod === 'compare') {
-            // Could show year-over-year comparison (would need backend support)
-            chartColor = '#ffc107';
-        }
-
-        const data = filteredData.map(item => ({
-            label: item.month_name.substr(0, 3),
-            value: parseFloat(item.total_revenue) || 0,
-            bookings: item.bookings || 0
-        }));
-
-        createBarChart(container, data, chartColor);
-    }
-
-    // Generic Bar Chart Creator
-    function createBarChart(container, data, color) {
-        try {
-            const maxValue = Math.max(...data.map(d => d.value), 1000);
-            const padding = 50;
-
-            // Calculate container dimensions properly
-            const containerRect = container.getBoundingClientRect();
-            const containerStyle = window.getComputedStyle(container);
-            const containerPadding = parseFloat(containerStyle.paddingTop) + parseFloat(containerStyle.paddingBottom);
-
-            const availableWidth = Math.max(containerRect.width || container.offsetWidth, 300);
-            const availableHeight = Math.max((containerRect.height || container.offsetHeight) - containerPadding, 250);
-
-            const chartWidth = availableWidth - (padding * 2);
-            const chartHeight = availableHeight - (padding * 2);
-            const barWidth = Math.max((chartWidth / data.length) * 0.7, 15);
-            const barSpacing = (chartWidth / data.length) * 0.15;
-
-            // SVG dimensions should fill container completely
-            const svgWidth = availableWidth;
-            const svgHeight = availableHeight;
-
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', '100%');
-            svg.setAttribute('height', '100%');
-            svg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
-            svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-
-            // Create grid lines and Y-axis labels
-            const gridCount = 5;
-            for (let i = 0; i <= gridCount; i++) {
-                const y = padding + (i * (chartHeight / gridCount));
-
-                // Grid line
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', padding);
-                line.setAttribute('y1', y);
-                line.setAttribute('x2', padding + chartWidth);
-                line.setAttribute('y2', y);
-                line.setAttribute('stroke', '#e0e0e0');
-                line.setAttribute('stroke-width', '1');
-                line.setAttribute('stroke-dasharray', '2,2');
-                svg.appendChild(line);
-
-                // Y-axis labels
-                const value = maxValue - (i * (maxValue / gridCount));
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', padding - 10);
-                text.setAttribute('y', y + 4);
-                text.setAttribute('text-anchor', 'end');
-                text.setAttribute('fill', '#6c757d');
-                text.setAttribute('font-size', '12');
-                text.setAttribute('font-family', 'Arial, sans-serif');
-
-                if (value >= 1000000) {
-                    text.textContent = '₽' + (value / 1000000).toFixed(1) + 'М';
-                } else if (value >= 1000) {
-                    text.textContent = '₽' + (value / 1000).toFixed(0) + 'К';
-                } else {
-                    text.textContent = '₽' + Math.round(value).toLocaleString('ru-RU');
-                }
-
-                svg.appendChild(text);
-            }
-
-            // Create bars
-            data.forEach((item, index) => {
-                const barHeight = maxValue > 0 ? (item.value / maxValue) * chartHeight : 0;
-                const x = padding + (index * (chartWidth / data.length)) + barSpacing;
-                const y = padding + chartHeight - barHeight;
-
-                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                rect.setAttribute('x', x);
-                rect.setAttribute('y', y);
-                rect.setAttribute('width', barWidth);
-                rect.setAttribute('height', Math.max(barHeight, 0));
-                rect.setAttribute('fill', color);
-                rect.setAttribute('rx', '4');
-                rect.style.cursor = 'pointer';
-
-                rect.addEventListener('mouseenter', function(e) {
-                    rect.setAttribute('fill', color === '#17a2b8' ? '#138496' : '#1e7e34');
-
-                    const tooltip = document.createElement('div');
-                    tooltip.className = 'chart-tooltip';
-
-                    let valueText;
-                    if (item.value >= 1000000) {
-                        valueText = (item.value / 1000000).toFixed(1) + 'М';
-                    } else if (item.value >= 1000) {
-                        valueText = (item.value / 1000).toFixed(0) + 'К';
-                    } else {
-                        valueText = item.value.toLocaleString('ru-RU');
-                    }
-
-                    tooltip.innerHTML = `${item.label}<br>₽${valueText}<br>${item.bookings} бронирований`;
-
-                    const rect_container = container.getBoundingClientRect();
-                    tooltip.style.position = 'absolute';
-                    tooltip.style.left = (e.clientX - rect_container.left + 10) + 'px';
-                    tooltip.style.top = (e.clientY - rect_container.top - 50) + 'px';
-                    tooltip.style.display = 'block';
-                    tooltip.style.zIndex = '1001';
-                    container.style.position = 'relative';
-                    container.appendChild(tooltip);
-
-                    rect._tooltip = tooltip;
-                });
-
-                rect.addEventListener('mouseleave', function() {
-                    rect.setAttribute('fill', color);
-                    if (rect._tooltip) {
-                        rect._tooltip.remove();
-                    }
-                });
-
-                svg.appendChild(rect);
-
-                // X-axis labels
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', x + barWidth / 2);
-                text.setAttribute('y', padding + chartHeight + 20);
-                text.setAttribute('text-anchor', 'middle');
-                text.setAttribute('fill', '#6c757d');
-                text.setAttribute('font-size', '12');
-                text.setAttribute('font-family', 'Arial, sans-serif');
-                text.textContent = item.label;
-                svg.appendChild(text);
-            });
-
-            container.innerHTML = '';
-            container.appendChild(svg);
-        } catch (error) {
-            console.error('Error creating bar chart:', error);
-            container.innerHTML = `
-                <div class="no-data-message">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span>Ошибка создания графика</span>
-                </div>
-            `;
+        if (legendContainer) {
+            legendContainer.innerHTML = legendHtml.join('');
         }
     }
-
-    // Initialize charts with proper timing
-    function initializeCharts() {
-        // Wait for DOM to be fully rendered
-        setTimeout(() => {
-            createRevenueChart();
-            createStatusChart();
-            createQuarterlyChart();
-            createSeasonalChart();
-        }, 200);
-    }
-
-    // Initialize charts
-    initializeCharts();
-
-    // Redraw charts on window resize with debouncing
-    let resizeTimeout;
-    window.addEventListener('resize', function() {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            createRevenueChart();
-            createStatusChart();
-            createQuarterlyChart();
-            createSeasonalChart();
-        }, 150);
-    });
-
-    // Listings table filtering functionality
-    function initializeListingsFiltering() {
-        const searchInput = document.getElementById('searchListings');
-        const statusFilter = document.getElementById('filterStatus');
-        const ratingFilter = document.getElementById('filterRating');
-        const sortSelect = document.getElementById('sortListings');
-        const tableBody = document.getElementById('listingsTableBody');
-
-        function filterAndSortTable() {
-            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-            const statusValue = statusFilter ? statusFilter.value : '';
-            const ratingValue = ratingFilter ? ratingFilter.value : '';
-            const sortValue = sortSelect ? sortSelect.value : 'revenue_desc';
-
-            const rows = Array.from(tableBody.querySelectorAll('tr[data-listing-id]'));
-
-            // Filter rows
-            rows.forEach(row => {
-                let shouldShow = true;
-
-                // Search filter
-                if (searchTerm && !row.dataset.title.includes(searchTerm)) {
-                    shouldShow = false;
-                }
-
-                // Status filter
-                if (statusValue) {
-                    if (statusValue === 'active' && !row.dataset.status.includes('active')) {
-                        shouldShow = false;
-                    } else if (statusValue === 'inactive' && row.dataset.status.includes('active')) {
-                        shouldShow = false;
-                    } else if (statusValue === 'pending' && !row.dataset.status.includes('pending')) {
-                        shouldShow = false;
-                    }
-                }
-
-                // Rating filter
-                if (ratingValue) {
-                    const rating = parseFloat(row.dataset.rating) || 0;
-                    if (ratingValue === 'no_rating' && rating > 0) {
-                        shouldShow = false;
-                    } else if (ratingValue !== 'no_rating') {
-                        const minRating = parseFloat(ratingValue);
-                        if (rating < minRating) {
-                            shouldShow = false;
-                        }
-                    }
-                }
-
-                row.style.display = shouldShow ? '' : 'none';
-            });
-
-            // Sort visible rows
-            const visibleRows = rows.filter(row => row.style.display !== 'none');
-            visibleRows.sort((a, b) => {
-                let aVal, bVal;
-
-                switch(sortValue) {
-                    case 'revenue_desc':
-                        aVal = parseFloat(a.dataset.revenue) || 0;
-                        bVal = parseFloat(b.dataset.revenue) || 0;
-                        return bVal - aVal;
-                    case 'revenue_asc':
-                        aVal = parseFloat(a.dataset.revenue) || 0;
-                        bVal = parseFloat(b.dataset.revenue) || 0;
-                        return aVal - bVal;
-                    case 'bookings_desc':
-                        aVal = parseInt(a.dataset.bookings) || 0;
-                        bVal = parseInt(b.dataset.bookings) || 0;
-                        return bVal - aVal;
-                    case 'rating_desc':
-                        aVal = parseFloat(a.dataset.rating) || 0;
-                        bVal = parseFloat(b.dataset.rating) || 0;
-                        return bVal - aVal;
-                    case 'price_desc':
-                        aVal = parseFloat(a.dataset.price) || 0;
-                        bVal = parseFloat(b.dataset.price) || 0;
-                        return bVal - aVal;
-                    case 'price_asc':
-                        aVal = parseFloat(a.dataset.price) || 0;
-                        bVal = parseFloat(b.dataset.price) || 0;
-                        return aVal - bVal;
-                    default:
-                        return 0;
-                }
-            });
-
-            // Reorder DOM elements
-            visibleRows.forEach(row => tableBody.appendChild(row));
-        }
-
-        // Add event listeners
-        if (searchInput) {
-            searchInput.addEventListener('input', filterAndSortTable);
-        }
-        if (statusFilter) {
-            statusFilter.addEventListener('change', filterAndSortTable);
-        }
-        if (ratingFilter) {
-            ratingFilter.addEventListener('change', filterAndSortTable);
-        }
-        if (sortSelect) {
-            sortSelect.addEventListener('change', filterAndSortTable);
-        }
-    }
-
-    // Initialize filtering after DOM is ready
-    setTimeout(initializeListingsFiltering, 100);
 });
 
-// Global functions for listings management
-function resetListingsFilters() {
-    const searchInput = document.getElementById('searchListings');
-    const statusFilter = document.getElementById('filterStatus');
-    const ratingFilter = document.getElementById('filterRating');
-    const sortSelect = document.getElementById('sortListings');
+// Chart update functions (called by filter buttons)
+function updateRevenueChart() {
+    const period = document.getElementById('revenue-period').value;
+    const listing = document.getElementById('revenue-listing').value;
+    const startDate = document.getElementById('revenue-start-date').value;
+    const endDate = document.getElementById('revenue-end-date').value;
 
-    if (searchInput) searchInput.value = '';
-    if (statusFilter) statusFilter.value = '';
-    if (ratingFilter) ratingFilter.value = '';
-    if (sortSelect) sortSelect.value = 'revenue_desc';
+    let url = '/listings/host-dashboard-data/?chart_type=revenue';
 
-    // Trigger filter update
-    if (searchInput) {
-        searchInput.dispatchEvent(new Event('input'));
+    if (period === 'custom' && startDate && endDate) {
+        url += `&start_date=${startDate}&end_date=${endDate}`;
+    } else {
+        url += `&period=${period}`;
     }
-}
 
-function exportListingsData() {
-    // Trigger the existing Excel export with current filters
-    const currentUrl = new URL(window.location);
-    const exportUrl = "{% url 'listings:export_dashboard' %}" + currentUrl.search;
-    window.open(exportUrl, '_blank');
-}
+    if (listing !== 'all') {
+        url += `&listing_filter=${listing}`;
+    }
 
-function toggleListingStatus(listingId, newStatus) {
-    if (confirm(`Вы уверены, что хотите ${newStatus ? 'активировать' : 'деактивировать'} это объявление?`)) {
-        fetch(`/listings/${listingId}/toggle-status/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                'Content-Type': 'application/json',
-            },
-        })
+    fetch(url)
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                location.reload(); // Reload to see changes
-            } else {
-                alert('Ошибка при изменении статуса объявления');
+            if (data.monthly_revenue) {
+                const container = document.getElementById('revenueChart');
+                const chartData = data.monthly_revenue.map(item => {
+                    const date = new Date(item.month + 'T00:00:00');
+                    return {
+                        label: date.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }),
+                        value: parseFloat(item.revenue) || 0
+                    };
+                });
+                createLineChart(container, chartData, '#28a745');
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('Произошла ошибка');
+            console.error('Error updating revenue chart:', error);
         });
-    }
 }
-</script>
 
+function updateStatusChart() {
+    const period = document.getElementById('status-period').value;
+    const startDate = document.getElementById('status-start-date').value;
+    const endDate = document.getElementById('status-end-date').value;
 
-{% endblock %}
+    let url = '/listings/host-dashboard-data/?chart_type=status';
+
+    if (period === 'custom' && startDate && endDate) {
+        url += `&start_date=${startDate}&end_date=${endDate}`;
+    } else {
+        url += `&period=${period}`;
+    }
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status_stats) {
+                const container = document.getElementById('statusChart');
+                const legendContainer = document.getElementById('statusLegend');
+
+                const statusLabels = {
+                    'pending': 'В ожидании',
+                    'confirmed': 'Подтверждено', 
+                    'completed': 'Завершено',
+                    'canceled': 'Отменено'
+                };
+
+                const statusColors = {
+                    'pending': '#ffc107',
+                    'confirmed': '#28a745',
+                    'completed': '#17a2b8',
+                    'canceled': '#dc3545'
+                };
+
+                const chartData = data.status_stats.map(item => ({
+                    label: statusLabels[item.status] || item.status,
+                    value: item.count,
+                    color: statusColors[item.status] || '#6c757d'
+                }));
+
+                createPieChart(container, chartData, legendContainer);
+            }
+        })
+        .catch(error => {
+            console.error('Error updating status chart:', error);
+        });
+}
+
+function updateQuarterlyChart() {
+    const period = document.getElementById('quarterly-period').value;
+    const listing = document.getElementById('quarterly-listing').value;
+
+    let url = '/listings/host-dashboard-data/?chart_type=quarterly';
+    url += `&period=${period}`;
+
+    if (listing !== 'all') {
+        url += `&listing_filter=${listing}`;
+    }
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.quarterly_revenue) {
+                const container = document.getElementById('quarterlyChart');
+                const chartData = data.quarterly_revenue.map(item => ({
+                    label: item.quarter_name,
+                    value: parseFloat(item.revenue) || 0
+                }));
+                createBarChart(container, chartData, '#17a2b8');
+            }
+        })
+        .catch(error => {
+            console.error('Error updating quarterly chart:', error);
+        });
+}
+
+function updateSeasonalChart() {
+    const period = document.getElementById('seasonal-period').value;
+    const listing = document.getElementById('seasonal-listing').value;
+
+    let url = '/listings/host-dashboard-data/?chart_type=seasonal';
+    url += `&period=${period}`;
+
+    if (listing !== 'all') {
+        url += `&listing_filter=${listing}`;
+    }
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.seasonal_revenue) {
+                const container = document.getElementById('seasonalChart');
+                const chartData = data.seasonal_revenue.map(item => ({
+                    label: item.month_name.substr(0, 3),
+                    value: parseFloat(item.total_revenue) || 0
+                }));
+                createBarChart(container, chartData, '#ffc107');
+            }
+        })
+        .catch(error => {
+            console.error('Error updating seasonal chart:', error);
+        });
+}
+
+function updateDetailedStats() {
+    const listing = document.getElementById('detail-listing').value;
+    const startDate = document.getElementById('detail-start-date').value;
+    const endDate = document.getElementById('detail-end-date').value;
+
+    if (!listing) {
+        alert('Выберите объявление');
+        return;
+    }
+
+    let url = `/listings/host-dashboard/?detail_listing_id=${listing}`;
+    if (startDate) url += `&custom_detail_start=${startDate}`;
+    if (endDate) url += `&custom_detail_end=${endDate}`;
+
+    // Redirect to show detailed stats
+    window.location.href = url;
+}
+
+// Helper functions for chart creation
+function createLineChart(container, data, color) {
+    if (!data || data.length === 0) {
+        container.innerHTML = '<div class="no-data-message"><i class="fas fa-chart-line"></i><span>Нет данных</span></div>';
+        return;
+    }
+
+    const maxValue = Math.max(...data.map(d => d.value), 1000);
+    const padding = 50;
+    const containerRect = container.getBoundingClientRect();
+    const svgWidth = Math.max(containerRect.width || container.offsetWidth, 300);
+    const svgHeight = Math.max(containerRect.height || container.offsetHeight, 250);
+    const chartWidth = svgWidth - (padding * 2);
+    const chartHeight = svgHeight - (padding * 2);
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '100%');
+    svg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
+
+    // Create grid lines
+    const gridCount = 5;
+    for (let i = 0; i <= gridCount; i++) {
+        const y = padding + (i * (chartHeight / gridCount));
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', padding);
+        line.setAttribute('y1', y);
+        line.setAttribute('x2', padding + chartWidth);
+        line.setAttribute('y2', y);
+        line.setAttribute('stroke', '#e0e0e0');
+        line.setAttribute('stroke-width', '1');
+        svg.appendChild(line);
+
+        // Y-axis labels
+        const value = maxValue - (i * (maxValue / gridCount));
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', padding - 10);
+        text.setAttribute('y', y + 4);
+        text.setAttribute('text-anchor', 'end');
+        text.setAttribute('font-size', '12');
+        text.setAttribute('fill', '#6c757d');
+
+        if (value >= 1000000) {
+            text.textContent = '₽' + (value / 1000000).toFixed(1) + 'М';
+        } else if (value >= 1000) {
+            text.textContent = '₽' + (value / 1000).toFixed(0) + 'К';
+        } else {
+            text.textContent = '₽' + Math.round(value).toLocaleString('ru-RU');
+        }
+        svg.appendChild(text);
+    }
+
+    // Calculate points
+    const points = data.map((d, i) => {
+        const x = padding + (i * (chartWidth / Math.max(data.length - 1, 1)));
+        const normalizedValue = maxValue > 0 ? (d.value / maxValue) : 0;
+        const y = padding + chartHeight - (normalizedValue * chartHeight);
+        return { x, y, value: d.value, label: d.label };
+    });
+
+    // Create line path
+    if (points.length > 1) {
+        const linePoints = points.map(p => `${p.x},${p.y}`).join(' L');
+        const linePath = `M${linePoints}`;
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        line.setAttribute('d', linePath);
+        line.setAttribute('fill', 'none');
+        line.setAttribute('stroke', color);
+        line.setAttribute('stroke-width', '3');
+        svg.appendChild(line);
+    }
+
+    // Create points
+    points.forEach((point, i) => {
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', point.x);
+        circle.setAttribute('cy', point.y);
+        circle.setAttribute('r', 5);
+        circle.setAttribute('fill', color);
+        circle.setAttribute('stroke', '#ffffff');
+        circle.setAttribute('stroke-width', '2');
+        svg.appendChild(circle);
+
+        // X-axis labels
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', point.x);
+        text.setAttribute('y', padding + chartHeight + 20);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('font-size', '12');
+        text.setAttribute('fill', '#6c757d');
+        text.textContent = point.label;
+        svg.appendChild(text);
+    });
+
+    container.innerHTML = '';
+    container.appendChild(svg);
+}
+
+function createBarChart(container, data, color) {
+    if (!data || data.length === 0) {
+        container.innerHTML = '<div class="no-data-message"><i class="fas fa-chart-bar"></i><span>Нет данных</span></div>';
+        return;
+    }
+
+    const maxValue = Math.max(...data.map(d => d.value), 1000);
+    const padding = 50;
+    const containerRect = container.getBoundingClientRect();
+    const svgWidth = Math.max(containerRect.width || container.offsetWidth, 300);
+    const svgHeight = Math.max(containerRect.height || container.offsetHeight, 250);
+    const chartWidth = svgWidth - (padding * 2);
+    const chartHeight =
