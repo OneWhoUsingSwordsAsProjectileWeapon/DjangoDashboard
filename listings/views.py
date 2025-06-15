@@ -392,37 +392,44 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         if status_filter != 'all':
             host_bookings = host_bookings.filter(status=status_filter)
 
-        # Calculate comprehensive statistics
+        # Calculate comprehensive statistics with filtered data
         all_bookings = Booking.objects.filter(listing__host=user)
-
+        
+        # Use filtered bookings for period-specific metrics
+        period_bookings = host_bookings
+        
         stats = {
             'total_listings': host_listings.count(),
             'active_listings': host_listings.filter(is_active=True).count(),
             'pending_listings': host_listings.filter(is_approved=False).count(),
-            'total_bookings': all_bookings.count(),
-            'pending_bookings': all_bookings.filter(status='pending').count(),
-            'confirmed_bookings': all_bookings.filter(status='confirmed').count(),
-            'completed_bookings': all_bookings.filter(status='completed').count(),
-            'canceled_bookings': all_bookings.filter(status='canceled').count(),
+            'total_bookings': period_bookings.count(),
+            'pending_bookings': period_bookings.filter(status='pending').count(),
+            'confirmed_bookings': period_bookings.filter(status='confirmed').count(),
+            'completed_bookings': period_bookings.filter(status='completed').count(),
+            'canceled_bookings': period_bookings.filter(status='canceled').count(),
             'total_revenue': all_bookings.filter(status='completed').aggregate(
                 total=Sum('total_price')
             )['total'] or 0,
-            'filtered_revenue': host_bookings.filter(status='completed').aggregate(
+            'filtered_revenue': period_bookings.filter(status='completed').aggregate(
                 total=Sum('total_price')
             )['total'] or 0,
-            'average_booking_value': all_bookings.filter(status='completed').aggregate(
+            'average_booking_value': period_bookings.filter(status='completed').aggregate(
                 avg=Avg('total_price')
             )['avg'] or 0,
-            'total_guests': all_bookings.filter(status__in=['completed', 'confirmed']).aggregate(
+            'total_guests': period_bookings.filter(status__in=['completed', 'confirmed']).aggregate(
                 total=Sum('guests')
             )['total'] or 0,
         }
 
-        # Calculate occupancy rate properly
+        # Calculate occupancy rate properly for filtered period
         total_possible_nights = 0
         total_booked_nights = 0
 
-        active_listings = host_listings.filter(is_active=True, is_approved=True)
+        # Apply listing filter if specified
+        if listing_filter != 'all' and listing_filter.isdigit():
+            active_listings = host_listings.filter(id=listing_filter, is_active=True, is_approved=True)
+        else:
+            active_listings = host_listings.filter(is_active=True, is_approved=True)
 
         for listing in active_listings:
             # Calculate available days since listing creation or start_date, whichever is later
@@ -436,12 +443,16 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                 if days_available > 0:
                     total_possible_nights += days_available
 
-                    # Get bookings for this listing in the time period
+                    # Get bookings for this listing in the time period with status filter
                     listing_bookings = listing.bookings.filter(
                         status__in=['completed', 'confirmed'],
                         start_date__lt=listing_end,
                         end_date__gt=listing_start
                     )
+                    
+                    # Apply status filter if specified
+                    if status_filter != 'all':
+                        listing_bookings = listing_bookings.filter(status=status_filter)
 
                     for booking in listing_bookings:
                         # Calculate overlap between booking and our period
@@ -558,8 +569,8 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
 
         seasonal_revenue = list(seasonal_data.values())
 
-        # Bookings by status
-        status_stats_qs = all_bookings.values('status').annotate(
+        # Bookings by status - use filtered bookings
+        status_stats_qs = period_bookings.values('status').annotate(
             count=Count('id'),
             revenue=Sum(Case(
                 When(status='completed', then='total_price'),
@@ -1790,8 +1801,46 @@ def host_dashboard_data(request):
     chart_type = request.GET.get('chart_type')
     period = request.GET.get('period', '12')
     
+    # Get current filter parameters from session or request
+    time_filter = request.GET.get('time_filter', '30')
+    listing_filter = request.GET.get('listing_filter', 'all')
+    status_filter = request.GET.get('status_filter', 'all')
+    custom_start = request.GET.get('custom_start')
+    custom_end = request.GET.get('custom_end')
+    
     user = request.user
     all_bookings = Booking.objects.filter(listing__host=user)
+    
+    # Calculate date range for filtering (same logic as main view)
+    end_date = timezone.now().date()
+    if custom_start and custom_end:
+        try:
+            start_date = datetime.strptime(custom_start, '%Y-%m-%d').date()
+            end_date = datetime.strptime(custom_end, '%Y-%m-%d').date()
+        except ValueError:
+            start_date = end_date - timedelta(days=30)
+    elif time_filter == '7':
+        start_date = end_date - timedelta(days=7)
+    elif time_filter == '30':
+        start_date = end_date - timedelta(days=30)
+    elif time_filter == '90':
+        start_date = end_date - timedelta(days=90)
+    elif time_filter == '365':
+        start_date = end_date - timedelta(days=365)
+    else:
+        start_date = end_date - timedelta(days=30)
+    
+    # Apply filters to bookings
+    filtered_bookings = all_bookings.filter(
+        created_at__date__gte=start_date,
+        created_at__date__lte=end_date
+    )
+    
+    if listing_filter != 'all' and listing_filter.isdigit():
+        filtered_bookings = filtered_bookings.filter(listing_id=listing_filter)
+    
+    if status_filter != 'all':
+        filtered_bookings = filtered_bookings.filter(status=status_filter)
     
     response_data = {}
     
@@ -1908,8 +1957,8 @@ def host_dashboard_data(request):
         response_data['seasonal_revenue'] = list(seasonal_data.values())
     
     elif chart_type == 'status':
-        # Generate status data
-        status_stats_qs = all_bookings.values('status').annotate(
+        # Generate status data using filtered bookings
+        status_stats_qs = filtered_bookings.values('status').annotate(
             count=Count('id'),
             revenue=Sum(Case(
                 When(status='completed', then='total_price'),

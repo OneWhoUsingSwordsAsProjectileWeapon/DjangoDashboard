@@ -1358,8 +1358,24 @@ document.addEventListener('DOMContentLoaded', function() {
             chartContainer.innerHTML = '<div class="no-data-message"><i class="fas fa-spinner fa-spin"></i><span>Обновление данных...</span></div>';
         }
 
+        // Get current filter values from URL parameters
+        const currentUrl = new URL(window.location);
+        const timeFilter = currentUrl.searchParams.get('time_filter') || '30';
+        const listingFilter = currentUrl.searchParams.get('listing_filter') || 'all';
+        const statusFilter = currentUrl.searchParams.get('status_filter') || 'all';
+        const customStart = currentUrl.searchParams.get('custom_start') || '';
+        const customEnd = currentUrl.searchParams.get('custom_end') || '';
+
+        // Build request URL with current filters
+        let requestUrl = `/listings/host-dashboard-data/?chart_type=${chartType}&period=${period}`;
+        requestUrl += `&time_filter=${timeFilter}`;
+        requestUrl += `&listing_filter=${listingFilter}`;
+        requestUrl += `&status_filter=${statusFilter}`;
+        if (customStart) requestUrl += `&custom_start=${customStart}`;
+        if (customEnd) requestUrl += `&custom_end=${customEnd}`;
+
         // Make AJAX request to get updated data
-        fetch(`/listings/host-dashboard-data/?chart_type=${chartType}&period=${period}`, {
+        fetch(requestUrl, {
             method: 'GET',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
