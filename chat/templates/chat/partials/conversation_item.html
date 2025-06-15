@@ -1,0 +1,46 @@
+
+<div class="conversation-item d-flex align-items-center text-decoration-none text-reset p-3 border-bottom {% if conversation.id == current_conversation_id %}bg-light{% endif %}">
+    {% with other_participant=conversation.get_other_participant:request.user %}
+        {% if other_participant.profile_picture %}
+            <img src="{{ other_participant.profile_picture.url }}" 
+                 class="rounded-circle me-3" 
+                 width="40" height="40" 
+                 alt="{{ other_participant.username }}">
+        {% else %}
+            <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center me-3 text-white" 
+                 style="width: 40px; height: 40px;">
+                {{ other_participant.username|first|upper }}
+            </div>
+        {% endif %}
+        
+        <div class="flex-grow-1 min-width-0">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <h6 class="mb-0 text-truncate fw-semibold" style="max-width: 120px;">
+                    {{ other_participant.get_full_name|default:other_participant.username }}
+                </h6>
+                <small class="text-muted">{{ conversation.updated_at|date:"M d" }}</small>
+            </div>
+            
+            <p class="mb-0 small text-muted text-truncate">
+                {% if conversation.last_message %}
+                    {% if conversation.last_message.sender == request.user %}
+                        <span class="fw-medium">Вы:</span> 
+                    {% endif %}
+                    {{ conversation.last_message.content|truncatechars:30 }}
+                {% else %}
+                    <em>Пока нет сообщений</em>
+                {% endif %}
+            </p>
+            
+            {% if conversation.listing %}
+                <small class="text-primary">
+                    <i class="fas fa-home me-1"></i>{{ conversation.listing.title|truncatechars:25 }}
+                </small>
+            {% elif conversation.booking %}
+                <small class="text-success">
+                    <i class="fas fa-calendar me-1"></i>Бронирование
+                </small>
+            {% endif %}
+        </div>
+    {% endwith %}
+</div>
