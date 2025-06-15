@@ -76,3 +76,22 @@ def notify_host_listing_created(sender, instance, created, **kwargs):
                 'has_verification_video': False
             }
         )
+    else:
+        # Объявление было изменено - создаем новую запись модерации если объявление не одобрено
+        if not instance.is_approved:
+            from moderation.models import ListingApproval
+            
+            # Создаем новую запись модерации
+            ListingApproval.objects.create(
+                listing=instance,
+                status='pending',
+                has_verification_video=bool(instance.verification_video)
+            )
+            
+            # Уведомляем хоста
+            Notification.objects.create(
+                user=instance.host,
+                notification_type='system',
+                title='Объявление отправлено на повторную модерацию',
+                message=f'Ваше объявление "{instance.title}" было изменено и отправлено на повторную модерацию.'
+            )
