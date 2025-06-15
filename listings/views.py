@@ -1462,6 +1462,69 @@ def create_review(request, listing_id):
     })
 
 @login_required
+def create_host_review(request, host_id):
+    """View for creating a review for a host based on completed bookings"""
+    from django.contrib.auth import get_user_model
+    from .models import HostReview
+    User = get_user_model()
+    
+    host = get_object_or_404(User, id=host_id)
+
+    # Check if user is trying to review themselves
+    if request.user == host:
+        messages.error(request, "Вы не можете оставить отзыв на себя.")
+        return redirect('users:public_profile', user_id=host.id)
+
+    # Find a completed booking where the user was a guest and the host was the owner
+    completed_booking = Booking.objects.filter(
+        guest=request.user,
+        listing__host=host,
+        status='completed'
+    ).first()
+
+    if not completed_booking:
+        messages.warning(request, "Вы можете оставить отзыв о хозяине только после завершенного пребывания в его объявлении.")
+        return redirect('users:public_profile', user_id=host.id)
+
+    # Check if review already exists for this booking
+    if HostReview.objects.filter(reviewer=request.user, host=host, booking=completed_booking).exists():
+        messages.error(request, "Вы уже оставили отзыв о хозяине для этого бронирования.")
+        return redirect('users:public_profile', user_id=host.id)
+
+    if request.method == 'POST':
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            host_review = HostReview.objects.create(
+                host=host,
+                reviewer=request.user,
+                booking=completed_booking,
+                rating=form.cleaned_data['rating'],
+                comment=form.cleaned_data['comment']
+            )
+
+            # Send notification to host
+            from notifications.tasks import create_notification
+            create_notification(
+                user=host,
+                notification_type='review_received',
+                title=f"Новый отзыв от {request.user.get_full_name() or request.user.username}",
+                message=f"Вы получили {host_review.rating}-звездочный отзыв за ваше гостеприимство.",
+                booking=completed_booking
+            )
+
+            messages.success(request, "Ваш отзыв о хозяине был успешно отправлен!")
+            return redirect('users:public_profile', user_id=host.id)
+    else:
+        form = ReviewForm()
+
+    return render(request, 'listings/review_form.html', {
+        'form': form,
+        'listing': completed_booking.listing,
+        'host_review': True,
+        'host': host
+    })
+
+@login_required
 def edit_review(request, review_id):
     """View for editing a review"""
     review = get_object_or_404(Review, id=review_id)

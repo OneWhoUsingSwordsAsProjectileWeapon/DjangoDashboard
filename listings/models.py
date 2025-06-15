@@ -340,3 +340,57 @@ class ListingImage(models.Model):
     
     def __str__(self):
         return f"Image for {self.listing.title}"
+
+class HostReview(models.Model):
+    """
+    Review model for host reviews
+    """
+    # Review content
+    rating = models.PositiveSmallIntegerField(
+        _("Rating"), 
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    comment = models.TextField(_("Comment"))
+    
+    # Relationships
+    host = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='host_reviews_received'
+    )
+    reviewer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='host_reviews_given'
+    )
+    booking = models.OneToOneField(
+        Booking,
+        on_delete=models.SET_NULL,
+        related_name='host_review',
+        null=True,
+        blank=True
+    )
+    
+    # Moderation
+    is_approved = models.BooleanField(_("Is approved"), default=True)
+    is_edited = models.BooleanField(_("Is edited"), default=False)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_("Created at"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Updated at"), auto_now=True)
+    
+    class Meta:
+        verbose_name = _("Host Review")
+        verbose_name_plural = _("Host Reviews")
+        ordering = ['-created_at']
+        # Ensure one review per booking
+        constraints = [
+            models.UniqueConstraint(
+                fields=['host', 'reviewer', 'booking'],
+                condition=models.Q(booking__isnull=False),
+                name='unique_host_booking_review'
+            )
+        ]
+        
+    def __str__(self):
+        return f"Host review by {self.reviewer.username} for {self.host.username}"

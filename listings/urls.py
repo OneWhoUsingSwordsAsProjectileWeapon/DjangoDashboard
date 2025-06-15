@@ -34,9 +34,10 @@ urlpatterns = [
 
     # Review views
     path('listing/<int:listing_id>/review/', views.create_review, name='create_review'),
-    path('review/<int:review_id>/edit/', views.edit_review, name='edit_review'),
-    path('review/<int:review_id>/delete/', views.delete_review, name='delete_review'),
-    path('review/<int:review_id>/admin-delete/', views.admin_delete_review, name='admin_delete_review'),
+    path('reviews/<int:review_id>/edit/', views.edit_review, name='edit_review'),
+    path('reviews/<int:review_id>/delete/', views.delete_review, name='delete_review'),
+    path('reviews/<int:review_id>/admin-delete/', views.admin_delete_review, name='admin_delete_review'),
+    path('reviews/create-host-review/<int:host_id>/', views.create_host_review, name='create_host_review'),
 
     # API endpoints for HTMX
     path('api/<int:pk>/calendar-data/', views.get_listing_calendar_data, name='calendar_data'),
