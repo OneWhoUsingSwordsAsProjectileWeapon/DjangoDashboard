@@ -446,8 +446,14 @@ def subscription_analytics(request):
         # Parse dates if provided
         if start_date and end_date:
             from datetime import datetime
-            start_date = datetime.fromisoformat(start_date)
-            end_date = datetime.fromisoformat(end_date)
+            try:
+                start_date = datetime.fromisoformat(start_date)
+                end_date = datetime.fromisoformat(end_date)
+            except ValueError as e:
+                logger.error(f"Invalid date format: {e}")
+                return Response({
+                    'error': 'Invalid date format. Use YYYY-MM-DD'
+                }, status=status.HTTP_400_BAD_REQUEST)
 
         # Get analytics data
         analytics_data = SubscriptionService.get_analytics_data(
@@ -456,12 +462,16 @@ def subscription_analytics(request):
             days=days
         )
 
+        logger.info(f"Analytics data generated successfully for user {request.user.username}")
         return Response(analytics_data)
 
     except Exception as e:
         logger.error(f"Error getting subscription analytics: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return Response({
-            'error': 'Failed to load analytics data'
+            'error': 'Failed to load analytics data',
+            'details': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])

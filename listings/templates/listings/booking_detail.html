@@ -94,10 +94,24 @@
                         {% if booking.guest == request.user %}
                         <!-- Guest controls for confirmed booking -->
                         <div class="d-flex justify-content-end mt-4">
-                            <form method="post" action="{% url 'listings:update_booking_status' reference=booking.booking_reference status='canceled' %}">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-warning">Отменить бронирование</button>
-                            </form>
+                            
+                            {% if booking.can_be_canceled %}
+                                <form method="post" action="{% url 'listings:update_booking_status' reference=booking.booking_reference status='canceled' %}">
+                                    {% csrf_token %}
+                                    
+                                    <button type="submit" class="btn btn-warning">Отменить бронирование</button>
+                                </form>
+                                <small class="text-muted d-block mt-1">
+                                    <i class="fas fa-info-circle"></i> Отмена возможна минимум за 2 дня до заезда
+                                </small>
+                            {% else %}
+                                <button type="button" class="btn btn-outline-secondary" disabled>
+                                    <i class="fas fa-times me-1"></i> Отмена недоступна
+                                </button>
+                                <small class="text-danger d-block mt-1">
+                                    <i class="fas fa-exclamation-triangle"></i> Отменить можно только за 2+ дня до заезда
+                                </small>
+                            {% endif %}
                         </div>
                         {% endif %}
                     {% endif %}

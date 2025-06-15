@@ -1,4 +1,3 @@
-
 {% extends 'base.html' %}
 {% load i18n %}
 
@@ -286,14 +285,24 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Analytics dashboard initializing...');
-    
+
     let charts = {};
     let currentPeriod = 'monthly';
     let analyticsData = {};
-    
+
     // Initialize dashboard
     loadAnalyticsData();
-    
+
+        // Make filter inputs functional
+        $('#timeFilter, #startDate, #endDate').on('change', function() {
+            loadAnalyticsData();
+        });
+
+        // Apply filters button
+        $('#applyFilters').on('click', function() {
+            loadAnalyticsData();
+        });
+
     // Event listeners
     document.getElementById('timeFilterSelect').addEventListener('change', function() {
         if (this.value === 'custom') {
@@ -304,11 +313,11 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('customDateRangeEnd').style.display = 'none';
         }
     });
-    
+
     document.getElementById('applyFilters').addEventListener('click', loadAnalyticsData);
     document.getElementById('resetFilters').addEventListener('click', resetFilters);
     document.getElementById('exportData').addEventListener('click', exportData);
-    
+
     // Period switchers
     document.querySelectorAll('[data-period]').forEach(button => {
         button.addEventListener('click', function() {
@@ -318,63 +327,67 @@ document.addEventListener('DOMContentLoaded', function() {
             updateRevenueChart();
         });
     });
-    
+
     function loadAnalyticsData() {
-        const timeFilter = document.getElementById('timeFilterSelect').value;
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
-        
-        let params = new URLSearchParams();
-        if (timeFilter === 'custom' && startDate && endDate) {
-            params.append('start_date', startDate);
-            params.append('end_date', endDate);
-        } else {
-            params.append('days', timeFilter);
+            console.log('Analytics dashboard initializing...');
+
+            const timeFilter = $('#timeFilter').val() || '365';
+            const startDate = $('#startDate').val();
+            const endDate = $('#endDate').val();
+
+            let url = '/api/subscriptions/analytics/?days=' + timeFilter;
+            if (startDate && endDate) {
+                url = `/api/subscriptions/analytics/?start_date=${startDate}&end_date=${endDate}`;
+            }
+
+            // Show loading state
+            $('.analytics-card').addClass('loading');
+
+            $.get(url)
+                .done(function(data) {
+                    console.log('Analytics data loaded:', data);
+                    updateSummaryStats(data.summary);
+                    updateCharts(data);
+                    $('.analytics-card').removeClass('loading');
+                })
+                .fail(function(xhr, status, error) {
+                    console.error('Failed to load analytics data:', error);
+                    console.error('Response:', xhr.responseText);
+                    showErrorMessage('Не удалось загрузить данные аналитики: ' + error);
+                    $('.analytics-card').removeClass('loading');
+                });
         }
-        
-        // Load main stats
-        fetch(`/api/subscriptions/analytics/?${params.toString()}`)
-            .then(response => response.json())
-            .then(data => {
-                analyticsData = data;
-                updateDashboard(data);
-            })
-            .catch(error => {
-                console.error('Ошибка загрузки аналитики:', error);
-                showError('Ошибка загрузки данных аналитики');
-            });
-    }
-    
+
     function updateDashboard(data) {
         // Update stats cards
         updateStatsCards(data.summary);
-        
+
         // Update charts
         updateRevenueChart();
         updatePlansChart(data.plans_distribution);
         updateConversionChart(data.conversion_data);
         updateArpuChart(data.arpu_data);
         updateSeasonalChart(data.seasonal_data);
-        
+
         // Update recent subscriptions table
         updateSubscriptionsTable(data.recent_subscriptions);
-        
+
         // Update seasonal insights
         updateSeasonalInsights(data.seasonal_insights);
     }
-    
+
     function updateStatsCards(summary) {
         document.getElementById('total-subscriptions').textContent = summary.total_subscriptions || 0;
         document.getElementById('active-subscriptions').textContent = summary.active_subscriptions || 0;
         document.getElementById('expired-subscriptions').textContent = summary.expired_subscriptions || 0;
         document.getElementById('total-revenue').textContent = `$${(summary.total_revenue || 0).toFixed(2)}`;
-        
+
         // Calculate percentages and changes
         const activePercentage = summary.total_subscriptions > 0 
             ? ((summary.active_subscriptions / summary.total_subscriptions) * 100).toFixed(1)
             : 0;
         document.getElementById('active-percentage').textContent = `${activePercentage}%`;
-        
+
         // Show changes if available
         if (summary.changes) {
             updateChangeIndicator('subscriptions-change', summary.changes.subscriptions_change);
@@ -382,36 +395,36 @@ document.addEventListener('DOMContentLoaded', function() {
             updateChangeIndicator('churn-rate', summary.changes.churn_rate, false, true);
         }
     }
-    
+
     function updateChangeIndicator(elementId, change, isCurrency = false, isChurn = false) {
         const element = document.getElementById(elementId);
         if (!element || change === undefined) return;
-        
+
         const isPositive = change > 0;
         const isNegative = change < 0;
-        
+
         // For churn rate, positive is bad
         const className = isChurn 
             ? (isPositive ? 'badge-danger' : 'badge-success')
             : (isPositive ? 'badge-success' : 'badge-danger');
-        
+
         element.className = `badge ${className}`;
-        
+
         const prefix = isPositive ? '+' : '';
         const suffix = isCurrency ? '$' : '%';
         element.textContent = `${prefix}${change.toFixed(1)}${suffix}`;
     }
-    
+
     function updateRevenueChart() {
         const ctx = document.getElementById('revenueChart').getContext('2d');
-        
+
         if (charts.revenue) {
             charts.revenue.destroy();
         }
-        
+
         const data = analyticsData[`${currentPeriod}_revenue`] || [];
         const chartType = document.getElementById('chartTypeSelect').value;
-        
+
         const chartData = {
             labels: data.map(item => item.label),
             datasets: [{
@@ -432,7 +445,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 type: 'line'
             }]
         };
-        
+
         charts.revenue = new Chart(ctx, {
             type: chartType === 'area' ? 'line' : chartType,
             data: chartData,
@@ -473,17 +486,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     function updatePlansChart(plansData) {
         const ctx = document.getElementById('plansChart').getContext('2d');
-        
+
         if (charts.plans) {
             charts.plans.destroy();
         }
-        
+
         const labels = Object.keys(plansData || {});
         const data = Object.values(plansData || {});
-        
+
         charts.plans = new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -511,14 +524,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     function updateConversionChart(conversionData) {
         const ctx = document.getElementById('conversionChart').getContext('2d');
-        
+
         if (charts.conversion) {
             charts.conversion.destroy();
         }
-        
+
         charts.conversion = new Chart(ctx, {
             type: 'line',
             data: {
@@ -549,14 +562,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     function updateArpuChart(arpuData) {
         const ctx = document.getElementById('arpuChart').getContext('2d');
-        
+
         if (charts.arpu) {
             charts.arpu.destroy();
         }
-        
+
         charts.arpu = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -580,14 +593,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     function updateSeasonalChart(seasonalData) {
         const ctx = document.getElementById('seasonalChart').getContext('2d');
-        
+
         if (charts.seasonal) {
             charts.seasonal.destroy();
         }
-        
+
         charts.seasonal = new Chart(ctx, {
             type: 'radar',
             data: {
@@ -624,15 +637,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     function updateSubscriptionsTable(subscriptions) {
         const tbody = document.getElementById('subscriptions-table');
-        
+
         if (!subscriptions || subscriptions.length === 0) {
             tbody.innerHTML = '<tr><td colspan="7" class="text-center">Нет данных</td></tr>';
             return;
         }
-        
+
         tbody.innerHTML = subscriptions.map(sub => `
             <tr>
                 <td>${sub.user}</td>
@@ -645,16 +658,16 @@ document.addEventListener('DOMContentLoaded', function() {
             </tr>
         `).join('');
     }
-    
+
     function updateSeasonalInsights(insights) {
         if (!insights) return;
-        
+
         document.getElementById('bestMonth').textContent = insights.best_month || '-';
         document.getElementById('worstMonth').textContent = insights.worst_month || '-';
         document.getElementById('seasonality').textContent = insights.seasonality_index ? 
             `${insights.seasonality_index.toFixed(2)}%` : '-';
     }
-    
+
     function getStatusColor(status) {
         switch (status) {
             case 'active': return 'success';
@@ -663,7 +676,7 @@ document.addEventListener('DOMContentLoaded', function() {
             default: return 'secondary';
         }
     }
-    
+
     function getStatusText(status) {
         switch (status) {
             case 'active': return 'Активна';
@@ -672,13 +685,13 @@ document.addEventListener('DOMContentLoaded', function() {
             default: return status;
         }
     }
-    
+
     function formatDate(dateString) {
         if (!dateString) return '-';
         const date = new Date(dateString);
         return date.toLocaleDateString('ru-RU');
     }
-    
+
     function resetFilters() {
         document.getElementById('timeFilterSelect').value = '365';
         document.getElementById('startDate').value = '';
@@ -688,25 +701,25 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('customDateRangeEnd').style.display = 'none';
         loadAnalyticsData();
     }
-    
+
     function exportData() {
         const timeFilter = document.getElementById('timeFilterSelect').value;
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
-        
+
         let params = new URLSearchParams();
         params.append('export', 'true');
-        
+
         if (timeFilter === 'custom' && startDate && endDate) {
             params.append('start_date', startDate);
             params.append('end_date', endDate);
         } else {
             params.append('days', timeFilter);
         }
-        
+
         window.location.href = `/api/subscriptions/analytics/export/?${params.toString()}`;
     }
-    
+
     function showError(message) {
         // Simple error display - could be replaced with a more sophisticated notification system
         const alertDiv = document.createElement('div');

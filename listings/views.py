@@ -1278,6 +1278,17 @@ def update_booking_status(request, reference, status):
             messages.error(request, "Cannot change status of a completed booking.")
             return redirect('listings:booking_detail', reference=reference)
 
+        # Check cancellation policy for confirmed bookings
+        if status == 'canceled' and booking.status == 'confirmed':
+            if not booking.can_be_canceled():
+                from django.utils import timezone
+                days_until_checkin = (booking.start_date - timezone.now().date()).days
+                if days_until_checkin < 2:
+                    messages.error(request, f"Нельзя отменить подтвержденное бронирование менее чем за 2 дня до заезда. До заезда осталось: {days_until_checkin} дн.")
+                else:
+                    messages.error(request, "Это бронирование нельзя отменить.")
+                return redirect('listings:booking_detail', reference=reference)
+
         # Update booking status
         booking.status = status
         booking.save(update_fields=['status'])

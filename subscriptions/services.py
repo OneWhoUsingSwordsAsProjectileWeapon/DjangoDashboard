@@ -143,6 +143,115 @@ class SubscriptionService:
         return subscription
 
     @staticmethod
+    def get_analytics_data(start_date=None, end_date=None, days=None):
+        """Get comprehensive analytics data for admin dashboard"""
+        from django.utils import timezone
+        from datetime import timedelta, datetime
+        from django.db.models import Sum, Count, Avg, Q
+        from django.db.models.functions import TruncMonth
+
+        # Set default date range
+        if not start_date or not end_date:
+            end_date = timezone.now()
+            if days:
+                try:
+                    days = int(days)
+                    start_date = end_date - timedelta(days=days)
+                except ValueError:
+                    start_date = end_date - timedelta(days=365)
+            else:
+                start_date = end_date - timedelta(days=365)
+
+        # Summary statistics
+        all_subscriptions = UserSubscription.objects.all()
+        period_subscriptions = all_subscriptions.filter(
+            created_at__gte=start_date,
+            created_at__lte=end_date
+        )
+
+        summary = {
+            'total_subscriptions': all_subscriptions.count(),
+            'active_subscriptions': all_subscriptions.filter(status='active').count(),
+            'expired_subscriptions': all_subscriptions.filter(status='expired').count(),
+            'canceled_subscriptions': all_subscriptions.filter(status='canceled').count(),
+            'period_subscriptions': period_subscriptions.count(),
+            'total_revenue': float(all_subscriptions.filter(status__in=['active', 'expired']).aggregate(
+                total=Sum('amount_paid')
+            )['total'] or 0),
+            'period_revenue': float(period_subscriptions.aggregate(
+                total=Sum('amount_paid')
+            )['total'] or 0),
+            'average_subscription_value': float(all_subscriptions.aggregate(
+                avg=Avg('amount_paid')
+            )['avg'] or 0)
+        }
+
+        # Monthly revenue data
+        monthly_data = all_subscriptions.filter(
+            created_at__gte=start_date - timedelta(days=365),  # Get extra data for trends
+            created_at__lte=end_date
+        ).annotate(
+            month=TruncMonth('created_at')
+        ).values('month').annotate(
+            revenue=Sum('amount_paid'),
+            subscriptions=Count('id')
+        ).order_by('month')
+
+        monthly_revenue = []
+        for item in monthly_data:
+            monthly_revenue.append({
+                'label': item['month'].strftime('%Y-%m'),
+                'month_name': item['month'].strftime('%b %Y'),
+                'revenue': float(item['revenue'] or 0),
+                'subscriptions': item['subscriptions']
+            })
+
+        # Plans distribution
+        plans_data = all_subscriptions.values(
+            'plan__name'
+        ).annotate(
+            count=Count('id')
+        ).order_by('-count')
+
+        plans_distribution = {}
+        for item in plans_data:
+            plans_distribution[item['plan__name']] = item['count']
+
+        # Recent subscriptions
+        recent_subs = all_subscriptions.select_related('user', 'plan').order_by('-created_at')[:20]
+        recent_subscriptions = []
+        for sub in recent_subs:
+            recent_subscriptions.append({
+                'user': sub.user.username,
+                'plan': sub.plan.name,
+                'status': sub.status,
+                'start_date': sub.start_date.isoformat() if sub.start_date else None,
+                'end_date': sub.end_date.isoformat() if sub.end_date else None,
+                'amount_paid': float(sub.amount_paid),
+                'auto_renew': sub.auto_renew
+            })
+
+        # Status distribution
+        status_data = all_subscriptions.values('status').annotate(
+            count=Count('id')
+        )
+        status_distribution = {}
+        for item in status_data:
+            status_distribution[item['status']] = item['count']
+
+        return {
+            'summary': summary,
+            'monthly_revenue': monthly_revenue,
+            'plans_distribution': plans_distribution,
+            'recent_subscriptions': recent_subscriptions,
+            'status_distribution': status_distribution,
+            'period': {
+                'start': start_date.isoformat() if hasattr(start_date, 'isoformat') else str(start_date),
+                'end': end_date.isoformat() if hasattr(end_date, 'isoformat') else str(end_date)
+            }
+        }
+
+    @staticmethod
     def get_subscription_stats():
         """Get subscription statistics for admin dashboard"""
         try:
@@ -231,7 +340,7 @@ class SubscriptionService:
                 pass
 
     @staticmethod
-    def get_analytics_data(start_date=None, end_date=None, days=None):
+    def get_analytics_data_old(start_date=None, end_date=None, days=None):
         """Get comprehensive analytics data for subscriptions"""
 
         # Calculate date range

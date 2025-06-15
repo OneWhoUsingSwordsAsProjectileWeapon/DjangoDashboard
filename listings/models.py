@@ -232,7 +232,20 @@ class Booking(models.Model):
     
     def can_be_canceled(self):
         """Check if booking can be canceled"""
-        return self.status in ['pending', 'confirmed']
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        # Pending bookings can always be canceled
+        if self.status == 'pending':
+            return True
+            
+        # Confirmed bookings can only be canceled 2+ days before check-in
+        if self.status == 'confirmed':
+            now = timezone.now().date()
+            days_until_checkin = (self.start_date - now).days
+            return days_until_checkin >= 2
+            
+        return False
     
     def cancel(self):
         """Cancel the booking"""
