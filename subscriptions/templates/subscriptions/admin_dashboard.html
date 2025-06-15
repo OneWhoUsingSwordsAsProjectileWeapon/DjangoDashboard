@@ -29,57 +29,33 @@
 
         <!-- Основной контент -->
         <div id="dashboard-content" style="display: none;">
-            <!-- Фильтры -->
-            <div class="row mb-4">
-                <div class="col-md-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="mb-0">Фильтры</h5>
-                        </div>
-                        <div class="card-body">
-                            <form id="filter-form" class="row g-3">
-                                <div class="col-md-3">
-                                    <label for="period-select" class="form-label">Период</label>
-                                    <select class="form-select" id="period-select" name="period">
-                                        <option value="30">Последние 30 дней</option>
-                                        <option value="90">Последние 3 месяца</option>
-                                        <option value="365" selected>Последний год</option>
-                                        <option value="all">Все время</option>
-                                        <option value="custom">Произвольный период</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3" id="start-date-group" style="display: none;">
-                                    <label for="start-date" class="form-label">Дата начала</label>
-                                    <input type="date" class="form-control" id="start-date" name="start_date">
-                                </div>
-                                <div class="col-md-3" id="end-date-group" style="display: none;">
-                                    <label for="end-date" class="form-label">Дата окончания</label>
-                                    <input type="date" class="form-control" id="end-date" name="end_date">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">&nbsp;</label>
-                                    <div>
-                                        <button type="submit" class="btn btn-primary">Применить фильтр</button>
-                                        <button type="button" class="btn btn-outline-secondary" id="export-btn">Экспорт CSV</button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Карточки со статистикой -->
             <div class="row mb-4" id="stats-cards">
                 <!-- Будут заполнены через JavaScript -->
             </div>
 
-            <!-- Графики -->
+            <!-- График доходов -->
             <div class="row mb-4">
                 <div class="col-md-8">
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="mb-0">Доходы по месяцам</h5>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Доходы по месяцам</h5>
+                                <div class="d-flex gap-2">
+                                    <select class="form-select form-select-sm" id="revenue-period-select" style="width: auto;">
+                                        <option value="30">30 дней</option>
+                                        <option value="90">3 месяца</option>
+                                        <option value="365" selected>1 год</option>
+                                        <option value="all">Все время</option>
+                                        <option value="custom">Произвольный</option>
+                                    </select>
+                                    <div id="revenue-custom-dates" style="display: none;">
+                                        <input type="date" class="form-control form-control-sm" id="revenue-start-date" style="width: 140px; display: inline-block;">
+                                        <input type="date" class="form-control form-control-sm" id="revenue-end-date" style="width: 140px; display: inline-block;">
+                                    </div>
+                                    <button class="btn btn-sm btn-primary" id="revenue-apply-filter">Применить</button>
+                                </div>
+                            </div>
                         </div>
                         <div class="card-body">
                             <canvas id="revenue-chart" height="100"></canvas>
@@ -89,7 +65,23 @@
                 <div class="col-md-4">
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="mb-0">Распределение по планам</h5>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Планы подписок</h5>
+                                <div class="d-flex gap-2">
+                                    <select class="form-select form-select-sm" id="plans-period-select" style="width: auto;">
+                                        <option value="30">30 дней</option>
+                                        <option value="90">3 месяца</option>
+                                        <option value="365" selected>1 год</option>
+                                        <option value="all">Все время</option>
+                                        <option value="custom">Произвольный</option>
+                                    </select>
+                                    <div id="plans-custom-dates" style="display: none;">
+                                        <input type="date" class="form-control form-control-sm" id="plans-start-date" style="width: 140px; display: inline-block;">
+                                        <input type="date" class="form-control form-control-sm" id="plans-end-date" style="width: 140px; display: inline-block;">
+                                    </div>
+                                    <button class="btn btn-sm btn-primary" id="plans-apply-filter">Применить</button>
+                                </div>
+                            </div>
                         </div>
                         <div class="card-body">
                             <canvas id="plans-chart" height="200"></canvas>
@@ -103,7 +95,23 @@
                 <div class="col-md-6">
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="mb-0">Сезонные тренды</h5>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Сезонные тренды</h5>
+                                <div class="d-flex gap-2">
+                                    <select class="form-select form-select-sm" id="seasonal-period-select" style="width: auto;">
+                                        <option value="current">Текущий год</option>
+                                        <option value="365" selected>1 год</option>
+                                        <option value="730">2 года</option>
+                                        <option value="all">Все время</option>
+                                        <option value="custom">Произвольный</option>
+                                    </select>
+                                    <div id="seasonal-custom-dates" style="display: none;">
+                                        <input type="date" class="form-control form-control-sm" id="seasonal-start-date" style="width: 140px; display: inline-block;">
+                                        <input type="date" class="form-control form-control-sm" id="seasonal-end-date" style="width: 140px; display: inline-block;">
+                                    </div>
+                                    <button class="btn btn-sm btn-primary" id="seasonal-apply-filter">Применить</button>
+                                </div>
+                            </div>
                         </div>
                         <div class="card-body">
                             <canvas id="seasonal-chart" height="150"></canvas>
@@ -113,7 +121,23 @@
                 <div class="col-md-6">
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="mb-0">Статистика по статусам</h5>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Статистика по статусам</h5>
+                                <div class="d-flex gap-2">
+                                    <select class="form-select form-select-sm" id="status-period-select" style="width: auto;">
+                                        <option value="30">30 дней</option>
+                                        <option value="90">3 месяца</option>
+                                        <option value="365" selected>1 год</option>
+                                        <option value="all">Все время</option>
+                                        <option value="custom">Произвольный</option>
+                                    </select>
+                                    <div id="status-custom-dates" style="display: none;">
+                                        <input type="date" class="form-control form-control-sm" id="status-start-date" style="width: 140px; display: inline-block;">
+                                        <input type="date" class="form-control form-control-sm" id="status-end-date" style="width: 140px; display: inline-block;">
+                                    </div>
+                                    <button class="btn btn-sm btn-primary" id="status-apply-filter">Применить</button>
+                                </div>
+                            </div>
                         </div>
                         <div class="card-body">
                             <canvas id="status-chart" height="150"></canvas>
@@ -127,7 +151,24 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="mb-0">Последние подписки</h5>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Последние подписки</h5>
+                                <div class="d-flex gap-2">
+                                    <select class="form-select form-select-sm" id="table-period-select" style="width: auto;">
+                                        <option value="30">30 дней</option>
+                                        <option value="90">3 месяца</option>
+                                        <option value="365" selected>1 год</option>
+                                        <option value="all">Все время</option>
+                                        <option value="custom">Произвольный</option>
+                                    </select>
+                                    <div id="table-custom-dates" style="display: none;">
+                                        <input type="date" class="form-control form-control-sm" id="table-start-date" style="width: 140px; display: inline-block;">
+                                        <input type="date" class="form-control form-control-sm" id="table-end-date" style="width: 140px; display: inline-block;">
+                                    </div>
+                                    <button class="btn btn-sm btn-primary" id="table-apply-filter">Применить</button>
+                                    <button class="btn btn-sm btn-outline-secondary" id="export-btn">Экспорт CSV</button>
+                                </div>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
@@ -159,60 +200,95 @@
         console.log('Analytics dashboard initializing...');
 
         let revenueChart, plansChart, seasonalChart, statusChart;
+        let currentData = {};
 
         $(document).ready(function() {
             console.log('Document ready, initializing dashboard...');
-            loadAnalyticsData();
+            loadInitialData();
+            setupFilterHandlers();
+        });
 
-            // Обработчик фильтра периода
-            $('#period-select').change(function() {
-                const period = $(this).val();
-                if (period === 'custom') {
-                    $('#start-date-group, #end-date-group').show();
-                } else {
-                    $('#start-date-group, #end-date-group').hide();
-                }
+        function setupFilterHandlers() {
+            // Обработчики для графика доходов
+            $('#revenue-period-select').change(function() {
+                toggleCustomDates('revenue', $(this).val());
+            });
+            $('#revenue-apply-filter').click(function() {
+                loadChartData('revenue');
             });
 
-            // Обработчик формы фильтра
-            $('#filter-form').submit(function(e) {
-                e.preventDefault();
-                loadAnalyticsData();
+            // Обработчики для графика планов
+            $('#plans-period-select').change(function() {
+                toggleCustomDates('plans', $(this).val());
+            });
+            $('#plans-apply-filter').click(function() {
+                loadChartData('plans');
+            });
+
+            // Обработчики для сезонного графика
+            $('#seasonal-period-select').change(function() {
+                toggleCustomDates('seasonal', $(this).val());
+            });
+            $('#seasonal-apply-filter').click(function() {
+                loadChartData('seasonal');
+            });
+
+            // Обработчики для графика статусов
+            $('#status-period-select').change(function() {
+                toggleCustomDates('status', $(this).val());
+            });
+            $('#status-apply-filter').click(function() {
+                loadChartData('status');
+            });
+
+            // Обработчики для таблицы
+            $('#table-period-select').change(function() {
+                toggleCustomDates('table', $(this).val());
+            });
+            $('#table-apply-filter').click(function() {
+                loadChartData('table');
             });
 
             // Обработчик экспорта
             $('#export-btn').click(function() {
                 exportAnalyticsData();
             });
-        });
+        }
 
-        function loadAnalyticsData() {
+        function toggleCustomDates(chartType, period) {
+            const customDatesDiv = $(`#${chartType}-custom-dates`);
+            if (period === 'custom') {
+                customDatesDiv.show();
+            } else {
+                customDatesDiv.hide();
+            }
+        }
+
+        function getFilterParams(chartType) {
+            const params = new URLSearchParams();
+            const period = $(`#${chartType}-period-select`).val();
+            
+            if (period === 'custom') {
+                const startDate = $(`#${chartType}-start-date`).val();
+                const endDate = $(`#${chartType}-end-date`).val();
+                if (startDate) params.append('start_date', startDate);
+                if (endDate) params.append('end_date', endDate);
+            } else if (period !== 'all') {
+                params.append('days', period);
+            }
+            
+            return params;
+        }
+
+        function loadInitialData() {
             $('#loading-overlay').show();
             $('#dashboard-content').hide();
 
             const params = new URLSearchParams();
-
-            const period = $('#period-select').val();
-            console.log('Loading analytics for period:', period);
-            
-            if (period !== 'custom' && period !== 'all') {
-                params.append('days', period);
-                console.log('Using days filter:', period);
-            } else if (period === 'custom') {
-                const startDate = $('#start-date').val();
-                const endDate = $('#end-date').val();
-                if (startDate) {
-                    params.append('start_date', startDate);
-                    console.log('Using start_date:', startDate);
-                }
-                if (endDate) {
-                    params.append('end_date', endDate);
-                    console.log('Using end_date:', endDate);
-                }
-            }
+            params.append('days', '365'); // Default period
 
             const url = '/api/subscriptions/analytics/?' + params.toString();
-            console.log('Request URL:', url);
+            console.log('Initial load URL:', url);
 
             $.ajax({
                 url: url,
@@ -221,9 +297,8 @@
                     'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
                 },
                 success: function(data) {
-                    console.log('Analytics data loaded:', data);
-                    console.log('Period subscriptions:', data.summary.period_subscriptions);
-                    console.log('Monthly data:', data.monthly_revenue);
+                    console.log('Initial analytics data loaded:', data);
+                    currentData = data;
                     renderDashboard(data);
                     $('#loading-overlay').hide();
                     $('#dashboard-content').show();
@@ -233,6 +308,52 @@
                     console.error('Response:', xhr.responseText);
                     alert('Ошибка загрузки данных аналитики: ' + error);
                     $('#loading-overlay').hide();
+                }
+            });
+        }
+
+        function loadChartData(chartType) {
+            const params = getFilterParams(chartType);
+            const url = '/api/subscriptions/analytics/?' + params.toString();
+            
+            console.log(`Loading ${chartType} chart data:`, url);
+
+            $.ajax({
+                url: url,
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+                },
+                success: function(data) {
+                    console.log(`${chartType} data loaded:`, data);
+                    
+                    // Обновляем соответствующую часть дашборда
+                    switch(chartType) {
+                        case 'revenue':
+                            renderRevenueChart(data.monthly_revenue);
+                            break;
+                        case 'plans':
+                            renderPlansChart(data.plans_distribution);
+                            break;
+                        case 'seasonal':
+                            renderSeasonalChart(data.seasonal_data);
+                            break;
+                        case 'status':
+                            renderStatusChart(data.status_distribution);
+                            break;
+                        case 'table':
+                            renderRecentSubscriptions(data.recent_subscriptions);
+                            break;
+                    }
+                    
+                    // Обновляем карточки статистики если это первый запрос
+                    if (chartType === 'revenue') {
+                        renderStatsCards(data.summary);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error(`Error loading ${chartType} data:`, error);
+                    alert(`Ошибка загрузки данных для ${chartType}: ` + error);
                 }
             });
         }
@@ -487,18 +608,7 @@
         }
 
         function exportAnalyticsData() {
-            const period = $('#period-select').val();
-            const params = new URLSearchParams();
-
-            if (period !== 'custom' && period !== 'all') {
-                params.append('days', period);
-            } else if (period === 'custom') {
-                const startDate = $('#start-date').val();
-                const endDate = $('#end-date').val();
-                if (startDate) params.append('start_date', startDate);
-                if (endDate) params.append('end_date', endDate);
-            }
-
+            const params = getFilterParams('table');
             window.open('/api/subscriptions/analytics/export/?' + params.toString(), '_blank');
         }
     </script>
