@@ -1,3 +1,4 @@
+
 {% extends 'base.html' %}
 {% load static %}
 {% load listing_extras %}
@@ -401,16 +402,7 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h1 class="mb-2">Панель управления хоста</h1>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
+                                <h1 class="mb-2">
                                     <i class="fas fa-chart-line text-primary me-3"></i>
                                     Панель владельца недвижимости
                                 </h1>
@@ -537,10 +529,7 @@
                                 </div>
                             </div>
                             <div id="revenueChart">
-                                <div class="no-data-message">
-                                    <div class="loading-spinner"></div>
-                                    <span>Загрузка данных...</span>
-                                </div>
+                                <canvas id="revenueChartCanvas" style="max-height: 300px;"></canvas>
                             </div>
                         </div>
                     </div>
@@ -566,10 +555,7 @@
                                 </select>
                             </div>
                             <div id="statusChart">
-                                <div class="no-data-message">
-                                    <div class="loading-spinner"></div>
-                                    <span>Загрузка данных...</span>
-                                </div>
+                                <canvas id="statusChartCanvas" style="max-height: 250px;"></canvas>
                             </div>
                         </div>
                     </div>
@@ -590,10 +576,7 @@
                                 </select>
                             </div>
                             <div id="seasonalChart">
-                                <div class="no-data-message">
-                                    <div class="loading-spinner"></div>
-                                    <span>Загрузка данных...</span>
-                                </div>
+                                <canvas id="seasonalChartCanvas" style="max-height: 250px;"></canvas>
                             </div>
                         </div>
                     </div>
@@ -855,4 +838,211 @@
                                     {{ listing.title|truncatechars:40 }}
                                 </option>
                                 {% endfor %}
-                            </select
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3" id="customDatesGroup" style="{% if current_filters.time_filter != 'custom' %}display: none;{% endif %}">
+                            <label class="form-label">Начальная дата</label>
+                            <input type="date" name="custom_start" class="form-control" value="{{ current_filters.custom_start }}">
+                        </div>
+                        <div class="col-md-6 mb-3" id="customDatesGroup2" style="{% if current_filters.time_filter != 'custom' %}display: none;{% endif %}">
+                            <label class="form-label">Конечная дата</label>
+                            <input type="date" name="custom_end" class="form-control" value="{{ current_filters.custom_end }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Статус бронирований</label>
+                            <select name="status_filter" class="form-select">
+                                {% for value, label in status_filter_options %}
+                                <option value="{{ value }}" {% if current_filters.status_filter == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Применить фильтры</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Chart data from Django context
+    const monthlyRevenueData = {{ monthly_revenue|safe }};
+    const quarterlyRevenueData = {{ quarterly_revenue|safe }};
+    const seasonalData = {{ seasonal_revenue|safe }};
+    const statusStats = {{ status_stats|safe }};
+
+    let revenueChart, statusChart, seasonalChart;
+
+    // Initialize Revenue Chart
+    function initRevenueChart() {
+        const ctx = document.getElementById('revenueChartCanvas');
+        if (!ctx) return;
+
+        const data = monthlyRevenueData;
+        
+        revenueChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(item => item.month_name),
+                datasets: [{
+                    label: 'Доход (₽)',
+                    data: data.map(item => item.revenue),
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }, {
+                    label: 'Количество бронирований',
+                    data: data.map(item => item.bookings),
+                    borderColor: '#48bb78',
+                    backgroundColor: 'rgba(72, 187, 120, 0.1)',
+                    borderWidth: 2,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    }
+                }
+            }
+        });
+    }
+
+    // Initialize Status Chart
+    function initStatusChart() {
+        const ctx = document.getElementById('statusChartCanvas');
+        if (!ctx || !statusStats.length) return;
+
+        const labels = statusStats.map(item => {
+            const statusMap = {
+                'pending': 'В ожидании',
+                'confirmed': 'Подтверждено',
+                'completed': 'Завершено',
+                'canceled': 'Отменено'
+            };
+            return statusMap[item.status] || item.status;
+        });
+
+        statusChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: statusStats.map(item => item.count),
+                    backgroundColor: [
+                        '#ffc107',
+                        '#28a745',
+                        '#17a2b8',
+                        '#dc3545'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+
+    // Initialize Seasonal Chart
+    function initSeasonalChart() {
+        const ctx = document.getElementById('seasonalChartCanvas');
+        if (!ctx) return;
+
+        seasonalChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: seasonalData.map(item => item.month_name),
+                datasets: [{
+                    label: 'Доход (₽)',
+                    data: seasonalData.map(item => item.total_revenue),
+                    backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                    borderColor: '#667eea',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Initialize all charts
+    initRevenueChart();
+    initStatusChart();
+    initSeasonalChart();
+
+    // Handle chart period changes
+    document.getElementById('revenuePeriodSelect')?.addEventListener('change', function(e) {
+        // You can implement period filtering here
+        console.log('Revenue period changed to:', e.target.value);
+    });
+
+    // Handle chart type changes
+    document.querySelectorAll('.btn-chart').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.btn-chart').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            if (this.dataset.chart === 'quarterly') {
+                // Switch to quarterly data
+                if (revenueChart) {
+                    revenueChart.data.labels = quarterlyRevenueData.map(item => item.quarter_name);
+                    revenueChart.data.datasets[0].data = quarterlyRevenueData.map(item => item.revenue);
+                    revenueChart.data.datasets[1].data = quarterlyRevenueData.map(item => item.bookings);
+                    revenueChart.update();
+                }
+            } else {
+                // Switch to monthly data
+                if (revenueChart) {
+                    revenueChart.data.labels = monthlyRevenueData.map(item => item.month_name);
+                    revenueChart.data.datasets[0].data = monthlyRevenueData.map(item => item.revenue);
+                    revenueChart.data.datasets[1].data = monthlyRevenueData.map(item => item.bookings);
+                    revenueChart.update();
+                }
+            }
+        });
+    });
+
+    // Handle filter modal
+    document.getElementById('timeFilterSelect')?.addEventListener('change', function(e) {
+        const customDatesGroup = document.getElementById('customDatesGroup');
+        const customDatesGroup2 = document.getElementById('customDatesGroup2');
+        if (e.target.value === 'custom') {
+            customDatesGroup.style.display = 'block';
+            customDatesGroup2.style.display = 'block';
+        } else {
+            customDatesGroup.style.display = 'none';
+            customDatesGroup2.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}
