@@ -662,7 +662,7 @@
                                     {% elif forloop.counter == 3 %}
                                     <img src="https://pixabay.com/get/gdbdd76969985cdff44ad3f53db6426342aaf0ca3eafc0b7e0c299f84bd59b51d0e6dccb56a20b1c9648bbd1265d8cc0e55bf22001ba2e91f5223fb926125c2d1_1280.jpg" class="card-img-top" alt="Недвижимость" style="height: 180px; object-fit: cover;">
                                     {% elif forloop.counter == 4 %}
-                                    <img src="https://pixabay.com/get/g4ed469d7dbe2db950e47562a11382208f65bc24b98e0236e4c22086f45a20dcbff2d7dd151b1952bce89ea4fd0706cd5ebc8038505313f6438954d36f230790d_1280.jpg" class="card-img-top"alt="Недвижимость" style="height: 180px; object-fit: cover;">
+                                    <img src="https://pixabay.com/get/g4ed469d7dbe2db950e47562a11382208f65bc24b98e0236e4c22086f45a20dcbff2d7dd151b1952bce89ea4fd0706cd5ebc80338505313f6438954d36f230790d_1280.jpg" class="card-img-top"alt="Недвижимость" style="height: 180px; object-fit: cover;">
                                     {% endif %}
                                     <div class="card-body p-3">
                                         <h6 class="card-title mb-2" style="font-size: 0.9rem;">Похожая недвижимость {{ forloop.counter }}</h6>
@@ -695,6 +695,34 @@
             </div>
         </div>
     </section>
+</div>
+
+<!-- Self-booking prevention modal -->
+<div class="modal fade" id="selfBookingModal" tabindex="-1" aria-labelledby="selfBookingModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="selfBookingModalLabel">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                    Бронирование недоступно
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="fas fa-home fa-3x text-muted mb-3"></i>
+                    <p class="mb-3">Вы не можете забронировать собственное объявление.</p>
+                    <p class="text-muted">Это ваша собственность. Для внесения изменений используйте панель управления хоста.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Понятно</button>
+                <a href="{% url 'listings:host_dashboard' %}" class="btn btn-primary">
+                    <i class="fas fa-tachometer-alt me-1"></i>Панель управления
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- All Reviews Modal -->
@@ -1091,5 +1119,13 @@
             };
         }
     });
+
+// Show self-booking modal if triggered
+{% if request.GET.show_self_booking_modal %}
+document.addEventListener('DOMContentLoaded', function() {
+    var selfBookingModal = new bootstrap.Modal(document.getElementById('selfBookingModal'));
+    selfBookingModal.show();
+});
+{% endif %}
 </script>
 {% endblock %}

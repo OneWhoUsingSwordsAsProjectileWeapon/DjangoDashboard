@@ -868,7 +868,18 @@ class HostListingListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         # Only show listings owned by current user
-        return Listing.objects.filter(host=self.request.user)
+        queryset = Listing.objects.filter(host=self.request.user)
+        
+        # If this is for profile view, show only active and approved listings
+        if self.request.GET.get('profile_view'):
+            queryset = queryset.filter(
+                is_active=True,
+                is_approved=True
+            ).filter(
+                Q(approval_record__status='approved') | Q(approval_record__isnull=True)
+            )
+            
+        return queryset
 
 class ListingCreateView(LoginRequiredMixin, CreateView):
     """View for creating a new listing"""
@@ -1028,8 +1039,8 @@ def create_booking(request, pk):
 
     # Check if user is trying to book their own listing
     if request.user == listing.host:
-        messages.error(request, "You cannot book your own listing.")
-        return redirect('listings:listing_detail', pk=listing.pk)
+        # Return to listing detail with modal trigger
+        return redirect(f'{reverse("listings:listing_detail", kwargs={"pk": listing.pk})}?show_self_booking_modal=1')
 
     if request.method == 'POST':
         form = BookingForm(listing, request.POST)

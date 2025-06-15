@@ -102,13 +102,11 @@
                 {% for listing in user_listings %}
                 <div class="col-lg-4 col-md-6 mb-4">
                     <div class="card h-100 shadow-sm">
-                        {% if listing.get_first_image %}
-                        <img src="{{ listing.get_first_image }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ listing.title }}">
-                        {% endif %}
+                        <img src="{{ listing.main_image_url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ listing.title }}">
                         <div class="card-body">
                             <h6 class="card-title">{{ listing.title|truncatechars:50 }}</h6>
-                            <p class="card-text text-muted small">{{ listing.location }}</p>
-                            <p class="card-text"><strong>${{ listing.price_per_night }}/ночь</strong></p>
+                            <p class="card-text text-muted small">{{ listing.city }}, {{ listing.state }}</p>
+                            <p class="card-text"><strong>₽{{ listing.price_per_night }}/ночь</strong></p>
                             <a href="{% url 'listings:listing_detail' listing.id %}" class="btn btn-sm btn-outline-primary">
                                 Подробнее
                             </a>

@@ -3,6 +3,15 @@
 
 {% block title %}Book {{ listing.title }} - Rental Aggregator{% endblock %}
 
+{% if user == listing.host %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Redirect to listing detail with modal
+    window.location.href = "{% url 'listings:listing_detail' listing.pk %}?show_self_booking_modal=1";
+});
+</script>
+{% endif %}
+
 {% block content %}
 <div class="container py-4">
     <div class="row">

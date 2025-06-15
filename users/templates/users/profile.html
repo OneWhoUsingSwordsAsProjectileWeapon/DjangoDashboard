@@ -141,7 +141,7 @@
                 </div>
             </div>
             <!-- Load user listings using HTMX -->
-            <div hx-get="{% url 'listings:host_listings' %}" hx-trigger="load" hx-target="this">
+            <div hx-get="{% url 'listings:host_listings' %}?profile_view=1" hx-trigger="load" hx-target="this">
                 <div class="text-center p-5">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Загрузка...</span>

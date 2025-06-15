@@ -7,7 +7,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.urls import reverse
 from django.conf import settings
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Q
 import uuid
 import json
 from django.contrib.auth import logout
@@ -124,7 +124,13 @@ def public_profile_view(request, user_id):
     user_listings = None
     if profile_user.is_host:
         from listings.models import Listing
-        user_listings = Listing.objects.filter(host=profile_user, is_active=True)[:6]
+        user_listings = Listing.objects.filter(
+            host=profile_user,
+            is_active=True,
+            is_approved=True
+        ).filter(
+            Q(approval_record__status='approved') | Q(approval_record__isnull=True)
+        )[:6]
 
     # Get user's reviews
     from listings.models import Review
