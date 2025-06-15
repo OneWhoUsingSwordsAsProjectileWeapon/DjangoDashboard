@@ -1,3 +1,4 @@
+
 {% extends 'base.html' %}
 {% load static %}
 
@@ -23,7 +24,7 @@
                                     <div class="d-flex w-100 justify-content-between">
                                         <div class="d-flex align-items-center">
                                             <div class="me-3">
-                                                {% with other_user=conversation.get_other_participant:request.user %}
+                                                {% with other_user=conversation.other_user %}
                                                     {% if other_user %}
                                                         <img src="https://ui-avatars.com/api/?name={{ other_user.get_full_name|default:other_user.username }}&background=007bff&color=fff" 
                                                              class="rounded-circle" width="40" height="40" alt="Аватар">
@@ -32,7 +33,7 @@
                                             </div>
                                             <div>
                                                 <h6 class="mb-1">
-                                                    {% with other_user=conversation.get_other_participant:request.user %}
+                                                    {% with other_user=conversation.other_user %}
                                                         {% if other_user %}
                                                             {{ other_user.get_full_name|default:other_user.username }}
                                                         {% else %}
@@ -49,13 +50,11 @@
                                         </div>
                                         <div class="text-end">
                                             {% if conversation.last_message %}
-                                                <small class="text-muted">{{ conversation.last_message.timestamp|timesince }} назад</small>
+                                                <small class="text-muted">{{ conversation.last_message.created_at|timesince }} назад</small>
                                             {% endif %}
-                                            {% with unread_count=conversation.get_unread_count:request.user %}
-                                                {% if unread_count > 0 %}
-                                                    <span class="badge bg-primary rounded-pill d-block mt-1">{{ unread_count }}</span>
-                                                {% endif %}
-                                            {% endwith %}
+                                            {% if conversation.unread_count > 0 %}
+                                                <span class="badge bg-primary rounded-pill d-block mt-1">{{ conversation.unread_count }}</span>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </a>
