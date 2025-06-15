@@ -121,15 +121,13 @@
 
                     <!-- User dropdown -->
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button"
                            data-bs-toggle="dropdown" aria-expanded="false">
-                            <a href="{% url 'users:profile' %}" class="text-decoration-none">
                             {% if user.profile_picture %}
-                                <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}" class="rounded-circle" width="32" height="32" style="object-fit: cover;">
+                                <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}" class="rounded-circle me-2" width="32" height="32" style="object-fit: cover;">
                             {% else %}
-                                <i class="fas fa-user-circle fa-lg"></i>
+                                <i class="fas fa-user-circle fa-lg me-2"></i>
                             {% endif %}
-                            </a>
                             {{ user.username }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">

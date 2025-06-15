@@ -68,7 +68,7 @@ def profile_view(request):
 def edit_profile_view(request):
     """Edit user profile"""
     if request.method == 'POST':
-        form = UserProfileForm(request.POST, instance=request.user)
+        form = UserProfileForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, 'Your profile has been updated.')
@@ -129,7 +129,7 @@ def public_profile_view(request, user_id):
     # Get user's reviews
     from listings.models import Review
     reviews_received = Review.objects.filter(listing__host=profile_user).select_related('user', 'listing')[:10]
-    reviews_given = Review.objects.filter(user=profile_user).select_related('listing')[:10]
+    reviews_given = Review.objects.filter(reviewer=profile_user).select_related('listing')[:10]
     
     # Calculate average rating
     avg_rating = reviews_received.aggregate(avg_rating=Avg('rating'))['avg_rating']
@@ -147,7 +147,7 @@ def public_profile_view(request, user_id):
         ).exists()
         
         # Check if user already reviewed this host
-        existing_review = reviews_received.filter(user=request.user).exists()
+        existing_review = reviews_received.filter(reviewer=request.user).exists()
         
         can_leave_review = completed_bookings and not existing_review
     
