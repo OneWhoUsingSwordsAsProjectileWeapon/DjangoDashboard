@@ -61,6 +61,18 @@ class Conversation(models.Model):
             return f"Booking: {self.booking.listing.title}"
         else:
             return "Chat"
+    
+    def get_other_participant(self, user=None):
+        """Get the other participant in the conversation (not the current user)"""
+        if user:
+            return self.participants.exclude(id=user.id).first()
+        return self.participants.first()
+    
+    def get_unread_count(self, user=None):
+        """Get count of unread messages for a specific user"""
+        if user:
+            return self.messages.filter(is_read=False).exclude(sender=user).count()
+        return 0
 
 class Message(models.Model):
     """

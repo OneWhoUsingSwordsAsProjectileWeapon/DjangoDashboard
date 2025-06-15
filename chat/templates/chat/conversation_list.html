@@ -23,18 +23,22 @@
                                     <div class="d-flex w-100 justify-content-between">
                                         <div class="d-flex align-items-center">
                                             <div class="me-3">
-                                                {% if conversation.get_other_participant %}
-                                                    <img src="https://ui-avatars.com/api/?name={{ conversation.get_other_participant.get_full_name|default:conversation.get_other_participant.username }}&background=007bff&color=fff" 
-                                                         class="rounded-circle" width="40" height="40" alt="Аватар">
-                                                {% endif %}
+                                                {% with other_user=conversation.get_other_participant:request.user %}
+                                                    {% if other_user %}
+                                                        <img src="https://ui-avatars.com/api/?name={{ other_user.get_full_name|default:other_user.username }}&background=007bff&color=fff" 
+                                                             class="rounded-circle" width="40" height="40" alt="Аватар">
+                                                    {% endif %}
+                                                {% endwith %}
                                             </div>
                                             <div>
                                                 <h6 class="mb-1">
-                                                    {% if conversation.get_other_participant %}
-                                                        {{ conversation.get_other_participant.get_full_name|default:conversation.get_other_participant.username }}
-                                                    {% else %}
-                                                        Неизвестный пользователь
-                                                    {% endif %}
+                                                    {% with other_user=conversation.get_other_participant:request.user %}
+                                                        {% if other_user %}
+                                                            {{ other_user.get_full_name|default:other_user.username }}
+                                                        {% else %}
+                                                            Неизвестный пользователь
+                                                        {% endif %}
+                                                    {% endwith %}
                                                 </h6>
                                                 {% if conversation.last_message %}
                                                     <p class="mb-1 text-muted small">{{ conversation.last_message.content|truncatechars:50 }}</p>
@@ -47,9 +51,11 @@
                                             {% if conversation.last_message %}
                                                 <small class="text-muted">{{ conversation.last_message.timestamp|timesince }} назад</small>
                                             {% endif %}
-                                            {% if conversation.get_unread_count %}
-                                                <span class="badge bg-primary rounded-pill d-block mt-1">{{ conversation.get_unread_count }}</span>
-                                            {% endif %}
+                                            {% with unread_count=conversation.get_unread_count:request.user %}
+                                                {% if unread_count > 0 %}
+                                                    <span class="badge bg-primary rounded-pill d-block mt-1">{{ unread_count }}</span>
+                                                {% endif %}
+                                            {% endwith %}
                                         </div>
                                     </div>
                                 </a>

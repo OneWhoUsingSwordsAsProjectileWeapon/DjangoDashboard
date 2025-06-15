@@ -146,7 +146,7 @@ def public_profile_view(request, user_id):
             status='confirmed'
         ).exists()
 
-        # Check if user already reviewed this host
+        # Check if the current user has already reviewed this user
         existing_review = reviews_received.filter(reviewer=request.user).exists()
 
         can_leave_review = completed_bookings and not existing_review

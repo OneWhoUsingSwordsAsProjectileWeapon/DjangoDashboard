@@ -19,7 +19,13 @@
                         </a>
                         <div>
                             <h6 class="mb-0">
-                                Чат с {{ conversation.get_other_participant.get_full_name|default:conversation.get_other_participant.username }}
+                                {% with other_user=conversation.get_other_participant:request.user %}
+                                    {% if other_user %}
+                                        Чат с {{ other_user.get_full_name|default:other_user.username }}
+                                    {% else %}
+                                        Чат
+                                    {% endif %}
+                                {% endwith %}
                             </h6>
                             {% if conversation.related_listing %}
                                 <small class="opacity-75">По поводу: {{ conversation.related_listing.title }}</small>
