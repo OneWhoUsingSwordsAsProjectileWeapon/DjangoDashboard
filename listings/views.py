@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.db.models import Q, Avg, Count, Sum, F, Case, When, IntegerField, DecimalField
 from django.db.models.functions import TruncMonth, TruncWeek, TruncDay
 from django.db import models
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, Http404, HttpResponse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from datetime import datetime, timedelta, date
@@ -505,7 +505,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         # Start from current quarter and go back 8 quarters
         today = timezone.now().date()
         current_quarter_start = date(today.year, ((today.month - 1) // 3) * 3 + 1, 1)
-
+        
         for i in range(7, -1, -1):  # Last 8 quarters
             quarter_start = current_quarter_start - relativedelta(months=i*3)
             quarter_end = quarter_start + relativedelta(months=3)
@@ -536,7 +536,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
 
         # Get data for last 2 years to have meaningful seasonal analysis
         two_years_ago = timezone.now().date() - timedelta(days=730)
-
+        
         for month in range(1, 13):
             month_bookings = all_bookings.filter(
                 status='completed',
@@ -646,14 +646,14 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
         custom_detail_end = self.request.GET.get('custom_detail_end')
 
         listing_detail_stats = None
-
+        
         if selected_listing_id and selected_listing_id.isdigit():
             try:
                 selected_listing = host_listings.get(id=selected_listing_id)
-
+                
                 # Calculate date range for detailed stats
                 current_date = timezone.now().date()
-
+                
                 if custom_detail_start and custom_detail_end:
                     try:
                         detail_start_date = datetime.strptime(custom_detail_start, '%Y-%m-%d').date()
@@ -674,11 +674,11 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
 
                 # Always calculate stats even if period seems short
                 total_possible_days = max(1, (actual_end_date - actual_start_date).days)
-
+                
                 # Используем ТОЧНО такую же логику как в общей статистике заполняемости
                 # Считаем заполняемость так же как в главной статистике
                 occupied_days = 0
-
+                
                 # Получаем все подтвержденные и завершенные бронирования для этого объявления за весь период
                 occupancy_bookings = selected_listing.bookings.filter(
                     status__in=['completed', 'confirmed'],
@@ -691,7 +691,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                     # Calculate overlap between booking and our period
                     booking_start = max(booking.start_date, actual_start_date)
                     booking_end = min(booking.end_date, actual_end_date)
-
+                    
                     # Only count if there's actual overlap
                     if booking_end > booking_start:
                         nights = (booking_end - booking_start).days
@@ -717,14 +717,14 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                 )
                 period_booking_count = all_bookings_in_period.count()
                 completed_bookings = all_bookings_in_period.filter(status='completed').count()
-
+                
                 # Calculate average booking value
                 avg_booking_value = (period_revenue / completed_bookings) if completed_bookings > 0 else 0
 
                 # Get monthly breakdown
                 monthly_breakdown = []
                 current_month = actual_start_date.replace(day=1)
-
+                
                 month_names_ru = {
                     1: 'Янв', 2: 'Фев', 3: 'Мар', 4: 'Апр', 5: 'Май', 6: 'Июн',
                     7: 'Июл', 8: 'Авг', 9: 'Сен', 10: 'Окт', 11: 'Ноя', 12: 'Дек'
@@ -736,7 +736,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                         month_end = current_month.replace(year=current_month.year + 1, month=1)
                     else:
                         month_end = current_month.replace(month=current_month.month + 1)
-
+                    
                     month_end = min(month_end, actual_end_date + timedelta(days=1))
                     month_actual_end = min(month_end - timedelta(days=1), actual_end_date)
 
@@ -755,7 +755,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                     for booking in month_occupancy_bookings:
                         booking_start = max(booking.start_date, max(current_month, actual_start_date))
                         booking_end = min(booking.end_date, month_actual_end)
-
+                        
                         # Only count if there's actual overlap
                         if booking_end > booking_start:
                             nights = (booking_end - booking_start).days
@@ -770,7 +770,7 @@ class HostDashboardView(LoginRequiredMixin, TemplateView):
                         end_date__gte=current_month,
                         end_date__lt=month_end
                     ).aggregate(total=Sum('total_price'))['total'] or 0
-
+                    
                     # Bookings count - используем created_at для подсчета бронирований
                     month_bookings_count = selected_listing.bookings.filter(
                         created_at__date__gte=current_month,
@@ -869,7 +869,7 @@ class HostListingListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         # Only show listings owned by current user
         queryset = Listing.objects.filter(host=self.request.user)
-
+        
         # If this is for profile view, show only active and approved listings
         if self.request.GET.get('profile_view'):
             queryset = queryset.filter(
@@ -878,7 +878,7 @@ class HostListingListView(LoginRequiredMixin, ListView):
             ).filter(
                 Q(approval_record__status='approved') | Q(approval_record__isnull=True)
             )
-
+            
         return queryset
 
     def get_template_names(self):
@@ -946,7 +946,7 @@ class ListingUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 return redirect('listings:host_listings')
         except BannedUser.DoesNotExist:
             pass
-
+        
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -1093,7 +1093,7 @@ def create_booking(request, pk):
 
             # Create in-app notifications
             from notifications.tasks import create_notification
-
+            
             # Notification for guest
             create_notification(
                 user=request.user,
@@ -1103,7 +1103,7 @@ def create_booking(request, pk):
                 listing=listing,
                 booking=booking
             )
-
+            
             # Notification for host
             create_notification(
                 user=listing.host,
@@ -1226,7 +1226,7 @@ def host_bookings(request):
         'guest__username', '-guest__username',
         'listing__title', '-listing__title'
     ]
-
+    
     if sort_by in valid_sort_fields:
         bookings = bookings.order_by(sort_by)
     else:
@@ -1467,7 +1467,7 @@ def create_host_review(request, host_id):
     from django.contrib.auth import get_user_model
     from .models import HostReview
     User = get_user_model()
-
+    
     host = get_object_or_404(User, id=host_id)
 
     # Check if user is trying to review themselves
@@ -1607,7 +1607,7 @@ def admin_delete_review(request, review_id):
     })
 
 def get_listing_calendar_data(request, pk):
-    """Get calendar data for a specific listing"""
+    """API view for getting listing calendar data"""
     try:
         listing = Listing.objects.get(pk=pk)
 
@@ -1758,24 +1758,24 @@ def set_main_image(request, pk, image_id):
 def user_reviews(request):
     """View for displaying user's reviews (given and received)"""
     user = request.user
-
+    
     # Get reviews written by user
     reviews_given = Review.objects.filter(
         reviewer=user
     ).select_related('listing').order_by('-created_at')
-
+    
     # Get reviews received by user (for their listings)
     reviews_received = Review.objects.filter(
         listing__host=user
     ).select_related('reviewer', 'listing').order_by('-created_at')
-
+    
     # Check if this is a request for tab content only
     if request.GET.get('tab_content'):
         return render(request, 'listings/partials/user_reviews_content.html', {
             'reviews_given': reviews_given,
             'reviews_received': reviews_received
         })
-
+    
     return render(request, 'listings/user_reviews.html', {
         'reviews_given': reviews_given,
         'reviews_received': reviews_received
@@ -1993,241 +1993,3 @@ def export_dashboard_excel(request):
 
     wb.save(response)
     return response
-
-@login_required
-def get_listing_calendar_data(request, pk):
-    """Get calendar data for a specific listing"""
-    listing = get_object_or_404(Listing, pk=pk, host=request.user)
-
-    # Get bookings for this listing
-    bookings = Booking.objects.filter(
-        listing=listing,
-        status__in=['confirmed', 'completed']
-    ).values('start_date', 'end_date', 'status')
-
-    # Format data for calendar
-    events = []
-    for booking in bookings:
-        events.append({
-            'start': booking['start_date'].isoformat(),
-            'end': booking['end_date'].isoformat(),
-            'title': 'Забронировано',
-            'color': '#dc3545' if booking['status'] == 'confirmed' else '#28a745'
-        })
-
-    return JsonResponse({'events': events})
-
-@login_required
-def host_analytics_api(request):
-    """API endpoint for host analytics data"""
-    try:
-        # Get parameters
-        days = request.GET.get('days', '365')
-        start_date = request.GET.get('start_date')
-        end_date = request.GET.get('end_date')
-
-        # Calculate date range
-        now = timezone.now()
-        if days and days != 'all':
-            try:
-                days_int = int(days)
-                end_date = now
-                start_date = end_date - timedelta(days=days_int)
-            except ValueError:
-                end_date = now
-                start_date = end_date - timedelta(days=365)
-        elif start_date and end_date:
-            try:
-                start_date = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
-                end_date = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
-                if start_date.tzinfo is None:
-                    start_date = timezone.make_aware(start_date)
-                if end_date.tzinfo is None:
-                    end_date = timezone.make_aware(end_date)
-            except ValueError:
-                end_date = now
-                start_date = end_date - timedelta(days=365)
-        else:
-            end_date = now
-            start_date = end_date - timedelta(days=365)
-
-        # Get host's listings
-        host_listings = Listing.objects.filter(host=request.user)
-
-        # Get bookings for host's listings
-        host_bookings = Booking.objects.filter(
-            listing__host=request.user,
-            created_at__gte=start_date,
-            created_at__lte=end_date
-        )
-
-        # Monthly revenue data
-        monthly_revenue = []
-        current_month = start_date.replace(day=1)
-
-        while current_month <= end_date:
-            next_month = (current_month.replace(day=28) + timedelta(days=4)).replace(day=1)
-
-            month_bookings = host_bookings.filter(
-                created_at__gte=current_month,
-                created_at__lt=next_month,
-                status__in=['confirmed', 'completed']
-            )
-
-            month_revenue = month_bookings.aggregate(
-                total=Sum('total_price')
-            )['total'] or 0
-
-            monthly_revenue.append({
-                'month': current_month.strftime('%Y-%m'),
-                'month_name': current_month.strftime('%b %Y'),
-                'revenue': float(month_revenue),
-                'bookings': month_bookings.count()
-            })
-
-            current_month = next_month
-
-        # Status distribution
-        status_stats = host_bookings.values('status').annotate(
-            count=Count('id')
-        ).order_by('-count')
-
-        # Seasonal data (by month)
-        seasonal_data = []
-        for month in range(1, 13):
-            month_bookings = host_bookings.filter(
-                created_at__month=month,
-                status__in=['confirmed', 'completed']
-            )
-            month_revenue = month_bookings.aggregate(
-                total=Sum('total_price')
-            )['total'] or 0
-
-            seasonal_data.append({
-                'month': month,
-                'month_name': [
-                    '', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-                    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-                ][month],
-                'total_revenue': float(month_revenue),
-                'bookings': month_bookings.count()
-            })
-
-        # Summary statistics
-        total_revenue = host_bookings.filter(
-            status__in=['confirmed', 'completed']
-        ).aggregate(total=Sum('total_price'))['total'] or 0
-
-        summary = {
-            'total_listings': host_listings.count(),
-            'active_listings': host_listings.filter(is_active=True).count(),
-            'total_bookings': host_bookings.count(),
-            'total_revenue': float(total_revenue),
-            'period_bookings': host_bookings.filter(
-                created_at__gte=start_date,
-                created_at__lte=end_date
-            ).count()
-        }
-
-        return JsonResponse({
-            'summary': summary,
-            'monthly_revenue': monthly_revenue,
-            'status_distribution': list(status_stats),
-            'seasonal_data': seasonal_data,
-            'period': {
-                'start': start_date.isoformat(),
-                'end': end_date.isoformat()
-            }
-        })
-
-    except Exception as e:
-        logger.error(f"Error in host analytics API: {e}")
-        return JsonResponse({
-            'error': 'Failed to load analytics data',
-            'summary': {
-                'total_listings': 0,
-                'active_listings': 0,
-                'total_bookings': 0,
-                'total_revenue': 0,
-                'period_bookings': 0
-            },
-            'monthly_revenue': [],
-            'status_distribution': [],
-            'seasonal_data': []
-        })
-
-@login_required
-def host_analytics_export(request):
-    """Export host analytics to CSV"""
-    try:
-        # Get parameters
-        days = request.GET.get('days', '365')
-        start_date = request.GET.get('start_date')
-        end_date = request.GET.get('end_date')
-
-        # Calculate date range
-        now = timezone.now()
-        if days and days != 'all':
-            try:
-                days_int = int(days)
-                end_date = now
-                start_date = end_date - timedelta(days=days_int)
-            except ValueError:
-                end_date = now
-                start_date = end_date - timedelta(days=365)
-        elif start_date and end_date:
-            try:
-                start_date = datetime.fromisoformat(start_date)
-                end_date = datetime.fromisoformat(end_date)
-            except ValueError:
-                end_date = now
-                start_date = end_date - timedelta(days=365)
-        else:
-            end_date = now
-            start_date = end_date - timedelta(days=365)
-
-        # Get host's bookings
-        host_bookings = Booking.objects.filter(
-            listing__host=request.user,
-            created_at__gte=start_date,
-            created_at__lte=end_date
-        ).select_related('listing', 'guest')
-
-        # Create CSV response
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = f'attachment; filename="host_analytics_{now.strftime("%Y%m%d_%H%M%S")}.csv"'
-
-        writer = csv.writer(response)
-
-        # Write header
-        writer.writerow(['Host Analytics Export'])
-        writer.writerow(['Generated:', now.strftime('%Y-%m-%d %H:%M:%S')])
-        writer.writerow(['Host:', request.user.get_full_name() or request.user.username])
-        writer.writerow(['Period:', f"{start_date.strftime('%Y-%m-%d')} - {end_date.strftime('%Y-%m-%d')}"])
-        writer.writerow([])
-
-        # Bookings data
-        writer.writerow(['Bookings Data'])
-        writer.writerow([
-            'Date', 'Guest', 'Listing', 'Status', 'Start Date', 'End Date', 
-            'Nights', 'Guests', 'Total Price'
-        ])
-
-        for booking in host_bookings:
-            writer.writerow([
-                booking.created_at.strftime('%Y-%m-%d'),
-                booking.guest.get_full_name() or booking.guest.username,
-                booking.listing.title,
-                booking.get_status_display(),
-                booking.start_date.strftime('%Y-%m-%d'),
-                booking.end_date.strftime('%Y-%m-%d'),
-                booking.duration_nights,
-                booking.guests,
-                f"₽{booking.total_price:.2f}"
-            ])
-
-        return response
-
-    except Exception as e:
-        logger.error(f"Error exporting host analytics: {e}")
-        return HttpResponse('Error exporting data', status=500)
