@@ -1782,6 +1782,156 @@ def user_reviews(request):
     })
 
 @login_required
+def host_dashboard_data(request):
+    """AJAX endpoint for updating dashboard chart data"""
+    if not request.user.is_host:
+        return JsonResponse({'error': 'Not a host'}, status=403)
+    
+    chart_type = request.GET.get('chart_type')
+    period = request.GET.get('period', '12')
+    
+    user = request.user
+    all_bookings = Booking.objects.filter(listing__host=user)
+    
+    response_data = {}
+    
+    if chart_type == 'revenue':
+        # Generate revenue data based on period
+        from dateutil.relativedelta import relativedelta
+        
+        try:
+            period_months = int(period) if period != 'all' else 12
+        except ValueError:
+            period_months = 12
+            
+        monthly_revenue = []
+        current_date = timezone.now().date()
+        
+        month_names_ru = {
+            1: 'Янв', 2: 'Фев', 3: 'Мар', 4: 'Апр', 5: 'Май', 6: 'Июн',
+            7: 'Июл', 8: 'Авг', 9: 'Сен', 10: 'Окт', 11: 'Ноя', 12: 'Дек'
+        }
+        
+        for i in range(period_months - 1, -1, -1):
+            target_date = current_date.replace(day=1) - relativedelta(months=i)
+            month_end = target_date + relativedelta(months=1)
+            
+            month_revenue = all_bookings.filter(
+                status='completed',
+                end_date__gte=target_date,
+                end_date__lt=month_end
+            ).aggregate(
+                total_revenue=Sum('total_price'),
+                total_bookings=Count('id')
+            )
+            
+            month_name = f"{month_names_ru[target_date.month]} {target_date.year}"
+            
+            monthly_revenue.append({
+                'month': target_date.strftime('%Y-%m-01'),
+                'month_name': month_name,
+                'revenue': float(month_revenue['total_revenue'] or 0),
+                'bookings': month_revenue['total_bookings'] or 0
+            })
+        
+        response_data['monthly_revenue'] = monthly_revenue
+    
+    elif chart_type == 'quarterly':
+        # Generate quarterly data
+        try:
+            period_quarters = int(period) if period != 'all' else 8
+        except ValueError:
+            period_quarters = 8
+            
+        quarterly_revenue = []
+        today = timezone.now().date()
+        current_quarter_start = date(today.year, ((today.month - 1) // 3) * 3 + 1, 1)
+        
+        for i in range(period_quarters - 1, -1, -1):
+            quarter_start = current_quarter_start - relativedelta(months=i*3)
+            quarter_end = quarter_start + relativedelta(months=3)
+            
+            quarter_revenue = all_bookings.filter(
+                status='completed',
+                end_date__gte=quarter_start,
+                end_date__lt=quarter_end
+            ).aggregate(
+                total_revenue=Sum('total_price'),
+                total_bookings=Count('id')
+            )
+            
+            quarter_num = ((quarter_start.month - 1) // 3) + 1
+            quarterly_revenue.append({
+                'quarter': f"{quarter_start.year}-Q{quarter_num}",
+                'quarter_name': f"Q{quarter_num} {quarter_start.year}",
+                'revenue': float(quarter_revenue['total_revenue'] or 0),
+                'bookings': quarter_revenue['total_bookings'] or 0
+            })
+        
+        response_data['quarterly_revenue'] = quarterly_revenue
+    
+    elif chart_type == 'seasonal':
+        # Generate seasonal data based on period
+        seasonal_data = {}
+        month_names_ru = [
+            '', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+            'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+        ]
+        
+        # Filter by period
+        if period == 'current':
+            year_filter = timezone.now().year
+            bookings_filter = all_bookings.filter(end_date__year=year_filter)
+        else:
+            # All time or last 2 years
+            two_years_ago = timezone.now().date() - timedelta(days=730)
+            bookings_filter = all_bookings.filter(end_date__gte=two_years_ago)
+        
+        for month in range(1, 13):
+            month_bookings = bookings_filter.filter(
+                status='completed',
+                end_date__month=month
+            ).aggregate(
+                total_revenue=Sum('total_price'),
+                total_bookings=Count('id'),
+                avg_revenue=Avg('total_price')
+            )
+            
+            seasonal_data[month] = {
+                'month': month,
+                'month_name': month_names_ru[month],
+                'total_revenue': float(month_bookings['total_revenue'] or 0),
+                'bookings': month_bookings['total_bookings'] or 0,
+                'avg_revenue': float(month_bookings['avg_revenue'] or 0)
+            }
+        
+        response_data['seasonal_revenue'] = list(seasonal_data.values())
+    
+    elif chart_type == 'status':
+        # Generate status data
+        status_stats_qs = all_bookings.values('status').annotate(
+            count=Count('id'),
+            revenue=Sum(Case(
+                When(status='completed', then='total_price'),
+                default=0,
+                output_field=DecimalField()
+            ))
+        )
+        
+        status_stats = []
+        for item in status_stats_qs:
+            if item['count'] > 0:
+                status_stats.append({
+                    'status': item['status'],
+                    'count': item['count'],
+                    'revenue': float(item['revenue'] or 0)
+                })
+        
+        response_data['status_stats'] = status_stats
+    
+    return JsonResponse(response_data)
+
+@login_required
 def export_dashboard_excel(request):
     """Export dashboard data to Excel"""
     if not request.user.is_host:

@@ -30,7 +30,8 @@ urlpatterns = [
     path('my-bookings/', views.user_bookings, name='user_bookings'),
     path('my-reviews/', views.user_reviews, name='user_reviews'),
     path('host-bookings/', views.host_bookings, name='host_bookings'),
-    path('bookings/<uuid:reference>/status/<str:status>/', views.update_booking_status, name='update_booking_status'),
+    path('host-dashboard-data/', views.host_dashboard_data, name='host_dashboard_data'),
+    path('booking/<uuid:reference>/status/<str:status>/', views.update_booking_status, name='update_booking_status'),
 
     # Review views
     path('listing/<int:listing_id>/review/', views.create_review, name='create_review'),

@@ -5,6 +5,11 @@
 
 {% block title %}Панель владельца недвижимости - Агрегатор Аренды{% endblock %}
 
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+{% endblock %}
+
 {% block extra_head %}
 <style>
 /* Dashboard Chart Styles */
@@ -1256,6 +1261,19 @@
 <script>
 // Native JavaScript chart implementation
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Host dashboard initializing...');
+    
+    // Check if Chart.js is loaded
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js is not loaded!');
+        // Show error message in chart containers
+        const chartContainers = document.querySelectorAll('.chart-container .line-chart, .chart-container .bar-chart, .chart-container .pie-chart');
+        chartContainers.forEach(container => {
+            container.innerHTML = '<div class="no-data-message"><i class="fas fa-exclamation-triangle"></i><span>Chart.js не загружен. Графики недоступны.</span></div>';
+        });
+        return;
+    }
+
     console.log('Dashboard charts initializing...');
 
     // Chart data - ensure proper JSON parsing
@@ -1299,7 +1317,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Period selectors
+    // Period selectors with AJAX updates
     const revenuePeriodSelect = document.getElementById('revenuePeriodSelect');
     const statusPeriodSelect = document.getElementById('statusPeriodSelect');
     const quarterlyPeriodSelect = document.getElementById('quarterlyPeriodSelect');
@@ -1307,25 +1325,82 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (revenuePeriodSelect) {
         revenuePeriodSelect.addEventListener('change', function() {
-            createRevenueChart();
+            updateChartsWithPeriod('revenue', this.value);
         });
     }
 
     if (statusPeriodSelect) {
         statusPeriodSelect.addEventListener('change', function() {
-            createStatusChart();
+            updateChartsWithPeriod('status', this.value);
         });
     }
 
     if (quarterlyPeriodSelect) {
         quarterlyPeriodSelect.addEventListener('change', function() {
-            createQuarterlyChart();
+            updateChartsWithPeriod('quarterly', this.value);
         });
     }
 
     if (seasonalPeriodSelect) {
         seasonalPeriodSelect.addEventListener('change', function() {
-            createSeasonalChart();
+            updateChartsWithPeriod('seasonal', this.value);
+        });
+    }
+
+    // Function to update charts with AJAX
+    function updateChartsWithPeriod(chartType, period) {
+        const url = new URL(window.location);
+        url.searchParams.set(chartType + '_period', period);
+        
+        // Show loading for specific chart
+        const chartContainer = document.getElementById(chartType + 'Chart');
+        if (chartContainer) {
+            chartContainer.innerHTML = '<div class="no-data-message"><i class="fas fa-spinner fa-spin"></i><span>Обновление данных...</span></div>';
+        }
+
+        // Make AJAX request to get updated data
+        fetch(`/listings/host-dashboard-data/?chart_type=${chartType}&period=${period}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Update the specific chart with new data
+            switch(chartType) {
+                case 'revenue':
+                    if (data.monthly_revenue) {
+                        monthlyData = data.monthly_revenue;
+                        createRevenueChart();
+                    }
+                    break;
+                case 'status':
+                    if (data.status_stats) {
+                        // Update status stats and recreate chart
+                        createStatusChart();
+                    }
+                    break;
+                case 'quarterly':
+                    if (data.quarterly_revenue) {
+                        quarterlyData = data.quarterly_revenue;
+                        createQuarterlyChart();
+                    }
+                    break;
+                case 'seasonal':
+                    if (data.seasonal_revenue) {
+                        seasonalData = data.seasonal_revenue;
+                        createSeasonalChart();
+                    }
+                    break;
+            }
+        })
+        .catch(error => {
+            console.error('Error updating chart:', error);
+            if (chartContainer) {
+                chartContainer.innerHTML = '<div class="no-data-message"><i class="fas fa-exclamation-triangle"></i><span>Ошибка загрузки данных</span></div>';
+            }
         });
     }
 
