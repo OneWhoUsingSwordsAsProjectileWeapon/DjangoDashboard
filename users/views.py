@@ -128,12 +128,12 @@ def public_profile_view(request, user_id):
 
     # Get user's reviews
     from listings.models import Review
-    reviews_received = Review.objects.filter(listing__host=profile_user).select_related('user', 'listing')[:10]
+    reviews_received_queryset = Review.objects.filter(listing__host=profile_user).select_related('user', 'listing')
     reviews_given = Review.objects.filter(reviewer=profile_user).select_related('listing')[:10]
 
-    # Calculate average rating
-    avg_rating = reviews_received.aggregate(avg_rating=Avg('rating'))['avg_rating']
-    total_reviews = reviews_received.count()
+    # Calculate average rating and total count before slicing
+    avg_rating = reviews_received_queryset.aggregate(avg_rating=Avg('rating'))['avg_rating']
+    total_reviews = reviews_received_queryset.count()
 
     # Check if current user can leave a review
     can_leave_review = False
@@ -141,15 +141,18 @@ def public_profile_view(request, user_id):
         from listings.models import Booking
         # Check if user has completed bookings with this host
         completed_bookings = Booking.objects.filter(
-            guest=profile_user,
+            guest=request.user,
             listing__host=profile_user,
             status='confirmed'
         ).exists()
 
         # Check if the current user has already reviewed this user
-        existing_review = reviews_received.filter(reviewer=request.user).exists()
+        existing_review = reviews_received_queryset.filter(reviewer=request.user).exists()
 
         can_leave_review = completed_bookings and not existing_review
+
+    # Apply slice after all filtering is done
+    reviews_received = reviews_received_queryset[:10]
 
     context = {
         'profile_user': profile_user,
