@@ -1,243 +1,151 @@
-{% extends 'base.html' %}
-{% load i18n %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аналитика подписок</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">
+                    <i class="fas fa-chart-line"></i>
+                    Аналитика подписок
+                </h1>
+            </div>
+        </div>
 
-{% block title %}Управление подписками{% endblock %}
+        <!-- Загрузчик -->
+        <div id="loading-overlay" class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+        </div>
 
-{% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h1 class="mb-0">Управление подписками</h1>
-                <div class="btn-group" role="group">
-                    <a href="{% url 'admin:subscriptions_subscriptionplan_changelist' %}" class="btn btn-primary">
-                        <i class="fas fa-cog"></i> Планы
-                    </a>
-                    <a href="{% url 'admin:subscriptions_usersubscription_changelist' %}" class="btn btn-outline-primary">
-                        <i class="fas fa-users"></i> Подписки
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Фильтры по периодам -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Фильтры и настройки</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <label for="timeFilterSelect" class="form-label">Период времени</label>
-                            <select class="form-select" id="timeFilterSelect">
-                                <option value="7">Последние 7 дней</option>
-                                <option value="30">Последние 30 дней</option>
-                                <option value="90">Последние 3 месяца</option>
-                                <option value="180">Последние 6 месяцев</option>
-                                <option value="365" selected>Последний год</option>
-                                <option value="custom">Произвольный период</option>
-                            </select>
+        <!-- Основной контент -->
+        <div id="dashboard-content" style="display: none;">
+            <!-- Фильтры -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Фильтры</h5>
                         </div>
-                        <div class="col-md-3" id="customDateRange" style="display: none;">
-                            <label for="startDate" class="form-label">От</label>
-                            <input type="date" class="form-control" id="startDate">
-                        </div>
-                        <div class="col-md-3" id="customDateRangeEnd" style="display: none;">
-                            <label for="endDate" class="form-label">До</label>
-                            <input type="date" class="form-control" id="endDate">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="chartTypeSelect" class="form-label">Тип графика</label>
-                            <select class="form-select" id="chartTypeSelect">
-                                <option value="line">Линейный</option>
-                                <option value="bar">Столбчатый</option>
-                                <option value="area">Области</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <button type="button" class="btn btn-primary" id="applyFilters">
-                                <i class="fas fa-filter"></i> Применить фильтры
-                            </button>
-                            <button type="button" class="btn btn-secondary" id="resetFilters">
-                                <i class="fas fa-undo"></i> Сбросить
-                            </button>
-                            <button type="button" class="btn btn-success" id="exportData">
-                                <i class="fas fa-download"></i> Экспорт данных
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Статистические карточки -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h5 class="card-title">Всего подписок</h5>
-                            <h2 id="total-subscriptions" class="mb-0">-</h2>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-users fa-2x"></i>
-                        </div>
-                    </div>
-                    <small class="mt-2">
-                        <span id="subscriptions-change" class="badge badge-light">-</span>
-                        с прошлого месяца
-                    </small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h5 class="card-title">Активные</h5>
-                            <h2 id="active-subscriptions" class="mb-0">-</h2>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-check-circle fa-2x"></i>
-                        </div>
-                    </div>
-                    <small class="mt-2">
-                        <span id="active-percentage" class="badge badge-light">-</span>
-                        от общего числа
-                    </small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h5 class="card-title">Истекшие</h5>
-                            <h2 id="expired-subscriptions" class="mb-0">-</h2>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-exclamation-triangle fa-2x"></i>
-                        </div>
-                    </div>
-                    <small class="mt-2">
-                        <span id="churn-rate" class="badge badge-light">-</span>
-                        показатель оттока
-                    </small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h5 class="card-title">Общий доход</h5>
-                            <h2 id="total-revenue" class="mb-0">-</h2>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-dollar-sign fa-2x"></i>
-                        </div>
-                    </div>
-                    <small class="mt-2">
-                        <span id="revenue-change" class="badge badge-light">-</span>
-                        с прошлого периода
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Графики доходов и подписок -->
-    <div class="row mb-4">
-        <div class="col-lg-8">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Динамика доходов</h5>
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-outline-primary active" data-period="monthly">Месячно</button>
-                        <button type="button" class="btn btn-outline-primary" data-period="quarterly">Кварталы</button>
-                        <button type="button" class="btn btn-outline-primary" data-period="seasonal">Сезоны</button>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <canvas id="revenueChart" height="300"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Распределение по планам</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="plansChart" height="300"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Дополнительная аналитика -->
-    <div class="row mb-4">
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Конверсия и retention</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="conversionChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Средний доход на пользователя (ARPU)</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="arpuChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Сезонная аналитика -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Сезонный анализ подписок</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-lg-8">
-                            <canvas id="seasonalChart" height="250"></canvas>
-                        </div>
-                        <div class="col-lg-4">
-                            <div class="seasonal-insights">
-                                <h6>Ключевые инсайты:</h6>
-                                <div id="seasonalInsights">
-                                    <div class="insight-item mb-2">
-                                        <small class="text-muted">Лучший месяц:</small>
-                                        <div id="bestMonth">-</div>
-                                    </div>
-                                    <div class="insight-item mb-2">
-                                        <small class="text-muted">Худший месяц:</small>
-                                        <div id="worstMonth">-</div>
-                                    </div>
-                                    <div class="insight-item mb-2">
-                                        <small class="text-muted">Сезонность:</small>
-                                        <div id="seasonality">-</div>
+                        <div class="card-body">
+                            <form id="filter-form" class="row g-3">
+                                <div class="col-md-3">
+                                    <label for="period-select" class="form-label">Период</label>
+                                    <select class="form-select" id="period-select" name="period">
+                                        <option value="30">Последние 30 дней</option>
+                                        <option value="90">Последние 3 месяца</option>
+                                        <option value="365" selected>Последний год</option>
+                                        <option value="all">Все время</option>
+                                        <option value="custom">Произвольный период</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3" id="start-date-group" style="display: none;">
+                                    <label for="start-date" class="form-label">Дата начала</label>
+                                    <input type="date" class="form-control" id="start-date" name="start_date">
+                                </div>
+                                <div class="col-md-3" id="end-date-group" style="display: none;">
+                                    <label for="end-date" class="form-label">Дата окончания</label>
+                                    <input type="date" class="form-control" id="end-date" name="end_date">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <div>
+                                        <button type="submit" class="btn btn-primary">Применить фильтр</button>
+                                        <button type="button" class="btn btn-outline-secondary" id="export-btn">Экспорт CSV</button>
                                     </div>
                                 </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Карточки со статистикой -->
+            <div class="row mb-4" id="stats-cards">
+                <!-- Будут заполнены через JavaScript -->
+            </div>
+
+            <!-- Графики -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Доходы по месяцам</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="revenue-chart" height="100"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Распределение по планам</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="plans-chart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Сезонная аналитика -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Сезонные тренды</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="seasonal-chart" height="150"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Статистика по статусам</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="status-chart" height="150"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Таблица последних подписок -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Последние подписки</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="recent-subscriptions-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Пользователь</th>
+                                            <th>План</th>
+                                            <th>Статус</th>
+                                            <th>Дата начала</th>
+                                            <th>Дата окончания</th>
+                                            <th>Сумма</th>
+                                            <th>Автопродление</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Будет заполнено через JavaScript -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -246,535 +154,335 @@
         </div>
     </div>
 
-    <!-- Таблица последних подписок -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Последние подписки</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Пользователь</th>
-                                    <th>План</th>
-                                    <th>Статус</th>
-                                    <th>Дата начала</th>
-                                    <th>Дата окончания</th>
-                                    <th>Сумма</th>
-                                    <th>Автопродление</th>
-                                </tr>
-                            </thead>
-                            <tbody id="subscriptions-table">
-                                <tr>
-                                    <td colspan="7" class="text-center">Загрузка...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        console.log('Analytics dashboard initializing...');
+
+        let revenueChart, plansChart, seasonalChart, statusChart;
+
+        $(document).ready(function() {
+            console.log('Document ready, initializing dashboard...');
+            loadAnalyticsData();
+
+            // Обработчик фильтра периода
+            $('#period-select').change(function() {
+                const period = $(this).val();
+                if (period === 'custom') {
+                    $('#start-date-group, #end-date-group').show();
+                } else {
+                    $('#start-date-group, #end-date-group').hide();
+                }
+            });
+
+            // Обработчик формы фильтра
+            $('#filter-form').submit(function(e) {
+                e.preventDefault();
+                loadAnalyticsData();
+            });
+
+            // Обработчик экспорта
+            $('#export-btn').click(function() {
+                exportAnalyticsData();
+            });
+        });
+
+        function loadAnalyticsData() {
+            $('#loading-overlay').show();
+            $('#dashboard-content').hide();
+
+            const formData = new FormData($('#filter-form')[0]);
+            const params = new URLSearchParams();
+
+            const period = $('#period-select').val();
+            if (period !== 'custom' && period !== 'all') {
+                params.append('days', period);
+            } else if (period === 'custom') {
+                const startDate = $('#start-date').val();
+                const endDate = $('#end-date').val();
+                if (startDate) params.append('start_date', startDate);
+                if (endDate) params.append('end_date', endDate);
+            }
+
+            $.ajax({
+                url: '/api/subscriptions/analytics/?' + params.toString(),
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+                },
+                success: function(data) {
+                    console.log('Analytics data loaded:', data);
+                    renderDashboard(data);
+                    $('#loading-overlay').hide();
+                    $('#dashboard-content').show();
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error loading analytics:', error);
+                    alert('Ошибка загрузки данных аналитики: ' + error);
+                    $('#loading-overlay').hide();
+                }
+            });
+        }
+
+        function renderDashboard(data) {
+            renderStatsCards(data.summary);
+            renderRevenueChart(data.monthly_revenue);
+            renderPlansChart(data.plans_distribution);
+            renderSeasonalChart(data.seasonal_data);
+            renderStatusChart(data.status_distribution);
+            renderRecentSubscriptions(data.recent_subscriptions);
+        }
+
+        function renderStatsCards(summary) {
+            const cardsHtml = `
+                <div class="col-md-3">
+                    <div class="card text-white bg-primary">
+                        <div class="card-body">
+                            <h5 class="card-title">Всего подписок</h5>
+                            <h2>${summary.total_subscriptions}</h2>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Analytics dashboard initializing...');
-
-    let charts = {};
-    let currentPeriod = 'monthly';
-    let analyticsData = {};
-
-    // Initialize dashboard
-    loadAnalyticsData();
-
-        // Make filter inputs functional
-        $('#timeFilter, #startDate, #endDate').on('change', function() {
-            loadAnalyticsData();
-        });
-
-        // Apply filters button
-        $('#applyFilters').on('click', function() {
-            loadAnalyticsData();
-        });
-
-    // Event listeners
-    document.getElementById('timeFilterSelect').addEventListener('change', function() {
-        if (this.value === 'custom') {
-            document.getElementById('customDateRange').style.display = 'block';
-            document.getElementById('customDateRangeEnd').style.display = 'block';
-        } else {
-            document.getElementById('customDateRange').style.display = 'none';
-            document.getElementById('customDateRangeEnd').style.display = 'none';
+                <div class="col-md-3">
+                    <div class="card text-white bg-success">
+                        <div class="card-body">
+                            <h5 class="card-title">Активных подписок</h5>
+                            <h2>${summary.active_subscriptions}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-warning">
+                        <div class="card-body">
+                            <h5 class="card-title">Истекших подписок</h5>
+                            <h2>${summary.expired_subscriptions}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-white bg-info">
+                        <div class="card-body">
+                            <h5 class="card-title">Общий доход</h5>
+                            <h2>$${summary.total_revenue.toFixed(2)}</h2>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('#stats-cards').html(cardsHtml);
         }
-    });
 
-    document.getElementById('applyFilters').addEventListener('click', loadAnalyticsData);
-    document.getElementById('resetFilters').addEventListener('click', resetFilters);
-    document.getElementById('exportData').addEventListener('click', exportData);
+        function renderRevenueChart(monthlyData) {
+            const ctx = document.getElementById('revenue-chart').getContext('2d');
 
-    // Period switchers
-    document.querySelectorAll('[data-period]').forEach(button => {
-        button.addEventListener('click', function() {
-            document.querySelectorAll('[data-period]').forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            currentPeriod = this.dataset.period;
-            updateRevenueChart();
-        });
-    });
-
-    function loadAnalyticsData() {
-            console.log('Analytics dashboard initializing...');
-
-            const timeFilter = $('#timeFilter').val() || '365';
-            const startDate = $('#startDate').val();
-            const endDate = $('#endDate').val();
-
-            let url = '/api/subscriptions/analytics/?days=' + timeFilter;
-            if (startDate && endDate) {
-                url = `/api/subscriptions/analytics/?start_date=${startDate}&end_date=${endDate}`;
+            if (revenueChart) {
+                revenueChart.destroy();
             }
 
-            // Show loading state
-            $('.analytics-card').addClass('loading');
-
-            $.get(url)
-                .done(function(data) {
-                    console.log('Analytics data loaded:', data);
-                    updateSummaryStats(data.summary);
-                    updateCharts(data);
-                    $('.analytics-card').removeClass('loading');
-                })
-                .fail(function(xhr, status, error) {
-                    console.error('Failed to load analytics data:', error);
-                    console.error('Response:', xhr.responseText);
-                    showErrorMessage('Не удалось загрузить данные аналитики: ' + error);
-                    $('.analytics-card').removeClass('loading');
-                });
-        }
-
-    function updateDashboard(data) {
-        // Update stats cards
-        updateStatsCards(data.summary);
-
-        // Update charts
-        updateRevenueChart();
-        updatePlansChart(data.plans_distribution);
-        updateConversionChart(data.conversion_data);
-        updateArpuChart(data.arpu_data);
-        updateSeasonalChart(data.seasonal_data);
-
-        // Update recent subscriptions table
-        updateSubscriptionsTable(data.recent_subscriptions);
-
-        // Update seasonal insights
-        updateSeasonalInsights(data.seasonal_insights);
-    }
-
-    function updateStatsCards(summary) {
-        document.getElementById('total-subscriptions').textContent = summary.total_subscriptions || 0;
-        document.getElementById('active-subscriptions').textContent = summary.active_subscriptions || 0;
-        document.getElementById('expired-subscriptions').textContent = summary.expired_subscriptions || 0;
-        document.getElementById('total-revenue').textContent = `$${(summary.total_revenue || 0).toFixed(2)}`;
-
-        // Calculate percentages and changes
-        const activePercentage = summary.total_subscriptions > 0 
-            ? ((summary.active_subscriptions / summary.total_subscriptions) * 100).toFixed(1)
-            : 0;
-        document.getElementById('active-percentage').textContent = `${activePercentage}%`;
-
-        // Show changes if available
-        if (summary.changes) {
-            updateChangeIndicator('subscriptions-change', summary.changes.subscriptions_change);
-            updateChangeIndicator('revenue-change', summary.changes.revenue_change, true);
-            updateChangeIndicator('churn-rate', summary.changes.churn_rate, false, true);
-        }
-    }
-
-    function updateChangeIndicator(elementId, change, isCurrency = false, isChurn = false) {
-        const element = document.getElementById(elementId);
-        if (!element || change === undefined) return;
-
-        const isPositive = change > 0;
-        const isNegative = change < 0;
-
-        // For churn rate, positive is bad
-        const className = isChurn 
-            ? (isPositive ? 'badge-danger' : 'badge-success')
-            : (isPositive ? 'badge-success' : 'badge-danger');
-
-        element.className = `badge ${className}`;
-
-        const prefix = isPositive ? '+' : '';
-        const suffix = isCurrency ? '$' : '%';
-        element.textContent = `${prefix}${change.toFixed(1)}${suffix}`;
-    }
-
-    function updateRevenueChart() {
-        const ctx = document.getElementById('revenueChart').getContext('2d');
-
-        if (charts.revenue) {
-            charts.revenue.destroy();
-        }
-
-        const data = analyticsData[`${currentPeriod}_revenue`] || [];
-        const chartType = document.getElementById('chartTypeSelect').value;
-
-        const chartData = {
-            labels: data.map(item => item.label),
-            datasets: [{
-                label: 'Доход',
-                data: data.map(item => item.revenue),
-                backgroundColor: chartType === 'area' ? 'rgba(54, 162, 235, 0.2)' : 'rgba(54, 162, 235, 0.8)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 2,
-                fill: chartType === 'area',
-                tension: 0.4
-            }, {
-                label: 'Количество подписок',
-                data: data.map(item => item.subscriptions),
-                backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                borderColor: 'rgba(255, 99, 132, 1)',
-                borderWidth: 2,
-                yAxisID: 'y1',
-                type: 'line'
-            }]
-        };
-
-        charts.revenue = new Chart(ctx, {
-            type: chartType === 'area' ? 'line' : chartType,
-            data: chartData,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        position: 'left',
-                        title: {
-                            display: true,
-                            text: 'Доход ($)'
-                        }
-                    },
-                    y1: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
-                        title: {
-                            display: true,
-                            text: 'Количество подписок'
-                        },
-                        grid: {
-                            drawOnChartArea: false,
-                        },
-                    }
+            revenueChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: monthlyData.map(item => item.month_name),
+                    datasets: [{
+                        label: 'Доход ($)',
+                        data: monthlyData.map(item => item.revenue),
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1
+                    }, {
+                        label: 'Количество подписок',
+                        data: monthlyData.map(item => item.subscriptions),
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        yAxisID: 'y1',
+                        tension: 0.1
+                    }]
                 },
-                plugins: {
-                    legend: {
-                        display: true
-                    },
-                    tooltip: {
+                options: {
+                    responsive: true,
+                    interaction: {
                         mode: 'index',
-                        intersect: false
+                        intersect: false,
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
                     }
                 }
-            }
-        });
-    }
-
-    function updatePlansChart(plansData) {
-        const ctx = document.getElementById('plansChart').getContext('2d');
-
-        if (charts.plans) {
-            charts.plans.destroy();
+            });
         }
 
-        const labels = Object.keys(plansData || {});
-        const data = Object.values(plansData || {});
+        function renderPlansChart(plansData) {
+            const ctx = document.getElementById('plans-chart').getContext('2d');
 
-        charts.plans = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: [
-                        '#FF6384',
-                        '#36A2EB',
-                        '#FFCE56',
-                        '#4BC0C0',
-                        '#9966FF',
-                        '#FF9F40'
-                    ]
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
+            if (plansChart) {
+                plansChart.destroy();
+            }
+
+            const labels = Object.keys(plansData);
+            const data = Object.values(plansData);
+
+            plansChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function renderSeasonalChart(seasonalData) {
+            const ctx = document.getElementById('seasonal-chart').getContext('2d');
+
+            if (seasonalChart) {
+                seasonalChart.destroy();
+            }
+
+            seasonalChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: seasonalData.map(item => item.month_name),
+                    datasets: [{
+                        label: 'Доход',
+                        data: seasonalData.map(item => item.total_revenue),
+                        backgroundColor: 'rgba(54, 162, 235, 0.8)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
                     }
                 }
-            }
-        });
-    }
-
-    function updateConversionChart(conversionData) {
-        const ctx = document.getElementById('conversionChart').getContext('2d');
-
-        if (charts.conversion) {
-            charts.conversion.destroy();
+            });
         }
 
-        charts.conversion = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: conversionData?.labels || [],
-                datasets: [{
-                    label: 'Конверсия (%)',
-                    data: conversionData?.conversion || [],
-                    borderColor: 'rgb(75, 192, 192)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    tension: 0.4
-                }, {
-                    label: 'Retention (%)',
-                    data: conversionData?.retention || [],
-                    borderColor: 'rgb(255, 99, 132)',
-                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100
-                    }
+        function renderStatusChart(statusData) {
+            const ctx = document.getElementById('status-chart').getContext('2d');
+
+            if (statusChart) {
+                statusChart.destroy();
+            }
+
+            const labels = Object.keys(statusData);
+            const data = Object.values(statusData);
+
+            statusChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels.map(label => {
+                        const statusMap = {
+                            'active': 'Активные',
+                            'expired': 'Истекшие',
+                            'canceled': 'Отмененные',
+                            'pending': 'Ожидающие'
+                        };
+                        return statusMap[label] || label;
+                    }),
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            '#28a745',
+                            '#ffc107',
+                            '#dc3545',
+                            '#17a2b8'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
                 }
+            });
+        }
+
+        function renderRecentSubscriptions(subscriptions) {
+            const tbody = $('#recent-subscriptions-table tbody');
+            tbody.empty();
+
+            subscriptions.forEach(sub => {
+                const row = `
+                    <tr>
+                        <td>${sub.user}</td>
+                        <td>${sub.plan}</td>
+                        <td>
+                            <span class="badge bg-${getStatusColor(sub.status)}">${getStatusText(sub.status)}</span>
+                        </td>
+                        <td>${formatDate(sub.start_date)}</td>
+                        <td>${formatDate(sub.end_date)}</td>
+                        <td>$${sub.amount_paid.toFixed(2)}</td>
+                        <td>${sub.auto_renew ? '<span class="badge bg-success">Да</span>' : '<span class="badge bg-secondary">Нет</span>'}</td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'active': 'success',
+                'expired': 'warning',
+                'canceled': 'danger',
+                'pending': 'info'
+            };
+            return colors[status] || 'secondary';
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                'active': 'Активна',
+                'expired': 'Истекла',
+                'canceled': 'Отменена',
+                'pending': 'Ожидает'
+            };
+            return texts[status] || status;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ru-RU');
+        }
+
+        function exportAnalyticsData() {
+            const period = $('#period-select').val();
+            const params = new URLSearchParams();
+
+            if (period !== 'custom' && period !== 'all') {
+                params.append('days', period);
+            } else if (period === 'custom') {
+                const startDate = $('#start-date').val();
+                const endDate = $('#end-date').val();
+                if (startDate) params.append('start_date', startDate);
+                if (endDate) params.append('end_date', endDate);
             }
-        });
-    }
 
-    function updateArpuChart(arpuData) {
-        const ctx = document.getElementById('arpuChart').getContext('2d');
-
-        if (charts.arpu) {
-            charts.arpu.destroy();
+            window.open('/api/subscriptions/analytics/export/?' + params.toString(), '_blank');
         }
-
-        charts.arpu = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: arpuData?.labels || [],
-                datasets: [{
-                    label: 'ARPU ($)',
-                    data: arpuData?.values || [],
-                    backgroundColor: 'rgba(153, 102, 255, 0.8)',
-                    borderColor: 'rgba(153, 102, 255, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    }
-
-    function updateSeasonalChart(seasonalData) {
-        const ctx = document.getElementById('seasonalChart').getContext('2d');
-
-        if (charts.seasonal) {
-            charts.seasonal.destroy();
-        }
-
-        charts.seasonal = new Chart(ctx, {
-            type: 'radar',
-            data: {
-                labels: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-                        'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
-                datasets: [{
-                    label: 'Доход по месяцам',
-                    data: seasonalData?.monthly_revenue || Array(12).fill(0),
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    pointBackgroundColor: 'rgba(54, 162, 235, 1)',
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: 'rgba(54, 162, 235, 1)'
-                }, {
-                    label: 'Количество подписок',
-                    data: seasonalData?.monthly_subscriptions || Array(12).fill(0),
-                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    pointBackgroundColor: 'rgba(255, 99, 132, 1)',
-                    pointBorderColor: '#fff',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: 'rgba(255, 99, 132, 1)'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    r: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    }
-
-    function updateSubscriptionsTable(subscriptions) {
-        const tbody = document.getElementById('subscriptions-table');
-
-        if (!subscriptions || subscriptions.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">Нет данных</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = subscriptions.map(sub => `
-            <tr>
-                <td>${sub.user}</td>
-                <td><span class="badge bg-primary">${sub.plan}</span></td>
-                <td><span class="badge bg-${getStatusColor(sub.status)}">${getStatusText(sub.status)}</span></td>
-                <td>${formatDate(sub.start_date)}</td>
-                <td>${formatDate(sub.end_date)}</td>
-                <td>$${sub.amount_paid}</td>
-                <td>${sub.auto_renew ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>'}</td>
-            </tr>
-        `).join('');
-    }
-
-    function updateSeasonalInsights(insights) {
-        if (!insights) return;
-
-        document.getElementById('bestMonth').textContent = insights.best_month || '-';
-        document.getElementById('worstMonth').textContent = insights.worst_month || '-';
-        document.getElementById('seasonality').textContent = insights.seasonality_index ? 
-            `${insights.seasonality_index.toFixed(2)}%` : '-';
-    }
-
-    function getStatusColor(status) {
-        switch (status) {
-            case 'active': return 'success';
-            case 'expired': return 'danger';
-            case 'canceled': return 'warning';
-            default: return 'secondary';
-        }
-    }
-
-    function getStatusText(status) {
-        switch (status) {
-            case 'active': return 'Активна';
-            case 'expired': return 'Истекла';
-            case 'canceled': return 'Отменена';
-            default: return status;
-        }
-    }
-
-    function formatDate(dateString) {
-        if (!dateString) return '-';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('ru-RU');
-    }
-
-    function resetFilters() {
-        document.getElementById('timeFilterSelect').value = '365';
-        document.getElementById('startDate').value = '';
-        document.getElementById('endDate').value = '';
-        document.getElementById('chartTypeSelect').value = 'line';
-        document.getElementById('customDateRange').style.display = 'none';
-        document.getElementById('customDateRangeEnd').style.display = 'none';
-        loadAnalyticsData();
-    }
-
-    function exportData() {
-        const timeFilter = document.getElementById('timeFilterSelect').value;
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
-
-        let params = new URLSearchParams();
-        params.append('export', 'true');
-
-        if (timeFilter === 'custom' && startDate && endDate) {
-            params.append('start_date', startDate);
-            params.append('end_date', endDate);
-        } else {
-            params.append('days', timeFilter);
-        }
-
-        window.location.href = `/api/subscriptions/analytics/export/?${params.toString()}`;
-    }
-
-    function showError(message) {
-        // Simple error display - could be replaced with a more sophisticated notification system
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
-        alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.row'));
-    }
-});
-</script>
-
-<style>
-.insight-item {
-    padding: 8px;
-    background-color: #f8f9fa;
-    border-radius: 4px;
-    border-left: 3px solid #007bff;
-}
-
-.seasonal-insights h6 {
-    color: #495057;
-    font-weight: 600;
-}
-
-.card .card-header h5 {
-    font-weight: 600;
-    color: #495057;
-}
-
-.badge {
-    font-size: 0.75rem;
-}
-
-.table th {
-    border-top: none;
-    font-weight: 600;
-    color: #495057;
-}
-
-canvas {
-    max-height: 400px;
-}
-
-.btn-group .btn {
-    font-size: 0.875rem;
-}
-
-.stats-card {
-    transition: transform 0.2s;
-}
-
-.stats-card:hover {
-    transform: translateY(-2px);
-}
-</style>
-{% endblock %}
+    </script>
+</body>
+</html>

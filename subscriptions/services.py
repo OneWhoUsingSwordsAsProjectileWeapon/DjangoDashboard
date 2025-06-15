@@ -151,16 +151,27 @@ class SubscriptionService:
         from django.db.models.functions import TruncMonth
 
         # Set default date range
-        if not start_date or not end_date:
-            end_date = timezone.now()
-            if days:
-                try:
-                    days = int(days)
-                    start_date = end_date - timedelta(days=days)
-                except ValueError:
-                    start_date = end_date - timedelta(days=365)
-            else:
+        now = timezone.now()
+        if days and days != 'all':
+            try:
+                days = int(days)
+                end_date = now
+                start_date = end_date - timedelta(days=days)
+            except ValueError:
+                end_date = now
                 start_date = end_date - timedelta(days=365)
+        elif start_date and end_date:
+            if isinstance(start_date, str):
+                start_date = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+                if start_date.tzinfo is None:
+                    start_date = timezone.make_aware(start_date)
+            if isinstance(end_date, str):
+                end_date = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+                if end_date.tzinfo is None:
+                    end_date = timezone.make_aware(end_date)
+        else:
+            end_date = now
+            start_date = end_date - timedelta(days=365)
 
         # Summary statistics
         all_subscriptions = UserSubscription.objects.all()
@@ -186,9 +197,10 @@ class SubscriptionService:
             )['avg'] or 0)
         }
 
-        # Monthly revenue data
+        # Monthly revenue data - get last 12 months
+        twelve_months_ago = end_date - timedelta(days=365)
         monthly_data = all_subscriptions.filter(
-            created_at__gte=start_date - timedelta(days=365),  # Get extra data for trends
+            created_at__gte=twelve_months_ago,
             created_at__lte=end_date
         ).annotate(
             month=TruncMonth('created_at')
@@ -199,12 +211,39 @@ class SubscriptionService:
 
         monthly_revenue = []
         for item in monthly_data:
-            monthly_revenue.append({
-                'label': item['month'].strftime('%Y-%m'),
-                'month_name': item['month'].strftime('%b %Y'),
-                'revenue': float(item['revenue'] or 0),
-                'subscriptions': item['subscriptions']
-            })
+            if item['month']:
+                monthly_revenue.append({
+                    'label': item['month'].strftime('%Y-%m'),
+                    'month_name': item['month'].strftime('%b %Y'),
+                    'revenue': float(item['revenue'] or 0),
+                    'subscriptions': item['subscriptions']
+                })
+        
+        # Fill missing months with zero data
+        if monthly_revenue:
+            current_month = twelve_months_ago.replace(day=1)
+            filled_data = []
+            existing_months = {item['label'] for item in monthly_revenue}
+            
+            while current_month <= end_date:
+                month_label = current_month.strftime('%Y-%m')
+                if month_label in existing_months:
+                    filled_data.extend([item for item in monthly_revenue if item['label'] == month_label])
+                else:
+                    filled_data.append({
+                        'label': month_label,
+                        'month_name': current_month.strftime('%b %Y'),
+                        'revenue': 0.0,
+                        'subscriptions': 0
+                    })
+                
+                # Move to next month
+                if current_month.month == 12:
+                    current_month = current_month.replace(year=current_month.year + 1, month=1)
+                else:
+                    current_month = current_month.replace(month=current_month.month + 1)
+            
+            monthly_revenue = sorted(filled_data, key=lambda x: x['label'])
 
         # Plans distribution
         plans_data = all_subscriptions.values(
@@ -216,6 +255,24 @@ class SubscriptionService:
         plans_distribution = {}
         for item in plans_data:
             plans_distribution[item['plan__name']] = item['count']
+
+        # Seasonal data (monthly aggregation across all years)
+        seasonal_data = []
+        month_names = [
+            '', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+            'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+        ]
+        
+        for month_num in range(1, 13):
+            month_subs = all_subscriptions.filter(created_at__month=month_num)
+            month_revenue = month_subs.aggregate(total=Sum('amount_paid'))['total'] or 0
+            seasonal_data.append({
+                'month': month_num,
+                'month_name': month_names[month_num],
+                'total_revenue': float(month_revenue),
+                'subscriptions': month_subs.count(),
+                'avg_revenue': float(month_revenue / max(month_subs.count(), 1))
+            })
 
         # Recent subscriptions
         recent_subs = all_subscriptions.select_related('user', 'plan').order_by('-created_at')[:20]
@@ -243,6 +300,7 @@ class SubscriptionService:
             'summary': summary,
             'monthly_revenue': monthly_revenue,
             'plans_distribution': plans_distribution,
+            'seasonal_data': seasonal_data,
             'recent_subscriptions': recent_subscriptions,
             'status_distribution': status_distribution,
             'period': {

@@ -443,16 +443,27 @@ def subscription_analytics(request):
         start_date = request.GET.get('start_date')
         end_date = request.GET.get('end_date')
 
+        logger.info(f"Analytics request - days: {days}, start_date: {start_date}, end_date: {end_date}")
+
         # Parse dates if provided
         if start_date and end_date:
             from datetime import datetime
             try:
-                start_date = datetime.fromisoformat(start_date)
-                end_date = datetime.fromisoformat(end_date)
+                # Handle various date formats
+                if 'T' in start_date:
+                    start_date = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+                else:
+                    start_date = datetime.strptime(start_date, '%Y-%m-%d')
+                
+                if 'T' in end_date:
+                    end_date = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+                else:
+                    end_date = datetime.strptime(end_date, '%Y-%m-%d')
+                    
             except ValueError as e:
                 logger.error(f"Invalid date format: {e}")
                 return Response({
-                    'error': 'Invalid date format. Use YYYY-MM-DD'
+                    'error': 'Invalid date format. Use YYYY-MM-DD or ISO format'
                 }, status=status.HTTP_400_BAD_REQUEST)
 
         # Get analytics data
@@ -471,8 +482,19 @@ def subscription_analytics(request):
         logger.error(f"Traceback: {traceback.format_exc()}")
         return Response({
             'error': 'Failed to load analytics data',
-            'details': str(e)
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            'details': str(e),
+            'summary': {
+                'total_subscriptions': 0,
+                'active_subscriptions': 0,
+                'expired_subscriptions': 0,
+                'total_revenue': 0.0
+            },
+            'monthly_revenue': [],
+            'plans_distribution': {},
+            'seasonal_data': [],
+            'recent_subscriptions': [],
+            'status_distribution': {}
+        }, status=status.HTTP_200_OK)  # Return empty data instead of error
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAdminUser])
