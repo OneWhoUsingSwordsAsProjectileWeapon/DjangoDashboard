@@ -128,7 +128,7 @@ def public_profile_view(request, user_id):
 
     # Get user's reviews
     from listings.models import Review
-    reviews_received_queryset = Review.objects.filter(listing__host=profile_user).select_related('user', 'listing')
+    reviews_received_queryset = Review.objects.filter(listing__host=profile_user).select_related('reviewer', 'listing')
     reviews_given = Review.objects.filter(reviewer=profile_user).select_related('listing')[:10]
 
     # Calculate average rating and total count before slicing
