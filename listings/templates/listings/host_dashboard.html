@@ -8,7 +8,7 @@
 
 {% block extra_head %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
 <style>
 /* Modern Dashboard Styles */
 .dashboard-container {
@@ -319,75 +319,20 @@
     }
 }
 
-/* SVG Chart Styles */
-.chart-line {
-    fill: none;
-    stroke: #667eea;
-    stroke-width: 3;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+/* Chart Canvas Wrapper */
+.chart-canvas-wrapper {
+    position: relative;
+    height: 300px;
+    width: 100%;
 }
 
-.chart-area {
-    fill: url(#chartGradient);
-    opacity: 0.3;
-}
-
-.chart-point {
-    fill: #667eea;
-    stroke: white;
-    stroke-width: 2;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.chart-point:hover {
-    fill: #5a67d8;
-    stroke-width: 3;
-    r: 6;
-}
-
-.chart-grid {
-    stroke: #e2e8f0;
-    stroke-width: 1;
-    stroke-dasharray: 2,2;
-}
-
-.chart-axis {
-    stroke: #a0aec0;
-    stroke-width: 1;
-}
-
-.chart-label {
-    fill: #4a5568;
-    font-size: 12px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    text-anchor: middle;
-}
-
-/* Tooltip */
-.chart-tooltip {
-    position: absolute;
-    background: rgba(0, 0, 0, 0.9);
-    color: white;
-    padding: 10px 15px;
-    border-radius: 10px;
-    font-size: 14px;
-    pointer-events: none;
-    z-index: 1000;
-    display: none;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+.filter-card {
+    background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
-}
-
-.chart-tooltip::after {
-    content: '';
-    position: absolute;
-    bottom: -5px;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 5px solid transparent;
-    border-top-color: rgba(0, 0, 0, 0.9);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 </style>
 {% endblock %}
@@ -419,6 +364,55 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters Card -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="filter-card">
+                    <h5 class="mb-3">
+                        <i class="fas fa-sliders-h text-primary me-2"></i>
+                        Фильтры
+                    </h5>
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Временной период</label>
+                            <select name="time_filter" class="form-select form-select-modern" id="timeFilterSelect">
+                                {% for value, label in time_filter_options %}
+                                <option value="{{ value }}" {% if current_filters.time_filter == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Объявление</label>
+                            <select name="listing_filter" class="form-select form-select-modern">
+                                <option value="all">Все объявления</option>
+                                {% for listing in host_listings_for_filter %}
+                                <option value="{{ listing.id }}" {% if current_filters.listing_filter == listing.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ listing.title|truncatechars:40 }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2" id="customDatesGroup" style="{% if current_filters.time_filter != 'custom' %}display: none;{% endif %}">
+                            <label class="form-label">От</label>
+                            <input type="date" name="custom_start" class="form-control" value="{{ current_filters.custom_start }}">
+                        </div>
+                        <div class="col-md-2" id="customDatesGroup2" style="{% if current_filters.time_filter != 'custom' %}display: none;{% endif %}">
+                            <label class="form-label">До</label>
+                            <input type="date" name="custom_end" class="form-control" value="{{ current_filters.custom_end }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <div>
+                                <button type="submit" class="action-btn action-btn-primary w-100">Применить</button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -528,8 +522,8 @@
                                     <button class="btn-chart" data-chart="quarterly">Квартально</button>
                                 </div>
                             </div>
-                            <div id="revenueChart">
-                                <canvas id="revenueChartCanvas" style="max-height: 300px;"></canvas>
+                            <div class="chart-canvas-wrapper">
+                                <canvas id="revenueChartCanvas"></canvas>
                             </div>
                         </div>
                     </div>
@@ -554,8 +548,8 @@
                                     <option value="365" selected>Год</option>
                                 </select>
                             </div>
-                            <div id="statusChart">
-                                <canvas id="statusChartCanvas" style="max-height: 250px;"></canvas>
+                            <div class="chart-canvas-wrapper">
+                                <canvas id="statusChartCanvas"></canvas>
                             </div>
                         </div>
                     </div>
@@ -575,8 +569,8 @@
                                     <option value="all" selected>Все время</option>
                                 </select>
                             </div>
-                            <div id="seasonalChart">
-                                <canvas id="seasonalChartCanvas" style="max-height: 250px;"></canvas>
+                            <div class="chart-canvas-wrapper">
+                                <canvas id="seasonalChartCanvas"></canvas>
                             </div>
                         </div>
                     </div>
@@ -595,9 +589,6 @@
                                 Эффективность объявлений
                             </h3>
                             <div class="d-flex gap-2">
-                                <button class="action-btn action-btn-info" data-bs-toggle="collapse" data-bs-target="#listingsFilters">
-                                    <i class="fas fa-filter me-2"></i>Фильтры
-                                </button>
                                 <a href="{% url 'listings:host_listings' %}" class="action-btn action-btn-primary">
                                     <i class="fas fa-cog me-2"></i>Управлять
                                 </a>
@@ -813,41 +804,12 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Фильтры панели</h5>
+                <h5 class="modal-title">Расширенные фильтры</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="get" id="filtersForm">
                 <div class="modal-body">
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Временной период</label>
-                            <select name="time_filter" class="form-select" id="timeFilterSelect">
-                                {% for value, label in time_filter_options %}
-                                <option value="{{ value }}" {% if current_filters.time_filter == value %}selected{% endif %}>
-                                    {{ label }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Объявление</label>
-                            <select name="listing_filter" class="form-select">
-                                <option value="all">Все объявления</option>
-                                {% for listing in host_listings_for_filter %}
-                                <option value="{{ listing.id }}" {% if current_filters.listing_filter == listing.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ listing.title|truncatechars:40 }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3" id="customDatesGroup" style="{% if current_filters.time_filter != 'custom' %}display: none;{% endif %}">
-                            <label class="form-label">Начальная дата</label>
-                            <input type="date" name="custom_start" class="form-control" value="{{ current_filters.custom_start }}">
-                        </div>
-                        <div class="col-md-6 mb-3" id="customDatesGroup2" style="{% if current_filters.time_filter != 'custom' %}display: none;{% endif %}">
-                            <label class="form-label">Конечная дата</label>
-                            <input type="date" name="custom_end" class="form-control" value="{{ current_filters.custom_end }}">
-                        </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Статус бронирований</label>
                             <select name="status_filter" class="form-select">
@@ -857,6 +819,10 @@
                                 </option>
                                 {% endfor %}
                             </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Минимальная сумма</label>
+                            <input type="number" name="min_amount" class="form-control" value="{{ current_filters.min_amount }}">
                         </div>
                     </div>
                 </div>
@@ -871,6 +837,14 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Host dashboard initializing...');
+    
+    // Check if Chart.js is loaded
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js is not loaded!');
+        return;
+    }
+
     // Chart data from Django context
     const monthlyRevenueData = {{ monthly_revenue|safe }};
     const quarterlyRevenueData = {{ quarterly_revenue|safe }};
@@ -882,7 +856,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Revenue Chart
     function initRevenueChart() {
         const ctx = document.getElementById('revenueChartCanvas');
-        if (!ctx) return;
+        if (!ctx) {
+            console.error('Revenue chart canvas not found');
+            return;
+        }
 
         const data = monthlyRevenueData;
         
@@ -910,16 +887,29 @@ document.addEventListener('DOMContentLoaded', function() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
                 scales: {
                     y: {
                         type: 'linear',
                         display: true,
                         position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Доход (₽)'
+                        }
                     },
                     y1: {
                         type: 'linear',
                         display: true,
                         position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Количество'
+                        },
                         grid: {
                             drawOnChartArea: false,
                         },
@@ -927,12 +917,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+        console.log('Revenue chart initialized');
     }
 
     // Initialize Status Chart
     function initStatusChart() {
         const ctx = document.getElementById('statusChartCanvas');
-        if (!ctx || !statusStats.length) return;
+        if (!ctx) {
+            console.error('Status chart canvas not found');
+            return;
+        }
+        
+        if (!statusStats || statusStats.length === 0) {
+            console.log('No status stats data available');
+            return;
+        }
 
         const labels = statusStats.map(item => {
             const statusMap = {
@@ -960,15 +959,24 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
             }
         });
+        console.log('Status chart initialized');
     }
 
     // Initialize Seasonal Chart
     function initSeasonalChart() {
         const ctx = document.getElementById('seasonalChartCanvas');
-        if (!ctx) return;
+        if (!ctx) {
+            console.error('Seasonal chart canvas not found');
+            return;
+        }
 
         seasonalChart = new Chart(ctx, {
             type: 'bar',
@@ -985,24 +993,38 @@ document.addEventListener('DOMContentLoaded', function() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
                 scales: {
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Доход (₽)'
+                        }
                     }
                 }
             }
         });
+        console.log('Seasonal chart initialized');
     }
 
     // Initialize all charts
-    initRevenueChart();
-    initStatusChart();
-    initSeasonalChart();
+    try {
+        initRevenueChart();
+        initStatusChart();
+        initSeasonalChart();
+    } catch (error) {
+        console.error('Error initializing charts:', error);
+    }
 
     // Handle chart period changes
     document.getElementById('revenuePeriodSelect')?.addEventListener('change', function(e) {
-        // You can implement period filtering here
         console.log('Revenue period changed to:', e.target.value);
+        // You can implement period filtering here
     });
 
     // Handle chart type changes
@@ -1013,7 +1035,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (this.dataset.chart === 'quarterly') {
                 // Switch to quarterly data
-                if (revenueChart) {
+                if (revenueChart && quarterlyRevenueData.length > 0) {
                     revenueChart.data.labels = quarterlyRevenueData.map(item => item.quarter_name);
                     revenueChart.data.datasets[0].data = quarterlyRevenueData.map(item => item.revenue);
                     revenueChart.data.datasets[1].data = quarterlyRevenueData.map(item => item.bookings);
@@ -1031,7 +1053,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Handle filter modal
+    // Handle filter changes
     document.getElementById('timeFilterSelect')?.addEventListener('change', function(e) {
         const customDatesGroup = document.getElementById('customDatesGroup');
         const customDatesGroup2 = document.getElementById('customDatesGroup2');
@@ -1043,6 +1065,8 @@ document.addEventListener('DOMContentLoaded', function() {
             customDatesGroup2.style.display = 'none';
         }
     });
+
+    console.log('Host dashboard loaded successfully');
 });
 </script>
 {% endblock %}
