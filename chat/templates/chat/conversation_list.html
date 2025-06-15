@@ -14,64 +14,59 @@
                         <i class="fas fa-plus me-1"></i>Начать новый чат
                     </a>
                 </div>
-                <div class="card-body p-0">
-                    {% if conversations %}
-                        <div class="list-group list-group-flush">
-                            {% for conversation in conversations %}
-                                {% if conversation.participant1 == request.user %}
-                                    {% with other_participant=conversation.participant2 %}
+                <div class="card-body p-0 conversation-list">
+                {% if conversations %}
+                    {% for conversation in conversations %}
+                        {% if conversation.participant1 == request.user %}
+                            {% with other_participant=conversation.participant2 %}
+                        {% else %}
+                            {% with other_participant=conversation.participant1 %}
+                        {% endif %}
+                    <a href="{% url 'chat:conversation_detail' conversation.id %}" class="conversation-item text-decoration-none {% if conversation.id == current_conversation_id %}bg-light{% endif %}">
+                        <div class="conversation-item-content d-flex w-100">
+                            <div class="me-3">
+                                {% if other_participant.profile_picture %}
+                                    <img src="{{ other_participant.profile_picture.url }}" alt="{{ other_participant.username }}" class="rounded-circle" style="width: 48px; height: 48px; object-fit: cover;">
                                 {% else %}
-                                    {% with other_participant=conversation.participant1 %}
-                                {% endif %}
-                                <a href="{% url 'chat:conversation_detail' conversation.pk %}" 
-                                   class="list-group-item list-group-item-action">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <div class="d-flex align-items-center">
-                                            <div class="me-3">
-                                                {% if other_participant %}
-                                                    <img src="https://ui-avatars.com/api/?name={{ other_participant.get_full_name|default:other_participant.username }}&background=007bff&color=fff" 
-                                                         class="rounded-circle" width="40" height="40" alt="Аватар">
-                                                {% endif %}
-                                            </div>
-                                            <div>
-                                                <h6 class="mb-1">
-                                                    {% if other_participant %}
-                                                        {{ other_participant.get_full_name|default:other_participant.username }}
-                                                    {% else %}
-                                                        Неизвестный пользователь
-                                                    {% endif %}
-                                                </h6>
-                                                {% if conversation.last_message %}
-                                                    <p class="mb-1 text-muted small">{{ conversation.last_message.content|truncatechars:50 }}</p>
-                                                {% else %}
-                                                    <p class="mb-1 text-muted small">Пока нет сообщений</p>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                        <div class="text-end">
-                                            {% if conversation.last_message %}
-                                                <small class="text-muted">{{ conversation.last_message.created_at|timesince }} назад</small>
-                                            {% endif %}
-                                            {% if conversation.unread_count > 0 %}
-                                                <span class="badge bg-primary rounded-pill d-block mt-1">{{ conversation.unread_count }}</span>
-                                            {% endif %}
-                                        </div>
+                                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                        <i class="fas fa-user text-secondary"></i>
                                     </div>
-                                </a>
-                            {% endwith %}
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                        <div class="text-center py-5">
-                            <i class="fas fa-comments fa-3x text-muted mb-3"></i>
-                            <h5>Пока нет диалогов</h5>
-                            <p class="text-muted">Начните диалог, чтобы обмениваться сообщениями с другими пользователями.</p>
-                            <a href="{% url 'chat:start_conversation' %}" class="btn btn-primary">
-                                <i class="fas fa-plus me-1"></i>Начать новый чат
-                            </a>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1 min-w-0">
+                                        <h6 class="mb-1 text-truncate">{{ other_participant.get_full_name|default:other_participant.username }}</h6>
+                                        {% if conversation.listing %}
+                                            <small class="text-muted d-block text-truncate">{{ conversation.listing.title }}</small>
+                                        {% endif %}
+                                        {% if conversation.last_message %}
+                                            <p class="mb-0 text-muted small text-truncate">{{ conversation.last_message.content }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-end ms-2 flex-shrink-0">
+                                        {% if conversation.last_message %}
+                                            <small class="text-muted d-block">{{ conversation.last_message.created_at|timesince }} назад</small>
+                                        {% endif %}
+                                        {% if conversation.unread_count > 0 %}
+                                            <span class="badge bg-primary rounded-pill mt-1">{{ conversation.unread_count }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    {% endif %}
-                </div>
+                    </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                        <h5>Пока нет диалогов</h5>
+                        <p class="text-muted">Начните диалог, чтобы обмениваться сообщениями с другими пользователями.</p>
+                        <a href="{% url 'chat:start_conversation' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Начать новый чат
+                        </a>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>

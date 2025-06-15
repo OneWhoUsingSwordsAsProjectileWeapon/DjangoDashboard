@@ -263,6 +263,48 @@ document.addEventListener('DOMContentLoaded', function() {
     initMessageHoverListeners();
 });
 
+// Add conversation list styling
+document.addEventListener('DOMContentLoaded', function() {
+    // Style conversation items
+    const conversationItems = document.querySelectorAll('.conversation-item');
+    conversationItems.forEach(item => {
+        item.style.cssText = `
+            padding: 12px 16px;
+            border-bottom: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        `;
+
+        item.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#f8f9fa';
+        });
+
+        item.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = 'transparent';
+        });
+    });
+
+    // Fix conversation list layout
+    const conversationList = document.querySelector('.conversation-list');
+    if (conversationList) {
+        conversationList.style.cssText = `
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+            padding: 0;
+            margin: 0;
+        `;
+    }
+
+    // Remove extra blocks and clean up layout
+    const extraBlocks = document.querySelectorAll('.conversation-item .extra-block, .conversation-item .duplicate-content');
+    extraBlocks.forEach(block => block.remove());
+});
+
 // WebSocket connection with proper protocol detection
 const conversationId = JSON.parse(document.getElementById('conversation-id').textContent);
 // Always use wss:// for Replit deployments
