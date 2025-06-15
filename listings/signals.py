@@ -44,75 +44,35 @@ if LISTING_MODELS_AVAILABLE:
 
             # You could implement notification logic, rating updates, etc. here
 
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.auth import get_user_model
-from .models import Booking, Review, Listing
+from .models import Listing
 from notifications.models import Notification
 
-User = get_user_model()
-
 @receiver(post_save, sender=Listing)
-def create_listing_moderation_request(sender, instance, created, **kwargs):
-    """Create moderation request when listing is created or updated"""
-    if not created:  # Only for updates, not new listings
-        # Check if listing needs re-moderation
-        if instance.is_active and not instance.is_approved:
-            # Import here to avoid circular imports
-            from moderation.models import ListingApproval
-
-            # Create new approval request
-            ListingApproval.objects.create(
-                listing=instance,
-                status='pending',
-                has_verification_video=bool(instance.verification_video)
-            )
-
-@receiver(post_save, sender=Booking)
-def create_booking_notifications(sender, instance, created, **kwargs):
-    """Create notifications for booking events"""
+def notify_host_listing_created(sender, instance, created, **kwargs):
+    """Send notification to host when listing is created and create moderation record"""
     if created:
-        # Notify the host about new booking request
+        # Create notification
         Notification.objects.create(
-            user=instance.listing.host,
-            notification_type='booking_request',
-            title='Новый запрос на бронирование',
-            message=f'Пользователь {instance.guest.first_name or instance.guest.username} хочет забронировать {instance.listing.title}',
-            booking=instance,
-            listing=instance.listing
+            user=instance.host,
+            notification_type='system',
+            title='Объявление создано',
+            message=f'Ваше объявление "{instance.title}" успешно создано и отправлено на модерацию.'
         )
-    else:
-        # Check if status changed
-        if instance.status == 'confirmed':
-            # Notify guest about confirmation
-            Notification.objects.create(
-                user=instance.guest,
-                notification_type='booking_confirmed',
-                title='Бронирование подтверждено',
-                message=f'Ваше бронирование {instance.listing.title} было подтверждено',
-                booking=instance,
-                listing=instance.listing
-            )
-        elif instance.status == 'canceled':
-            # Notify both parties about cancellation
-            Notification.objects.create(
-                user=instance.guest,
-                notification_type='booking_canceled',
-                title='Бронирование отменено',
-                message=f'Ваше бронирование {instance.listing.title} было отменено',
-                booking=instance,
-                listing=instance.listing
-            )
 
-@receiver(post_save, sender=Review)
-def create_review_notification(sender, instance, created, **kwargs):
-    """Create notification when review is posted"""
-    if created:
-        Notification.objects.create(
-            user=instance.listing.host,
-            notification_type='review_received',
-            title='Новый отзыв',
-            message=f'Пользователь {instance.user.first_name or instance.user.username} оставил отзыв на {instance.listing.title}',
-            listing=instance.listing,
-            review=instance
+        # Create moderation record
+        from moderation.models import ListingApproval
+        ListingApproval.objects.get_or_create(
+            listing=instance,
+            defaults={
+                'status': 'pending',
+                'has_valid_title': False,
+                'has_valid_description': False,
+                'has_valid_images': False,
+                'has_valid_address': False,
+                'has_appropriate_pricing': False,
+                'follows_content_policy': False,
+                'has_verification_video': False
+            }
         )
