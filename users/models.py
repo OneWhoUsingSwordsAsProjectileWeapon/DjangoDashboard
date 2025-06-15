@@ -8,7 +8,7 @@ class User(AbstractUser):
     """
     # Basic profile information
     phone_number = models.CharField(_("Phone number"), max_length=20, blank=True)
-    profile_picture = models.URLField(_("Profile picture URL"), blank=True)
+    profile_picture = models.ImageField(_("Profile picture"), upload_to='profile_pictures/', blank=True, null=True)
     bio = models.TextField(_("Bio"), blank=True)
     
     # Verification fields

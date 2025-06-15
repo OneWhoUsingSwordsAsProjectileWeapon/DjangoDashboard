@@ -7,6 +7,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.urls import reverse
 from django.conf import settings
+from django.db.models import Avg, Count
 import uuid
 import json
 from django.contrib.auth import logout
@@ -114,6 +115,53 @@ def send_verification_code(request):
             messages.error(request, 'Please provide a valid phone number.')
     
     return redirect('users:verify_phone')
+
+def public_profile_view(request, user_id):
+    """Display public user profile"""
+    profile_user = get_object_or_404(User, id=user_id)
+    
+    # Get user's listings if they are a host
+    user_listings = None
+    if profile_user.is_host:
+        from listings.models import Listing
+        user_listings = Listing.objects.filter(host=profile_user, is_active=True)[:6]
+    
+    # Get user's reviews
+    from listings.models import Review
+    reviews_received = Review.objects.filter(listing__host=profile_user).select_related('user', 'listing')[:10]
+    reviews_given = Review.objects.filter(user=profile_user).select_related('listing')[:10]
+    
+    # Calculate average rating
+    avg_rating = reviews_received.aggregate(avg_rating=Avg('rating'))['avg_rating']
+    total_reviews = reviews_received.count()
+    
+    # Check if current user can leave a review
+    can_leave_review = False
+    if request.user.is_authenticated and request.user != profile_user:
+        from listings.models import Booking
+        # Check if user has completed bookings with this host
+        completed_bookings = Booking.objects.filter(
+            user=request.user,
+            listing__host=profile_user,
+            status='confirmed'
+        ).exists()
+        
+        # Check if user already reviewed this host
+        existing_review = reviews_received.filter(user=request.user).exists()
+        
+        can_leave_review = completed_bookings and not existing_review
+    
+    context = {
+        'profile_user': profile_user,
+        'user_listings': user_listings,
+        'reviews_received': reviews_received,
+        'reviews_given': reviews_given,
+        'avg_rating': avg_rating,
+        'total_reviews': total_reviews,
+        'can_leave_review': can_leave_review,
+    }
+    
+    return render(request, 'users/public_profile.html', context)
 
 def logout_view(request):
     """Handle user logout"""

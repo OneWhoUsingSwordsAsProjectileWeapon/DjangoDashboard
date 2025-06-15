@@ -22,12 +22,12 @@
                             <div class="col-12 text-center">
                                 <div class="position-relative d-inline-block">
                                     {% if user.profile_picture %}
-                                        <img src="{{ user.profile_picture }}" alt="{{ user.username }}" 
+                                        <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}" 
                                              class="rounded-circle mb-3" width="120" height="120" 
-                                             style="object-fit: cover;">
+                                             style="object-fit: cover;" id="profile-preview">
                                     {% else %}
                                         <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mb-3 mx-auto" 
-                                             style="width: 120px; height: 120px;">
+                                             style="width: 120px; height: 120px;" id="profile-placeholder">
                                             <i class="fas fa-user-circle fa-4x text-secondary"></i>
                                         </div>
                                     {% endif %}
@@ -94,7 +94,7 @@
 
                         <div class="mb-3" style="display: none;">
                             <label for="{{ form.profile_picture.id_for_label }}" class="form-label">
-                                Фотография профиля (URL)
+                                Фотография профиля
                             </label>
                             {{ form.profile_picture }}
                             {% if form.profile_picture.errors %}
@@ -193,25 +193,30 @@
 
 {% block extra_js %}
 <script>
-    // Preview profile picture URL
-    document.getElementById('{{ form.profile_picture.id_for_label }}').addEventListener('input', function() {
-        const url = this.value;
-        const preview = document.querySelector('img[alt="{{ user.username }}"]') || 
-                       document.querySelector('.rounded-circle.bg-light');
-        
-        if (url && url.startsWith('http')) {
-            if (preview.tagName === 'IMG') {
-                preview.src = url;
-            } else {
-                const img = document.createElement('img');
-                img.src = url;
-                img.alt = '{{ user.username }}';
-                img.className = 'rounded-circle mb-3';
-                img.style.width = '120px';
-                img.style.height = '120px';
-                img.style.objectFit = 'cover';
-                preview.parentNode.replaceChild(img, preview);
-            }
+    // Preview profile picture file
+    document.getElementById('{{ form.profile_picture.id_for_label }}').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('profile-preview');
+                const placeholder = document.getElementById('profile-placeholder');
+                
+                if (preview) {
+                    preview.src = e.target.result;
+                } else if (placeholder) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.alt = '{{ user.username }}';
+                    img.className = 'rounded-circle mb-3';
+                    img.style.width = '120px';
+                    img.style.height = '120px';
+                    img.style.objectFit = 'cover';
+                    img.id = 'profile-preview';
+                    placeholder.parentNode.replaceChild(img, placeholder);
+                }
+            };
+            reader.readAsDataURL(file);
         }
     });
 </script>
