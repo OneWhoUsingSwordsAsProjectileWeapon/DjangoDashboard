@@ -77,16 +77,27 @@ def notify_host_listing_created(sender, instance, created, **kwargs):
             }
         )
     else:
-        # Объявление было изменено - создаем новую запись модерации если объявление не одобрено
+        # Объявление было изменено - обновляем статус существующей записи модерации
         if not instance.is_approved:
             from moderation.models import ListingApproval
             
-            # Создаем новую запись модерации
-            ListingApproval.objects.create(
+            # Получаем или создаем запись модерации
+            approval, created = ListingApproval.objects.get_or_create(
                 listing=instance,
-                status='pending',
-                has_verification_video=bool(instance.verification_video)
+                defaults={
+                    'status': 'pending',
+                    'has_verification_video': bool(instance.verification_video)
+                }
             )
+            
+            # Если запись уже существовала, обновляем её статус
+            if not created:
+                approval.status = 'pending'
+                approval.has_verification_video = bool(instance.verification_video)
+                approval.moderator = None  # Сбрасываем модератора
+                approval.moderator_notes = ''  # Очищаем заметки
+                approval.reviewed_at = None  # Сбрасываем дату рассмотрения
+                approval.save()
             
             # Уведомляем хоста
             Notification.objects.create(
