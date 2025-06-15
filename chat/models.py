@@ -73,6 +73,10 @@ class Conversation(models.Model):
         if user:
             return self.messages.filter(is_read=False).exclude(sender=user).count()
         return 0
+    
+    def get_unread_count_for_user(self, user):
+        """Get count of unread messages for a specific user - template helper"""
+        return self.get_unread_count(user)
 
 class Message(models.Model):
     """

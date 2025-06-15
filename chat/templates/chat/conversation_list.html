@@ -72,11 +72,9 @@
                                             {% if conversation.last_message %}
                                                 <small class="text-muted">{{ conversation.last_message.timestamp|timesince }} назад</small>
                                             {% endif %}
-                                            {% with unread_count=conversation.get_unread_count:request.user %}
-                                                {% if unread_count > 0 %}
-                                                    <span class="badge bg-primary rounded-pill d-block mt-1">{{ unread_count }}</span>
-                                                {% endif %}
-                                            {% endwith %}
+                                            {% if conversation.unread_count > 0 %}
+                                                <span class="badge bg-primary rounded-pill d-block mt-1">{{ conversation.unread_count }}</span>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </a>
