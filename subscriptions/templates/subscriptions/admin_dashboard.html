@@ -190,47 +190,33 @@
             $('#loading-overlay').show();
             $('#dashboard-content').hide();
 
+            const formData = new FormData($('#filter-form')[0]);
             const params = new URLSearchParams();
 
             const period = $('#period-select').val();
-            console.log('Loading analytics for period:', period);
-            
             if (period !== 'custom' && period !== 'all') {
                 params.append('days', period);
-                console.log('Using days filter:', period);
             } else if (period === 'custom') {
                 const startDate = $('#start-date').val();
                 const endDate = $('#end-date').val();
-                if (startDate) {
-                    params.append('start_date', startDate);
-                    console.log('Using start_date:', startDate);
-                }
-                if (endDate) {
-                    params.append('end_date', endDate);
-                    console.log('Using end_date:', endDate);
-                }
+                if (startDate) params.append('start_date', startDate);
+                if (endDate) params.append('end_date', endDate);
             }
 
-            const url = '/api/subscriptions/analytics/?' + params.toString();
-            console.log('Request URL:', url);
-
             $.ajax({
-                url: url,
+                url: '/api/subscriptions/analytics/?' + params.toString(),
                 method: 'GET',
                 headers: {
                     'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
                 },
                 success: function(data) {
                     console.log('Analytics data loaded:', data);
-                    console.log('Period subscriptions:', data.summary.period_subscriptions);
-                    console.log('Monthly data:', data.monthly_revenue);
                     renderDashboard(data);
                     $('#loading-overlay').hide();
                     $('#dashboard-content').show();
                 },
                 error: function(xhr, status, error) {
                     console.error('Error loading analytics:', error);
-                    console.error('Response:', xhr.responseText);
                     alert('Ошибка загрузки данных аналитики: ' + error);
                     $('#loading-overlay').hide();
                 }
@@ -251,9 +237,8 @@
                 <div class="col-md-3">
                     <div class="card text-white bg-primary">
                         <div class="card-body">
-                            <h5 class="card-title">Подписки за период</h5>
-                            <h2>${summary.period_subscriptions}</h2>
-                            <small>Всего: ${summary.total_subscriptions}</small>
+                            <h5 class="card-title">Всего подписок</h5>
+                            <h2>${summary.total_subscriptions}</h2>
                         </div>
                     </div>
                 </div>
@@ -262,7 +247,6 @@
                         <div class="card-body">
                             <h5 class="card-title">Активных подписок</h5>
                             <h2>${summary.active_subscriptions}</h2>
-                            <small>Сейчас активно</small>
                         </div>
                     </div>
                 </div>
@@ -271,16 +255,14 @@
                         <div class="card-body">
                             <h5 class="card-title">Истекших подписок</h5>
                             <h2>${summary.expired_subscriptions}</h2>
-                            <small>Всего истекло</small>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="card text-white bg-info">
                         <div class="card-body">
-                            <h5 class="card-title">Доход за период</h5>
-                            <h2>$${summary.period_revenue.toFixed(2)}</h2>
-                            <small>Общий: $${summary.total_revenue.toFixed(2)}</small>
+                            <h5 class="card-title">Общий доход</h5>
+                            <h2>$${summary.total_revenue.toFixed(2)}</h2>
                         </div>
                     </div>
                 </div>
