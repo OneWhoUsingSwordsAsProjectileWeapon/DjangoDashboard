@@ -16,14 +16,8 @@ def conversation_list(request):
         participants=request.user
     ).select_related('listing', 'booking').prefetch_related('participants')
     
-    # Add unread count for each conversation
-    conversations_with_unread = []
-    for conversation in conversations:
-        conversation.unread_count = conversation.get_unread_count(request.user)
-        conversations_with_unread.append(conversation)
-    
     return render(request, 'chat/conversation_list.html', {
-        'conversations': conversations_with_unread
+        'conversations': conversations
     })
 
 @login_required
