@@ -23,28 +23,49 @@
                                     <div class="d-flex w-100 justify-content-between">
                                         <div class="d-flex align-items-center">
                                             <div class="me-3">
-                                                {% with other_user=conversation.get_other_participant:request.user %}
-                                                    {% if other_user %}
-                                                        <img src="https://ui-avatars.com/api/?name={{ other_user.get_full_name|default:other_user.username }}&background=007bff&color=fff" 
-                                                             class="rounded-circle" width="40" height="40" alt="Аватар">
-                                                    {% endif %}
-                                                {% endwith %}
+                                                {% if conversation.participant1 == request.user %}
+                                                    {% with other_user=conversation.participant2 %}
+                                                        {% if other_user %}
+                                                            <img src="https://ui-avatars.com/api/?name={{ other_user.get_full_name|default:other_user.username }}&background=007bff&color=fff" 
+                                                                 class="rounded-circle" width="40" height="40" alt="Аватар">
+                                                        {% endif %}
+                                                    {% endwith %}
+                                                {% else %}
+                                                    {% with other_user=conversation.participant1 %}
+                                                        {% if other_user %}
+                                                            <img src="https://ui-avatars.com/api/?name={{ other_user.get_full_name|default:other_user.username }}&background=007bff&color=fff" 
+                                                                 class="rounded-circle" width="40" height="40" alt="Аватар">
+                                                        {% endif %}
+                                                    {% endwith %}
+                                                {% endif %}
                                             </div>
                                             <div>
                                                 <h6 class="mb-1">
-                                                    {% with other_user=conversation.get_other_participant:request.user %}
-                                                        {% if other_user %}
-                                                            {{ other_user.get_full_name|default:other_user.username }}
-                                                        {% else %}
-                                                            Неизвестный пользователь
-                                                        {% endif %}
-                                                    {% endwith %}
+                                                    {% if conversation.participant1 == request.user %}
+                                                        {% with other_user=conversation.participant2 %}
+                                                            {% if other_user %}
+                                                                {{ other_user.get_full_name|default:other_user.username }}
+                                                            {% else %}
+                                                                Неизвестный пользователь
+                                                            {% endif %}
+                                                        {% endwith %}
+                                                    {% else %}
+                                                        {% with other_user=conversation.participant1 %}
+                                                            {% if other_user %}
+                                                                {{ other_user.get_full_name|default:other_user.username }}
+                                                            {% else %}
+                                                                Неизвестный пользователь
+                                                            {% endif %}
+                                                        {% endwith %}
+                                                    {% endif %}
                                                 </h6>
-                                                {% if conversation.last_message %}
-                                                    <p class="mb-1 text-muted small">{{ conversation.last_message.content|truncatechars:50 }}</p>
-                                                {% else %}
-                                                    <p class="mb-1 text-muted small">Пока нет сообщений</p>
-                                                {% endif %}
+                                                <small class="text-muted">
+                                                    {% if conversation.last_message %}
+                                                        {{ conversation.last_message.content|truncatechars:50 }}
+                                                    {% else %}
+                                                        Нет сообщений
+                                                    {% endif %}
+                                                </small>
                                             </div>
                                         </div>
                                         <div class="text-end">
