@@ -333,6 +333,37 @@
             deactivateButton.disabled = !this.checked;
         });
     }
+
+    // Initialize Bootstrap tabs
+    document.addEventListener('DOMContentLoaded', function() {
+        // Enable all tabs
+        const tabTriggerList = document.querySelectorAll('#profileTabs button[data-bs-toggle="tab"]');
+        tabTriggerList.forEach(function(tabTrigger) {
+            tabTrigger.addEventListener('click', function(event) {
+                event.preventDefault();
+                
+                // Remove active class from all tabs and content
+                document.querySelectorAll('#profileTabs .nav-link').forEach(function(tab) {
+                    tab.classList.remove('active');
+                    tab.setAttribute('aria-selected', 'false');
+                });
+                document.querySelectorAll('#profileTabsContent .tab-pane').forEach(function(content) {
+                    content.classList.remove('show', 'active');
+                });
+                
+                // Add active class to clicked tab
+                this.classList.add('active');
+                this.setAttribute('aria-selected', 'true');
+                
+                // Show corresponding content
+                const targetId = this.getAttribute('data-bs-target');
+                const targetContent = document.querySelector(targetId);
+                if (targetContent) {
+                    targetContent.classList.add('show', 'active');
+                }
+            });
+        });
+    });
 </script>
 {% endblock %}
 ```
