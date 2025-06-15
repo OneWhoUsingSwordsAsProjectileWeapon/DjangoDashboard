@@ -148,26 +148,35 @@ class SubscriptionService:
         """Get comprehensive analytics data for subscriptions"""
         try:
             # Calculate date range
+            now = timezone.now()
             if start_date and end_date:
-                # Use provided dates
-                pass
+                if isinstance(start_date, str):
+                    start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+                if isinstance(end_date, str):
+                    end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
             elif days:
                 # Calculate based on days parameter
-                end_date = timezone.now().date()
+                end_date = now.date()
                 start_date = end_date - timedelta(days=int(days))
             else:
                 # Default to last year
-                end_date = timezone.now().date()
+                end_date = now.date()
                 start_date = end_date - timedelta(days=365)
 
-            # Get all subscriptions and period-specific subscriptions
-            all_subscriptions = UserSubscription.objects.all()
-            period_subscriptions = all_subscriptions.filter(
+            logger.info(f"Analytics date range: {start_date} to {end_date}")
+
+            # Get filtered subscriptions for the specific period
+            period_subscriptions = UserSubscription.objects.filter(
                 created_at__date__gte=start_date,
                 created_at__date__lte=end_date
             )
 
-            # Summary statistics - mix of all-time and period-specific
+            # Get all subscriptions for total counts
+            all_subscriptions = UserSubscription.objects.all()
+
+            logger.info(f"Found {period_subscriptions.count()} subscriptions in period, {all_subscriptions.count()} total")
+
+            # Summary statistics - use filtered data for period-specific metrics
             summary = {
                 'total_subscriptions': all_subscriptions.count(),
                 'active_subscriptions': all_subscriptions.filter(status='active').count(),
@@ -185,27 +194,50 @@ class SubscriptionService:
                 )['avg'] or 0)
             }
 
-            # Monthly revenue data - limit to filtered period
+            # Monthly revenue data - use ONLY filtered period data
             monthly_data = []
 
             # Calculate how many months to show based on period
-            if (end_date - start_date).days <= 92:  # ~3 months
+            period_days = (end_date - start_date).days
+            if period_days <= 7:  # 1 week
+                # Show daily data for short periods
+                for i in range(period_days + 1):
+                    day = start_date + timedelta(days=i)
+                    day_subscriptions = period_subscriptions.filter(
+                        created_at__date=day
+                    )
+                    
+                    day_revenue = day_subscriptions.aggregate(
+                        total=Sum('amount_paid')
+                    )['total'] or 0
+
+                    monthly_data.append({
+                        'label': day.strftime('%Y-%m-%d'),
+                        'month_name': day.strftime('%d %b'),
+                        'revenue': float(day_revenue),
+                        'subscriptions': day_subscriptions.count()
+                    })
+            elif period_days <= 92:  # ~3 months
                 months_to_show = 3
-            elif (end_date - start_date).days <= 366:  # ~1 year
+            elif period_days <= 366:  # ~1 year
                 months_to_show = 12
             else:
                 months_to_show = 24
 
-            current_date = end_date
-
-            for i in range(months_to_show - 1, -1, -1):
-                month_start = current_date.replace(day=1) - relativedelta(months=i)
-                month_end = month_start + relativedelta(months=1)
-
-                # Only include months within our date range
-                if month_start >= start_date and month_start <= end_date:
-                    month_subscriptions = all_subscriptions.filter(
-                        created_at__date__gte=max(month_start, start_date),
+            # For longer periods, show monthly data
+            if period_days > 7:
+                current_date = start_date.replace(day=1)  # Start from first day of start month
+                
+                while current_date <= end_date:
+                    # Calculate month end
+                    if current_date.month == 12:
+                        month_end = current_date.replace(year=current_date.year + 1, month=1)
+                    else:
+                        month_end = current_date.replace(month=current_date.month + 1)
+                    
+                    # Filter subscriptions for this month within our period
+                    month_subscriptions = period_subscriptions.filter(
+                        created_at__date__gte=max(current_date, start_date),
                         created_at__date__lt=min(month_end, end_date + timedelta(days=1))
                     )
 
@@ -214,11 +246,14 @@ class SubscriptionService:
                     )['total'] or 0
 
                     monthly_data.append({
-                        'label': month_start.strftime('%Y-%m'),
-                        'month_name': month_start.strftime('%b %Y'),
+                        'label': current_date.strftime('%Y-%m'),
+                        'month_name': current_date.strftime('%b %Y'),
                         'revenue': float(month_revenue),
                         'subscriptions': month_subscriptions.count()
                     })
+                    
+                    # Move to next month
+                    current_date = month_end
 
             # Plans distribution
             plans_data = period_subscriptions.values(
@@ -231,7 +266,7 @@ class SubscriptionService:
             for item in plans_data:
                 plans_distribution[item['plan__name']] = item['count']
 
-            # Seasonal data (monthly aggregation across all years)
+            # Seasonal data (monthly aggregation for filtered period)
             seasonal_data = []
             month_names = [
                 '', 'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -239,6 +274,7 @@ class SubscriptionService:
             ]
 
             for month_num in range(1, 13):
+                # Only use subscriptions from filtered period
                 month_subs = period_subscriptions.filter(created_at__month=month_num)
                 month_revenue = month_subs.aggregate(total=Sum('amount_paid'))['total'] or 0
                 seasonal_data.append({
@@ -263,13 +299,16 @@ class SubscriptionService:
                     'auto_renew': sub.auto_renew
                 })
 
-            # Status distribution
+            # Status distribution - use filtered period data
             status_data = period_subscriptions.values('status').annotate(
                 count=Count('id')
             )
             status_distribution = {}
             for item in status_data:
                 status_distribution[item['status']] = item['count']
+                
+            logger.info(f"Status distribution: {status_distribution}")
+            logger.info(f"Monthly data count: {len(monthly_data)}")
 
             return {
                 'summary': summary,
