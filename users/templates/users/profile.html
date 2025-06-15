@@ -115,7 +115,7 @@
                 </div>
                 <div class="col-md-9">
                     <!-- Load user bookings using HTMX -->
-                    <div hx-get="{% url 'listings:user_bookings' %}" hx-trigger="load" hx-target="this">
+                    <div id="trips-content" hx-get="{% url 'listings:user_bookings' %}" hx-trigger="load once">
                         <div class="text-center p-5">
                             <div class="spinner-border text-primary" role="status">
                                 <span class="visually-hidden">Загрузка...</span>
@@ -141,7 +141,7 @@
                 </div>
             </div>
             <!-- Load user listings using HTMX -->
-            <div hx-get="{% url 'listings:host_listings' %}?profile_view=1" hx-trigger="load" hx-target="this">
+            <div id="listings-content">
                 <div class="text-center p-5">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Загрузка...</span>
@@ -324,22 +324,8 @@
 
 {% block extra_css %}
 <style>
-.tab-content > .tab-pane {
-    display: none;
-}
-
-.tab-content > .tab-pane.active {
-    display: block;
-}
-
 .nav-tabs .nav-link {
     cursor: pointer;
-}
-
-.nav-tabs .nav-link.active {
-    background-color: #fff;
-    border-color: #dee2e6 #dee2e6 #fff;
-    color: #495057;
 }
 </style>
 {% endblock %}
@@ -358,39 +344,30 @@
 
     // Initialize Bootstrap tabs
     document.addEventListener('DOMContentLoaded', function() {
-        // Enable all tabs
-        const tabTriggerList = document.querySelectorAll('#profileTabs button[data-bs-toggle="tab"]');
-        tabTriggerList.forEach(function(tabTrigger) {
-            tabTrigger.addEventListener('click', function(event) {
-                event.preventDefault();
-                
-                // Remove active class from all tabs and content
-                document.querySelectorAll('#profileTabs .nav-link').forEach(function(tab) {
-                    tab.classList.remove('active');
-                    tab.setAttribute('aria-selected', 'false');
-                });
-                document.querySelectorAll('#profileTabsContent .tab-pane').forEach(function(content) {
-                    content.classList.remove('show', 'active');
-                });
-                
-                // Add active class to clicked tab
-                this.classList.add('active');
-                this.setAttribute('aria-selected', 'true');
-                
-                // Show corresponding content
-                const targetId = this.getAttribute('data-bs-target');
-                const targetContent = document.querySelector(targetId);
-                if (targetContent) {
-                    targetContent.classList.add('show', 'active');
-                }
-            });
-        });
-
-        // Initialize Bootstrap Tab instance for proper functionality
+        // Initialize Bootstrap Tab instances
         if (typeof bootstrap !== 'undefined') {
             const triggerTabList = [].slice.call(document.querySelectorAll('#profileTabs button[data-bs-toggle="tab"]'));
             triggerTabList.map(function (triggerEl) {
-                return new bootstrap.Tab(triggerEl);
+                const tab = new bootstrap.Tab(triggerEl);
+                
+                // Add event listener for tab shown event
+                triggerEl.addEventListener('shown.bs.tab', function (event) {
+                    const targetId = event.target.getAttribute('data-bs-target');
+                    
+                    // Load content for specific tabs using HTMX
+                    if (targetId === '#listings') {
+                        const listingsContent = document.getElementById('listings-content');
+                        if (listingsContent && !listingsContent.hasAttribute('data-loaded')) {
+                            htmx.ajax('GET', '{% url 'listings:host_listings' %}?profile_view=1', {
+                                target: '#listings-content',
+                                swap: 'innerHTML'
+                            });
+                            listingsContent.setAttribute('data-loaded', 'true');
+                        }
+                    }
+                });
+                
+                return tab;
             });
         }
     });
