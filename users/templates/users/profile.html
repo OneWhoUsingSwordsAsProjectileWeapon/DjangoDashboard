@@ -150,7 +150,7 @@
                 </div>
             </div>
         </div>
-        {% endif %}</div>
+        {% endif %}
 
         <!-- Reviews Tab -->
         <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
@@ -285,6 +285,20 @@
 .nav-tabs .nav-link {
     cursor: pointer;
 }
+
+.tab-content > .tab-pane {
+    display: none;
+}
+
+.tab-content > .tab-pane.active {
+    display: block;
+}
+
+.nav-tabs .nav-link.active {
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+    color: #495057;
+}
 </style>
 {% endblock %}
 
@@ -336,6 +350,13 @@
                 
                 return tab;
             });
+
+            // Manually activate the first tab on page load
+            const firstTab = document.querySelector('#profileTabs button[data-bs-toggle="tab"]');
+            if (firstTab) {
+                const firstTabInstance = new bootstrap.Tab(firstTab);
+                firstTabInstance.show();
+            }
         }
     });
 </script>
