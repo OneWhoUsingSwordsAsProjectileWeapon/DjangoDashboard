@@ -231,6 +231,49 @@ class ListingApproval(models.Model):
         ]
         return sum(criteria) / len(criteria) * 100
 
+    def save(self, *args, **kwargs):
+        """Override save to log status changes"""
+        from django.utils import timezone
+        
+        # Track if this is a status change
+        old_status = None
+        if self.pk:
+            try:
+                old_instance = ListingApproval.objects.get(pk=self.pk)
+                old_status = old_instance.status
+            except ListingApproval.DoesNotExist:
+                pass
+        
+        # Set reviewed_at if status is changing from pending
+        if old_status == 'pending' and self.status != 'pending' and not self.reviewed_at:
+            self.reviewed_at = timezone.now()
+        
+        super().save(*args, **kwargs)
+        
+        # Log status change if it occurred
+        if old_status and old_status != self.status:
+            try:
+                action_map = {
+                    'approved': 'listing_approved',
+                    'rejected': 'listing_rejected',
+                    'requires_changes': 'listing_requires_changes',
+                    'pending': 'listing_pending'
+                }
+                
+                action_type = action_map.get(self.status, 'listing_status_changed')
+                
+                ModerationLog.objects.create(
+                    moderator=self.moderator or self.listing.host,  # Fallback to host if no moderator
+                    action_type=action_type,
+                    target_listing=self.listing,
+                    target_user=self.listing.host,
+                    description=f"Статус модерации изменен с '{old_status}' на '{self.status}' для объявления: {self.listing.title}",
+                    notes=f"Автоматическое логирование изменения статуса"
+                )
+            except Exception:
+                # Don't fail the save if logging fails
+                pass
+
 class ModerationLog(models.Model):
     """
     Model for logging all moderation actions
@@ -242,6 +285,9 @@ class ModerationLog(models.Model):
         ('user_unbanned', _('User Unbanned')),
         ('listing_approved', _('Listing Approved')),
         ('listing_rejected', _('Listing Rejected')),
+        ('listing_requires_changes', _('Listing Requires Changes')),
+        ('listing_pending', _('Listing Pending Review')),
+        ('listing_status_changed', _('Listing Status Changed')),
         ('content_removed', _('Content Removed')),
         ('content_edited', _('Content Edited')),
         ('subscription_created', _('Subscription Created')),
