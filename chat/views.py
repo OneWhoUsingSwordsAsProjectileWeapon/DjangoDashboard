@@ -45,7 +45,6 @@ def conversation_detail(request, pk):
                 sender=request.user,
                 content=content
             )
-            messages.success(request, "Message sent successfully!")
         return redirect('chat:conversation_detail', pk=pk)
 
     # Get messages in conversation
