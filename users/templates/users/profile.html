@@ -288,11 +288,11 @@
             const triggerTabList = [].slice.call(document.querySelectorAll('#profileTabs button[data-bs-toggle="tab"]'));
             triggerTabList.map(function (triggerEl) {
                 const tab = new bootstrap.Tab(triggerEl);
-                
+
                 // Add event listener for tab shown event
                 triggerEl.addEventListener('shown.bs.tab', function (event) {
                     const targetId = event.target.getAttribute('data-bs-target');
-                    
+
                     // Load content for specific tabs using HTMX
                     if (targetId === '#listings') {
                         const listingsContent = document.getElementById('listings-content');
@@ -314,7 +314,7 @@
                         }
                     }
                 });
-                
+
                 return tab;
             });
 
@@ -328,4 +328,3 @@
     });
 </script>
 {% endblock %}
-```

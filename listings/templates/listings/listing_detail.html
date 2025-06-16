@@ -177,7 +177,7 @@
                             <div class="carousel-inner">
                                 {% for image in listing.images.all %}
                                     <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                                        <img src="{{ image.image.url }}" class="d-block w-100" alt="{{ listing.title }}" style="height: 400px; object-fit: cover;">
+                                        <img src="{{ image.image.url }}" class="d-block w-100" alt="{{ listing.title }}" style="height: 400px; object-fit: cover; cursor: pointer;" onclick="openImageGalleryModal({{ forloop.counter0 }})">
                                         {% if image.is_main %}
                                             <div class="position-absolute top-0 start-0 m-3">
                                                 <span class="badge bg-primary">
@@ -209,7 +209,7 @@
                             <div class="carousel-inner">
                                 {% for image_url in listing.image_urls %}
                                     <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                                        <img src="{{ image_url }}" class="d-block w-100" alt="{{ listing.title }}" style="height: 400px; object-fit: cover;">
+                                        <img src="{{ image_url }}" class="d-block w-100" alt="{{ listing.title }}" style="height: 400px; object-fit: cover; cursor: pointer;" onclick="openImageGalleryModal({{ forloop.counter0 }})">
                                     </div>
                                 {% endfor %}
                             </div>
@@ -1005,7 +1005,7 @@
         } else {
             for (let i = 0; i < images.length; i++) {
                 thumbnailsHTML += `
-                    <img src="${images[i]}" class="img-fluid modal-thumbnail" onclick="openImageGalleryModal(${i})" style="width: 100px; height: 80px; object-fit: cover; cursor: pointer;" alt="Thumbnail ${i + 1}">
+                    <img src="${images[i]}" class="img-fluid modal-thumbnail" onclick="currentImageIndex = ${i}; updateModalImage();" style="width: 100px; height: 80px; object-fit: cover; cursor: pointer;" alt="Thumbnail ${i + 1}">
                 `;
             }
         }
