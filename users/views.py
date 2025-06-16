@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
+from django.urls import reverse
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.urls import reverse
@@ -44,6 +45,13 @@ def register_view(request):
 
             login(request, user)
             messages.success(request, 'Your account has been created! A verification email has been sent.')
+            
+            # Check if there's a redirect URL saved in session
+            redirect_url = request.session.get('redirect_after_login')
+            if redirect_url:
+                del request.session['redirect_after_login']
+                return redirect(redirect_url)
+            
             return redirect('users:profile')
     else:
         form = UserRegisterForm()
@@ -55,6 +63,17 @@ class CustomLoginView(LoginView):
     template_name = 'users/login.html'
     authentication_form = UserLoginForm
     redirect_authenticated_user = True
+    
+    def get_success_url(self):
+        """Get success URL, checking for saved redirect URL first"""
+        # Check if there's a redirect URL saved in session
+        redirect_url = self.request.session.get('redirect_after_login')
+        if redirect_url:
+            del self.request.session['redirect_after_login']
+            return redirect_url
+        
+        # Use default behavior
+        return super().get_success_url()
 
 @login_required
 def profile_view(request):

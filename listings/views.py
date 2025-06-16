@@ -1042,7 +1042,6 @@ def remove_listing_image(request, pk, index):
 
     return redirect('listings:listing_images', pk=listing.pk)
 
-@login_required
 def create_booking(request, pk):
     """View for creating a booking"""
     listing = get_object_or_404(
@@ -1053,6 +1052,25 @@ def create_booking(request, pk):
             approval_record__status='approved'
         )
     )
+    
+    # If user is not authenticated, save the URL and redirect to login
+    if not request.user.is_authenticated:
+        # Save the current URL with all query parameters for after login
+        request.session['redirect_after_login'] = request.get_full_path()
+        
+        # Save form data if provided in GET parameters
+        booking_data = {}
+        if 'check_in' in request.GET:
+            booking_data['check_in'] = request.GET['check_in']
+        if 'check_out' in request.GET:
+            booking_data['check_out'] = request.GET['check_out']
+        if 'guests' in request.GET:
+            booking_data['guests'] = request.GET['guests']
+        
+        if booking_data:
+            request.session['booking_form_data'] = booking_data
+        
+        return redirect('users:login')
 
     # Check if user is trying to book their own listing
     if request.user == listing.host:
@@ -1128,25 +1146,49 @@ def create_booking(request, pk):
             messages.success(request, "Booking created successfully. Awaiting host confirmation.")
             return redirect('listings:booking_detail', reference=booking.booking_reference)
     else:
-        # Pre-fill form with query parameters if provided
+        # Pre-fill form with query parameters or session data if provided
         initial = {}
-        if 'check_in' in request.GET:
-            try:
-                initial['start_date'] = datetime.strptime(request.GET['check_in'], '%Y-%m-%d').date()
-            except ValueError:
-                pass
+        
+        # First check for saved booking data in session
+        booking_form_data = request.session.get('booking_form_data')
+        if booking_form_data:
+            if 'check_in' in booking_form_data:
+                try:
+                    initial['start_date'] = datetime.strptime(booking_form_data['check_in'], '%Y-%m-%d').date()
+                except ValueError:
+                    pass
+            if 'check_out' in booking_form_data:
+                try:
+                    initial['end_date'] = datetime.strptime(booking_form_data['check_out'], '%Y-%m-%d').date()
+                except ValueError:
+                    pass
+            if 'guests' in booking_form_data:
+                try:
+                    initial['guests'] = int(booking_form_data['guests'])
+                except ValueError:
+                    pass
+            
+            # Clear the session data after using it
+            del request.session['booking_form_data']
+        else:
+            # Fall back to query parameters
+            if 'check_in' in request.GET:
+                try:
+                    initial['start_date'] = datetime.strptime(request.GET['check_in'], '%Y-%m-%d').date()
+                except ValueError:
+                    pass
 
-        if 'check_out' in request.GET:
-            try:
-                initial['end_date'] = datetime.strptime(request.GET['check_out'], '%Y-%m-%d').date()
-            except ValueError:
-                pass
+            if 'check_out' in request.GET:
+                try:
+                    initial['end_date'] = datetime.strptime(request.GET['check_out'], '%Y-%m-%d').date()
+                except ValueError:
+                    pass
 
-        if 'guests' in request.GET:
-            try:
-                initial['guests'] = int(request.GET['guests'])
-            except ValueError:
-                pass
+            if 'guests' in request.GET:
+                try:
+                    initial['guests'] = int(request.GET['guests'])
+                except ValueError:
+                    pass
 
         form = BookingForm(listing, initial=initial)
 
