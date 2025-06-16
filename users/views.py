@@ -17,10 +17,6 @@ from .forms import UserRegisterForm, UserLoginForm, UserProfileForm
 from .models import User
 from notifications.tasks import send_email_notification
 
-def terms_agreement_view(request):
-    """Display terms agreement page"""
-    return render(request, 'users/terms_agreement.html')
-
 def register_view(request):
     """Handle user registration"""
     if request.method == 'POST':
