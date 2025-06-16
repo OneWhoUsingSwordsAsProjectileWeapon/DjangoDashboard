@@ -1,0 +1,86 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Удалить объявление - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Подтверждение удаления
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Внимание!</strong> Это действие нельзя отменить.
+                    </div>
+
+                    <h5>Вы уверены, что хотите удалить это объявление?</h5>
+                    
+                    <div class="border rounded p-3 mb-4 bg-light">
+                        <div class="row">
+                            <div class="col-md-3">
+                                {% if object.main_image_url %}
+                                    <img src="{{ object.main_image_url }}" 
+                                         class="img-fluid rounded" 
+                                         alt="{{ object.title }}"
+                                         style="height: 120px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-secondary rounded d-flex align-items-center justify-content-center" 
+                                         style="height: 120px;">
+                                        <i class="fas fa-home fa-2x text-white"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-9">
+                                <h6 class="mb-2">{{ object.title }}</h6>
+                                <p class="text-muted mb-1">
+                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                    {{ object.city }}, {{ object.state }}, {{ object.country }}
+                                </p>
+                                <p class="text-muted mb-1">
+                                    <i class="fas fa-users me-1"></i>
+                                    {{ object.accommodates }} гостей • {{ object.bedrooms }} спален • {{ object.bathrooms }} ванных
+                                </p>
+                                <p class="mb-0">
+                                    <strong class="text-primary">₽{{ object.price_per_night|floatformat:0 }}</strong> за ночь
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <h6>При удалении объявления будут:</h6>
+                        <ul class="text-muted">
+                            <li>Удалены все изображения и данные объявления</li>
+                            <li>Отменены все активные и ожидающие бронирования</li>
+                            <li>Сохранены завершенные бронирования в истории</li>
+                            <li>Уведомлены гости с активными бронированиями</li>
+                        </ul>
+                    </div>
+
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <div class="d-flex gap-3 justify-content-end">
+                            <a href="{% url 'listings:host_listings' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-2"></i>
+                                Отмена
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-2"></i>
+                                Да, удалить объявление
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
