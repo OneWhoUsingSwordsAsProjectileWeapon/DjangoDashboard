@@ -1,0 +1,76 @@
+Environment:
+
+
+Request Method: GET
+Request URL: https://2a7ed7e4-3016-4268-b37f-22f207efb8d4-00-1iqmgy1oxcvms.kirk.replit.dev/listings/67/delete/
+
+Django Version: 5.2.3
+Python Version: 3.12.7
+Installed Applications:
+['django.contrib.admin',
+ 'django.contrib.auth',
+ 'django.contrib.contenttypes',
+ 'django.contrib.sessions',
+ 'django.contrib.messages',
+ 'django.contrib.staticfiles',
+ 'django.contrib.humanize',
+ 'rest_framework',
+ 'django_filters',
+ 'channels',
+ 'users.apps.UsersConfig',
+ 'listings.apps.ListingsConfig',
+ 'chat.apps.ChatConfig',
+ 'notifications.apps.NotificationsConfig',
+ 'moderation.apps.ModerationConfig',
+ 'subscriptions.apps.SubscriptionsConfig',
+ 'django_extensions']
+Installed Middleware:
+['django.middleware.security.SecurityMiddleware',
+ 'django.contrib.sessions.middleware.SessionMiddleware',
+ 'django.middleware.common.CommonMiddleware',
+ 'django.middleware.csrf.CsrfViewMiddleware',
+ 'django.contrib.auth.middleware.AuthenticationMiddleware',
+ 'django.contrib.messages.middleware.MessageMiddleware',
+ 'django.middleware.clickjacking.XFrameOptionsMiddleware']
+
+Template loader postmortem
+Django tried loading these templates, in this order:
+
+Using engine django:
+    * django.template.loaders.filesystem.Loader: /home/runner/workspace/templates/listings/listing_confirm_delete.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/contrib/admin/templates/listings/listing_confirm_delete.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/contrib/auth/templates/listings/listing_confirm_delete.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/rest_framework/templates/listings/listing_confirm_delete.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django_filters/templates/listings/listing_confirm_delete.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/users/templates/listings/listing_confirm_delete.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/listings/templates/listings/listing_confirm_delete.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/chat/templates/listings/listing_confirm_delete.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/notifications/templates/listings/listing_confirm_delete.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/moderation/templates/listings/listing_confirm_delete.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/subscriptions/templates/listings/listing_confirm_delete.html (Source does not exist)
+    * django.template.loaders.app_directories.Loader: /home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django_extensions/templates/listings/listing_confirm_delete.html (Source does not exist)
+
+
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/base.py", line 220, in _get_response
+    response = response.render()
+               ^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/response.py", line 114, in render
+    self.content = self.rendered_content
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/response.py", line 90, in rendered_content
+    template = self.resolve_template(self.template_name)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/response.py", line 72, in resolve_template
+    return select_template(template, using=self.using)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader.py", line 47, in select_template
+    raise TemplateDoesNotExist(", ".join(template_name_list), chain=chain)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Exception Type: TemplateDoesNotExist at /listings/67/delete/
+Exception Value: listings/listing_confirm_delete.html
