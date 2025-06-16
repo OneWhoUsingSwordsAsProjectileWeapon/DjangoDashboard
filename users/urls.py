@@ -22,9 +22,7 @@ urlpatterns = [
     path('verify/send-code/', views.send_verification_code, name='send_verification_code'),
 
     # Password reset
-    path('password-reset/', 
-        auth_views.PasswordResetView.as_view(template_name='users/password_reset.html'), 
-        name='password_reset'),
+    path('password-reset/', views.password_reset_view, name='password_reset'),
     path('password-reset/done/', 
         auth_views.PasswordResetDoneView.as_view(template_name='users/password_reset_done.html'), 
         name='password_reset_done'),

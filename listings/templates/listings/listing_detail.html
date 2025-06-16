@@ -253,13 +253,15 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
-                        {% if listing.host.profile_picture %}
-                            <img src="{{ listing.host.profile_picture }}" class="rounded-circle me-3" width="60" height="60" alt="{{ listing.host.username }}">
-                        {% else %}
-                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
-                                <i class="fas fa-user-circle fa-2x text-secondary"></i>
-                            </div>
-                        {% endif %}
+                        <a href="{% url 'users:public_profile' user_id=listing.host.id %}" class="text-decoration-none">
+                            {% if listing.host.profile_picture %}
+                                <img src="{{ listing.host.profile_picture.url }}" class="rounded-circle me-3" width="60" height="60" alt="{{ listing.host.username }}" style="object-fit: cover; cursor: pointer; transition: opacity 0.2s ease;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                            {% else %}
+                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px; cursor: pointer; transition: background-color 0.2s ease;" onmouseover="this.style.backgroundColor='#e9ecef'" onmouseout="this.style.backgroundColor='#f8f9fa'">
+                                    <i class="fas fa-user-circle fa-2x text-secondary"></i>
+                                </div>
+                            {% endif %}
+                        </a>
                         <div>
                             <h5 class="mb-1">Хозяин: {{ listing.host.first_name|default:listing.host.username }}</h5>
                             <p class="mb-0 text-muted">Участник с {{ listing.host.date_joined|date:"F Y" }}</p>

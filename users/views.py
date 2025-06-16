@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.contrib.auth import login
+from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView
 from django.urls import reverse
@@ -190,6 +190,43 @@ def public_profile_view(request, user_id):
     }
 
     return render(request, 'users/public_profile.html', context)
+
+@login_required
+def password_reset_view(request):
+    """Handle password change"""
+    if request.method == 'POST':
+        old_password = request.POST.get('old_password')
+        new_password1 = request.POST.get('new_password1')
+        new_password2 = request.POST.get('new_password2')
+        
+        # Check if old password is correct
+        if not request.user.check_password(old_password):
+            messages.error(request, 'Неверный текущий пароль.')
+            return render(request, 'users/password_reset.html')
+        
+        # Check if new passwords match
+        if new_password1 != new_password2:
+            messages.error(request, 'Новые пароли не совпадают.')
+            return render(request, 'users/password_reset.html')
+        
+        # Check password length
+        if len(new_password1) < 8:
+            messages.error(request, 'Пароль должен содержать минимум 8 символов.')
+            return render(request, 'users/password_reset.html')
+        
+        # Set new password
+        request.user.set_password(new_password1)
+        request.user.save()
+        
+        # Re-authenticate user to keep them logged in
+        user = authenticate(username=request.user.username, password=new_password1)
+        if user:
+            login(request, user)
+        
+        messages.success(request, 'Пароль успешно изменен.')
+        return redirect('users:profile')
+    
+    return render(request, 'users/password_reset.html')
 
 def logout_view(request):
     """Handle user logout"""

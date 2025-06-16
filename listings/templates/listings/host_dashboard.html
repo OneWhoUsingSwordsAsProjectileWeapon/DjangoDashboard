@@ -656,7 +656,7 @@
 
             <!-- Status Chart Row -->
             <div class="row mb-4">
-                <div class="col-lg-4 mb-3">
+                <div class="col-lg-6 mb-3">
                     <div class="card h-100">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="card-title mb-0">Статусы бронирований</h5>
@@ -680,24 +680,22 @@
                         </div>
                     </div>
                 </div>
-                <div class="row mb-4">
-                    <div class="col-lg-6 mb-3">
-                        <div class="card h-100">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="card-title mb-0">Сезонная активность</h5>
-                                <select class="form-select form-select-sm" id="seasonalPeriodSelect" style="width: auto;">
-                                    <option value="current">Текущий год</option>
-                                    <option value="all" selected>Все время</option>
-                                    <option value="compare">Сравнение лет</option>
-                                </select>
-                            </div>
-                            <div class="card-body p-3">
-                                <div class="chart-container">
-                                    <div class="bar-chart" id="seasonalChart">
-                                        <div class="no-data-message">
-                                            <i class="fas fa-chart-bar"></i>
-                                            <span>Загрузка данных...</span>
-                                        </div>
+                <div class="col-lg-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">Сезонная активность</h5>
+                            <select class="form-select form-select-sm" id="seasonalPeriodSelect" style="width: auto;">
+                                <option value="current">Текущий год</option>
+                                <option value="all" selected>Все время</option>
+                                <option value="compare">Сравнение лет</option>
+                            </select>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="chart-container">
+                                <div class="bar-chart" id="seasonalChart">
+                                    <div class="no-data-message">
+                                        <i class="fas fa-chart-bar"></i>
+                                        <span>Загрузка данных...</span>
                                     </div>
                                 </div>
                             </div>
@@ -1515,8 +1513,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const legendContainer = document.getElementById('statusLegend');
         if (!container) return;
 
-        // Note: For full period filtering, we would need to make an AJAX call to get filtered data
-        // For now, we'll use the existing data but show the selection
+        // Get current filter values from URL parameters or use session filters
+        const currentUrl = new URL(window.location);
+        const timeFilter = currentUrl.searchParams.get('time_filter') || '{{ current_filters.time_filter }}';
+        const listingFilter = currentUrl.searchParams.get('listing_filter') || '{{ current_filters.listing_filter }}';
+        const statusFilter = currentUrl.searchParams.get('status_filter') || '{{ current_filters.status_filter }}';
+        
+        // Use filtered status stats that respect the current date filters
         const statusStats = {{ status_stats|safe }};
         console.log('Status data:', statusStats);
 
