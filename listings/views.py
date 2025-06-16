@@ -981,8 +981,38 @@ class ListingDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         listing = self.get_object()
         return self.request.user == listing.host
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        listing = self.get_object()
+        
+        # Check for active bookings
+        active_bookings = listing.bookings.filter(
+            status__in=['pending', 'confirmed']
+        ).select_related('guest')
+        
+        context['active_bookings'] = active_bookings
+        context['can_delete'] = not active_bookings.exists()
+        
+        return context
+
     def delete(self, request, *args, **kwargs):
-        messages.success(request, 'Your listing has been deleted.')
+        listing = self.get_object()
+        
+        # Check if there are active bookings
+        active_bookings = listing.bookings.filter(
+            status__in=['pending', 'confirmed']
+        )
+        
+        if active_bookings.exists():
+            messages.error(
+                request, 
+                f'Нельзя удалить объявление с активными бронированиями. '
+                f'У вас есть {active_bookings.count()} активных бронирований. '
+                f'Сначала отмените все активные бронирования или дождитесь их завершения.'
+            )
+            return redirect('listings:listing_detail', pk=listing.pk)
+        
+        messages.success(request, 'Объявление успешно удалено.')
         return super().delete(request, *args, **kwargs)
 
 @login_required

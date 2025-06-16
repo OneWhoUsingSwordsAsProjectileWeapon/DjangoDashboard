@@ -55,29 +55,82 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <h6>При удалении объявления будут:</h6>
-                        <ul class="text-muted">
-                            <li>Удалены все изображения и данные объявления</li>
-                            <li>Отменены все активные и ожидающие бронирования</li>
-                            <li>Сохранены завершенные бронирования в истории</li>
-                            <li>Уведомлены гости с активными бронированиями</li>
-                        </ul>
-                    </div>
+                    {% if active_bookings %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Удаление невозможно!</strong> 
+                            У этого объявления есть активные бронирования.
+                        </div>
 
-                    <form method="post" class="d-inline">
-                        {% csrf_token %}
+                        <div class="mb-4">
+                            <h6>Активные бронирования ({{ active_bookings.count }}):</h6>
+                            <div class="list-group">
+                                {% for booking in active_bookings %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>{{ booking.guest.get_full_name|default:booking.guest.username }}</strong>
+                                                <br>
+                                                <small class="text-muted">
+                                                    {{ booking.start_date }} - {{ booking.end_date }}
+                                                    <span class="badge bg-{% if booking.status == 'confirmed' %}success{% else %}warning{% endif %}">
+                                                        {{ booking.get_status_display }}
+                                                    </span>
+                                                </small>
+                                            </div>
+                                            <div class="text-end">
+                                                <strong>₽{{ booking.total_price|floatformat:0 }}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Что нужно сделать:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Отмените все активные бронирования через <a href="{% url 'listings:host_bookings' %}" class="alert-link">управление бронированиями</a></li>
+                                <li>Или дождитесь завершения всех бронирований</li>
+                                <li>После этого вы сможете удалить объявление</li>
+                            </ul>
+                        </div>
+
                         <div class="d-flex gap-3 justify-content-end">
                             <a href="{% url 'listings:host_listings' %}" class="btn btn-secondary">
-                                <i class="fas fa-times me-2"></i>
-                                Отмена
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Вернуться к объявлениям
                             </a>
-                            <button type="submit" class="btn btn-danger">
-                                <i class="fas fa-trash me-2"></i>
-                                Да, удалить объявление
-                            </button>
+                            <a href="{% url 'listings:host_bookings' %}?listing={{ object.id }}" class="btn btn-primary">
+                                <i class="fas fa-calendar-alt me-2"></i>
+                                Управление бронированиями
+                            </a>
                         </div>
-                    </form>
+                    {% else %}
+                        <div class="mb-3">
+                            <h6>При удалении объявления будут:</h6>
+                            <ul class="text-muted">
+                                <li>Удалены все изображения и данные объявления</li>
+                                <li>Сохранены завершенные бронирования в истории</li>
+                                <li>Это действие нельзя отменить</li>
+                            </ul>
+                        </div>
+
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <div class="d-flex gap-3 justify-content-end">
+                                <a href="{% url 'listings:host_listings' %}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>
+                                    Отмена
+                                </a>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-trash me-2"></i>
+                                    Да, удалить объявление
+                                </button>
+                            </div>
+                        </form>
+                    {% endif %}
                 </div>
             </div>
         </div>
