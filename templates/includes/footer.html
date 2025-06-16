@@ -1,97 +1,150 @@
 
-<footer class="footer mt-5">
+<footer class="footer mt-5 bg-dark text-light py-4">
     <div class="container">
         <div class="row">
-            <div class="col-md-4 mb-4 mb-md-0">
+            <div class="col-md-6 mb-3 mb-md-0">
                 <h5 class="mb-3">Агрегатор Аренды</h5>
-                <p class="text-muted">
-                    Найдите и забронируйте идеальное жилье для вашего следующего путешествия. 
-                    Тысячи проверенных объектов недвижимости по всему миру.
+                <p class="text-muted mb-3">
+                    Платформа для поиска и бронирования жилья по всему миру.
                 </p>
                 <div class="social-links">
-                    <a href="#" class="me-3"><i class="fab fa-facebook"></i></a>
-                    <a href="#" class="me-3"><i class="fab fa-twitter"></i></a>
-                    <a href="#" class="me-3"><i class="fab fa-instagram"></i></a>
-                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                    <a href="#" class="me-3" title="Facebook"><i class="fab fa-facebook"></i></a>
+                    <a href="#" class="me-3" title="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="#" title="Telegram"><i class="fab fa-telegram"></i></a>
                 </div>
             </div>
             
-            <div class="col-md-2 mb-4 mb-md-0">
-                <h6 class="mb-3">Компания</h6>
+            <div class="col-md-3 mb-3 mb-md-0">
+                <h6 class="mb-3">Для пользователей</h6>
                 <ul class="list-unstyled">
-                    <li><a href="#" class="footer-link">О нас</a></li>
-                    <li><a href="#" class="footer-link">Карьера</a></li>
-                    <li><a href="#" class="footer-link">Пресс-центр</a></li>
-                    <li><a href="#" class="footer-link">Блог</a></li>
-                </ul>
-            </div>
-            
-            <div class="col-md-2 mb-4 mb-md-0">
-                <h6 class="mb-3">Поддержка</h6>
-                <ul class="list-unstyled">
+                    <li><a href="{% url 'listings:listing_list' %}" class="footer-link">Поиск жилья</a></li>
+                    <li><a href="{% url 'listings:user_bookings' %}" class="footer-link">Мои бронирования</a></li>
                     <li><a href="#" class="footer-link">Центр помощи</a></li>
                     <li><a href="#" class="footer-link">Связаться с нами</a></li>
-                    <li><a href="#" class="footer-link">Доверие и безопасность</a></li>
-                    <li><a href="#" class="footer-link">Специальные возможности</a></li>
                 </ul>
             </div>
             
-            <div class="col-md-2 mb-4 mb-md-0">
-                <h6 class="mb-3">Хозяевам</h6>
+            <div class="col-md-3">
+                <h6 class="mb-3">Для арендодателей</h6>
                 <ul class="list-unstyled">
-                    <li><a href="{% url 'listings:listing_create' %}" class="footer-link">Разместить объявление</a></li>
-                    <li><a href="#" class="footer-link">Ресурсы для хозяев</a></li>
-                    <li><a href="#" class="footer-link">Центр сообщества</a></li>
-                    <li><a href="#" class="footer-link">Ответственное размещение</a></li>
-                </ul>
-            </div>
-            
-            <div class="col-md-2">
-                <h6 class="mb-3">Путешественникам</h6>
-                <ul class="list-unstyled">
-                    <li><a href="{% url 'listings:listing_list' %}" class="footer-link">Поиск недвижимости</a></li>
-                    <li><a href="#" class="footer-link">Путеводители</a></li>
-                    <li><a href="#" class="footer-link">Подарочные карты</a></li>
-                    <li><a href="#" class="footer-link">Реферальная программа</a></li>
+                    <li><a href="{% url 'listings:listing_create' %}" class="footer-link">Сдать жилье</a></li>
+                    <li><a href="{% url 'listings:host_listings' %}" class="footer-link">Мои объявления</a></li>
+                    <li><a href="{% url 'listings:host_bookings' %}" class="footer-link">Управление бронированиями</a></li>
+                    <li><a href="#" class="footer-link">Правила размещения</a></li>
                 </ul>
             </div>
         </div>
         
-        <hr class="my-4">
+        <hr class="my-4 border-secondary">
         
         <div class="row align-items-center">
-            <div class="col-md-6">
+            <div class="col-md-8">
                 <p class="text-muted mb-0">
                     &copy; 2024 Агрегатор Аренды. Все права защищены.
                 </p>
             </div>
-            <div class="col-md-6 text-md-end">
-                <a href="#" class="footer-link me-3">Конфиденциальность</a>
-                <a href="#" class="footer-link me-3">Условия</a>
-                <a href="#" class="footer-link">Карта сайта</a>
+            <div class="col-md-4 text-md-end">
+                <a href="#" class="footer-link me-3" data-bs-toggle="modal" data-bs-target="#privacyModal">Конфиденциальность</a>
+                <a href="#" class="footer-link">Условия</a>
             </div>
         </div>
     </div>
 </footer>
 
+<!-- Privacy Policy Modal (for footer link) -->
+<div class="modal fade" id="privacyModal" tabindex="-1" aria-labelledby="privacyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="privacyModalLabel">Политика конфиденциальности</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <h6>1. Сбор информации</h6>
+                <p>Мы собираем информацию, которую вы предоставляете нам при регистрации, включая имя, адрес электронной почты, номер телефона и другие данные профиля.</p>
+                
+                <h6>2. Использование информации</h6>
+                <p>Ваша информация используется для предоставления услуг платформы аренды, обработки бронирований и платежей, отправки уведомлений о бронированиях и обеспечения безопасности платформы.</p>
+                
+                <h6>3. Защита данных</h6>
+                <p>Мы применяем современные методы шифрования и защиты для обеспечения безопасности ваших персональных данных.</p>
+                
+                <h6>4. Контактная информация</h6>
+                <p>По вопросам обработки персональных данных обращайтесь по адресу: privacy@rentalplatform.com</p>
+                
+                <p class="mt-4"><small>Дата последнего обновления: 16 июня 2025 года</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
+.footer {
+    background: linear-gradient(135deg, #2c3e50, #34495e) !important;
+    border-top: 3px solid var(--primary-color, #007bff);
+}
+
 .footer-link {
     color: #adb5bd;
     text-decoration: none;
-    transition: color 0.3s;
+    transition: all 0.3s ease;
+    padding: 2px 0;
+    display: inline-block;
 }
 
 .footer-link:hover {
-    color: white;
+    color: #ffffff;
+    transform: translateX(5px);
 }
 
 .social-links a {
     color: #adb5bd;
-    font-size: 1.25rem;
-    transition: color 0.3s;
+    font-size: 1.5rem;
+    transition: all 0.3s ease;
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .social-links a:hover {
-    color: white;
+    color: #ffffff;
+    background: var(--primary-color, #007bff);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+}
+
+.footer h5, .footer h6 {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.footer .text-muted {
+    color: #adb5bd !important;
+}
+
+.footer ul li {
+    margin-bottom: 8px;
+}
+
+.border-secondary {
+    border-color: #495057 !important;
+}
+
+@media (max-width: 768px) {
+    .footer .text-md-end {
+        text-align: left !important;
+        margin-top: 1rem;
+    }
+    
+    .social-links {
+        margin-bottom: 1rem;
+    }
 }
 </style>
