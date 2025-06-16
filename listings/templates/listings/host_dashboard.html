@@ -383,9 +383,6 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2>Панель владельца недвижимости</h2>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filtersModal">
-                        <i class="fas fa-filter"></i> Фильтры
-                    </button>
                     <a href="{% url 'listings:export_dashboard' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" 
                        class="btn btn-outline-success">
                         <i class="fas fa-file-excel"></i> Экспорт в Excel
@@ -683,180 +680,34 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-8 mb-3">
-                    <div class="card h-100">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-chart-line text-info me-2"></i>
-                                Детальная статистика объявления
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <!-- Filters for detailed statistics -->
-                            <form method="get" class="mb-4">
-                                <!-- Preserve existing filters -->
-                                <input type="hidden" name="time_filter" value="{{ current_filters.time_filter }}">
-                                <input type="hidden" name="listing_filter" value="{{ current_filters.listing_filter }}">
-                                <input type="hidden" name="status_filter" value="{{ current_filters.status_filter }}">
-
-                                <div class="row">
-                                    <div class="col-md-6 mb-2">
-                                        <label class="form-label">Объявление:</label>
-                                        <select class="form-select form-select-sm" name="detail_listing_id">
-                                            <option value="">Выберите объявление</option>
-                                            {% for listing in host_listings_for_filter %}
-                                            <option value="{{ listing.id }}" {% if selected_listing_id == listing.id|stringformat:"s" %}selected{% endif %}>
-                                                {{ listing.title|truncatechars:40 }}
-                                            </option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3 mb-2">
-                                        <label class="form-label">Начальная дата:</label>
-                                        <input type="date" class="form-control form-control-sm" name="custom_detail_start" value="{{ custom_detail_start }}" placeholder="Начало периода">
-                                    </div>
-                                    <div class="col-md-3 mb-2">
-                                        <label class="form-label">Конечная дата:</label>
-                                        <input type="date" class="form-control form-control-sm" name="custom_detail_end" value="{{ custom_detail_end }}" placeholder="Конец периода">
+                <div class="row mb-4">
+                    <div class="col-lg-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">Сезонная активность</h5>
+                                <select class="form-select form-select-sm" id="seasonalPeriodSelect" style="width: auto;">
+                                    <option value="current">Текущий год</option>
+                                    <option value="all" selected>Все время</option>
+                                    <option value="compare">Сравнение лет</option>
+                                </select>
+                            </div>
+                            <div class="card-body p-3">
+                                <div class="chart-container">
+                                    <div class="bar-chart" id="seasonalChart">
+                                        <div class="no-data-message">
+                                            <i class="fas fa-chart-bar"></i>
+                                            <span>Загрузка данных...</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="row">
-                                    <div class="col-12 d-flex justify-content-end">
-                                        <button type="submit" class="btn btn-primary btn-sm">Показать статистику</button>
-                                    </div>
-                                </div>
-                            </form>
-
-                            {% if listing_detail_stats %}
-                                {% if listing_detail_stats.error %}
-                                    <div class="alert alert-warning">
-                                        <i class="fas fa-exclamation-triangle me-2"></i>
-                                        {{ listing_detail_stats.error }}
-                                    </div>
-                                {% else %}
-                                    <!-- Summary statistics -->
-                                    <div class="row mb-4">
-                                        <div class="col-md-3 text-center">
-                                            <div class="p-3 bg-success bg-opacity-10 rounded">
-                                                <h4 class="text-success mb-1">{{ listing_detail_stats.occupancy_rate }}%</h4>
-                                                <small class="text-muted">Заполняемость</small>
-                                                <div class="small text-muted mt-1">{{ listing_detail_stats.occupied_days }} из {{ listing_detail_stats.total_possible_days }} дней</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3 text-center">
-                                            <div class="p-3 bg-primary bg-opacity-10 rounded">
-                                                <h4 class="text-primary mb-1">₽{{ listing_detail_stats.total_revenue|floatformat:0|intcomma }}</h4>
-                                                <small class="text-muted">Общий доход</small>
-                                                <div class="small text-muted mt-1">{{ listing_detail_stats.period_start }} - {{ listing_detail_stats.period_end }}</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3 text-center">
-                                            <div class="p-3 bg-warning bg-opacity-10 rounded">
-                                                <h4 class="text-warning mb-1">{{ listing_detail_stats.total_bookings }}</h4>
-                                                <small class="text-muted">Всего бронирований</small>
-                                                <div class="small text-muted mt-1">{{ listing_detail_stats.completed_bookings }} завершено</div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3 text-center">
-                                            <div class="p-3 bg-info bg-opacity-10 rounded">
-                                                <h4 class="text-info mb-1">₽{{ listing_detail_stats.avg_booking_value|floatformat:0 }}</h4>
-                                                <small class="text-muted">Средний чек</small>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Monthly breakdown -->
-                                    <div class="table-responsive">
-                                        <table class="table table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th>Месяц</th>
-                                                    ```
-Анализ: The code changes remove the year selection from the detailed statistics form and adjust the layout.
-                                                    <th>Дни в периоде</th>
-                                                    <th>Занято дней</th>
-                                                    <th>Заполняемость</th>
-                                                    <th>Бронирований</th>
-                                                    <th>Доход</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for month in listing_detail_stats.monthly_breakdown %}
-                                                <tr>
-                                                    <td>{{ month.month_name }}</td>
-                                                    <td>{{ month.days }}</td>
-                                                    <td>{{ month.occupied_days }}</td>
-                                                    <td>
-                                                        <span class="badge {% if month.occupancy_rate >= 70 %}bg-success{% elif month.occupancy_rate >= 40 %}bg-warning{% else %}bg-danger{% endif %}">
-                                                            {{ month.occupancy_rate }}%
-                                                        </span>
-                                                    </td>
-                                                    <td>{{ month.bookings }}</td>
-                                                    <td>₽{{ month.revenue|floatformat:0|intcomma }}</td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                {% endif %}
-                            {% else %}
-                                <div class="text-center py-4 text-muted">
-                                    <i class="fas fa-chart-line fa-3x mb-3"></i>
-                                    <p>Выберите объявление и период для просмотра детальной статистики</p>
-                                </div>
-                            {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Additional Charts Row -->
-            <div class="row mb-4">
-                <div class="col-lg-6 mb-3">
-                    <div class="card h-100">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="card-title mb-0">Сравнение кварталов</h5>
-                            <select class="form-select form-select-sm" id="quarterlyPeriodSelect" style="width: auto;">
-                                <option value="4">Последние 4 квартала</option>
-                                <option value="8" selected>Последние 8 кварталов</option>
-                                <option value="all">Все кварталы</option>
-                            </select>
-                        </div>
-                        <div class="card-body p-3">
-                            <div class="chart-container">
-                                <div class="bar-chart" id="quarterlyChart">
-                                    <div class="no-data-message">
-                                        <i class="fas fa-chart-bar"></i>
-                                        <span>Загрузка данных...</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-6 mb-3">
-                    <div class="card h-100">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="card-title mb-0">Сезонная активность</h5>
-                            <select class="form-select form-select-sm" id="seasonalPeriodSelect" style="width: auto;">
-                                <option value="current">Текущий год</option>
-                                <option value="all" selected>Все время</option>
-                                <option value="compare">Сравнение лет</option>
-                            </select>
-                        </div>
-                        <div class="card-body p-3">
-                            <div class="chart-container">
-                                <div class="bar-chart" id="seasonalChart">
-                                    <div class="no-data-message">
-                                        <i class="fas fa-chart-bar"></i>
-                                        <span>Загрузка данных...</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            
 
             <!-- Quick Actions -->
             <div class="row mb-5">
@@ -953,9 +804,6 @@
                                     <div class="col-md-3 mb-2 d-flex align-items-end">
                                         <button class="btn btn-sm btn-outline-secondary me-2" onclick="resetListingsFilters()">
                                             <i class="fas fa-undo"></i> Сбросить
-                                        </button>
-                                        <button class="btn btn-sm btn-success" onclick="exportListingsData()">
-                                            <i class="fas fa-download"></i> Экспорт
                                         </button>
                                     </div>
                                 </div>

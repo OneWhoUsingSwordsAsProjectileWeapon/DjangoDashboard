@@ -92,17 +92,6 @@
                                 <input type="number" class="form-control" id="bathrooms" name="bathrooms" min="0" step="0.5" 
                                        value="{{ form.bathrooms.value|default:'' }}">
                             </div>
-                            <div class="col-md-2">
-                                <label for="property_type" class="form-label">Тип недвижимости</label>
-                                <select class="form-select" id="property_type" name="property_type">
-                                    <option value="">Любой</option>
-                                    <option value="apartment" {% if form.property_type.value == 'apartment' %}selected{% endif %}>Квартира</option>
-                                    <option value="house" {% if form.property_type.value == 'house' %}selected{% endif %}>Дом</option>
-                                    <option value="villa" {% if form.property_type.value == 'villa' %}selected{% endif %}>Вилла</option>
-                                    <option value="cabin" {% if form.property_type.value == 'cabin' %}selected{% endif %}>Домик</option>
-                                    <option value="condo" {% if form.property_type.value == 'condo' %}selected{% endif %}>Кондоминиум</option>
-                                </select>
-                            </div>
                         </div>
                     </div>
 

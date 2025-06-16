@@ -100,19 +100,6 @@
         <!-- Trips Tab -->
         <div class="tab-pane fade show active" id="trips" role="tabpanel" aria-labelledby="trips-tab">
             <div class="row">
-                <div class="col-md-3 mb-4">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">Фильтры путешествий</h5>
-                            <div class="list-group mt-3">
-                                <a href="#" class="list-group-item list-group-item-action active">Все</a>
-                                <a href="#" class="list-group-item list-group-item-action">Предстоящие</a>
-                                <a href="#" class="list-group-item list-group-item-action">Прошедшие</a>
-                                <a href="#" class="list-group-item list-group-item-action">Отмененные</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 <div class="col-md-9">
                     <!-- Load user bookings using HTMX -->
                     <div id="trips-content" hx-get="{% url 'listings:user_bookings' %}?tab_content=1" hx-trigger="load once">
@@ -174,9 +161,6 @@
                             <h5 class="card-title">Настройки</h5>
                             <div class="list-group mt-3">
                                 <a href="#" class="list-group-item list-group-item-action active">Профиль</a>
-                                <a href="#" class="list-group-item list-group-item-action">Уведомления</a>
-                                <a href="#" class="list-group-item list-group-item-action">Приватность</a>
-                                <a href="#" class="list-group-item list-group-item-action">Безопасность</a>
                             </div>
                         </div>
                     </div>
@@ -214,23 +198,6 @@
                                 </a>
                                 {% endif %}
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title">Уведомления</h5>
-                            <form>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="emailNotifications" {% if user.email_notifications %}checked{% endif %}>
-                                    <label class="form-check-label" for="emailNotifications">Почта</label>
-                                </div>
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="smsNotifications" {% if user.sms_notifications %}checked{% endif %}>
-                                    <label class="form-check-label" for="smsNotifications">СМС</label>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Сохранить</button>
-                            </form>
                         </div>
                     </div>
 
