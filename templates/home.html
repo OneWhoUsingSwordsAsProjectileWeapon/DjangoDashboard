@@ -242,7 +242,7 @@
                     <i class="fas fa-search me-2"></i>Browse Properties
                 </a>
                 {% if not user.is_authenticated %}
-                <a href="{% url 'users:register' %}" class="btn btn-outline-primary btn-lg">
+                <a href="{% url 'users:terms_agreement' %}" class="btn btn-outline-primary btn-lg">
                     <i class="fas fa-user-plus me-2"></i>Sign Up Free
                 </a>
                 {% endif %}
