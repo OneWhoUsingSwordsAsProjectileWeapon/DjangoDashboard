@@ -108,14 +108,14 @@
                         
                         
                         <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="termsCheck" required>
-                            <label class="form-check-label" for="termsCheck">
-                                Я согласен с <a href="#" target="_blank">Условиями обслуживания</a> и <a href="#" target="_blank">Политикой конфиденциальности</a>
+                            <input type="checkbox" class="form-check-input" id="privacyCheck" required>
+                            <label class="form-check-label" for="privacyCheck">
+                                Я ознакомлен и принимаю <a href="#" data-bs-toggle="modal" data-bs-target="#privacyModal">Политику конфиденциальности</a>
                             </label>
                         </div>
                         
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">Создать аккаунт</button>
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" disabled>Создать аккаунт</button>
                         </div>
                     </form>
                     
@@ -129,4 +129,88 @@
         </div>
     </div>
 </div>
+
+<!-- Privacy Policy Modal -->
+<div class="modal fade" id="privacyModal" tabindex="-1" aria-labelledby="privacyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="privacyModalLabel">Политика конфиденциальности</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <h6>1. Сбор информации</h6>
+                <p>Мы собираем информацию, которую вы предоставляете нам при регистрации, включая имя, адрес электронной почты, номер телефона и другие данные профиля.</p>
+                
+                <h6>2. Использование информации</h6>
+                <p>Ваша информация используется для:</p>
+                <ul>
+                    <li>Предоставления услуг платформы аренды</li>
+                    <li>Обработки бронирований и платежей</li>
+                    <li>Отправки уведомлений о бронированиях</li>
+                    <li>Обеспечения безопасности платформы</li>
+                </ul>
+                
+                <h6>3. Защита данных</h6>
+                <p>Мы применяем современные методы шифрования и защиты для обеспечения безопасности ваших персональных данных.</p>
+                
+                <h6>4. Передача данных третьим лицам</h6>
+                <p>Мы не передаем ваши персональные данные третьим лицам без вашего согласия, за исключением случаев, предусмотренных законодательством.</p>
+                
+                <h6>5. Cookies</h6>
+                <p>Мы используем файлы cookie для улучшения работы сайта и анализа посещаемости.</p>
+                
+                <h6>6. Ваши права</h6>
+                <p>Вы имеете право на доступ, исправление, удаление ваших персональных данных, а также право на ограничение их обработки.</p>
+                
+                <h6>7. Контактная информация</h6>
+                <p>По вопросам обработки персональных данных обращайтесь по адресу: privacy@rentalplatform.com</p>
+                
+                <h6>8. Изменения в политике</h6>
+                <p>Мы оставляем за собой право вносить изменения в данную политику конфиденциальности. О значительных изменениях мы уведомим вас по электронной почте.</p>
+                
+                <p class="mt-4"><small>Дата последнего обновления: 16 июня 2025 года</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-primary" id="acceptPrivacyBtn">Принимаю</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const privacyCheck = document.getElementById('privacyCheck');
+    const submitBtn = document.getElementById('submitBtn');
+    const acceptPrivacyBtn = document.getElementById('acceptPrivacyBtn');
+    const privacyModal = document.getElementById('privacyModal');
+    
+    // Initially disable submit button
+    submitBtn.disabled = true;
+    
+    // Enable/disable submit button based on checkbox
+    privacyCheck.addEventListener('change', function() {
+        submitBtn.disabled = !this.checked;
+    });
+    
+    // Handle privacy policy acceptance
+    acceptPrivacyBtn.addEventListener('click', function() {
+        privacyCheck.checked = true;
+        submitBtn.disabled = false;
+        
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(privacyModal);
+        modal.hide();
+    });
+    
+    // Prevent form submission if privacy policy not accepted
+    document.querySelector('form').addEventListener('submit', function(e) {
+        if (!privacyCheck.checked) {
+            e.preventDefault();
+            alert('Необходимо принять политику конфиденциальности для продолжения регистрации.');
+        }
+    });
+});
+</script>
 {% endblock %}
